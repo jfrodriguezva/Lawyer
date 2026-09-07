@@ -2,7 +2,7 @@ using ECAbogados.Application.Citas.Commands.CambiarEstatusCita;
 using ECAbogados.Application.Citas.Commands.CrearCita;
 using ECAbogados.Application.Citas.Queries.ListarCitas;
 using ECAbogados.Domain.Entities;
-using MediatR;
+using ECAbogados.Application.Mediation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

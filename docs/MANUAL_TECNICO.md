@@ -43,7 +43,53 @@ Base: `/api`
 | | `GET /contacto` | JWT | Listar mensajes |
 | | `PATCH /contacto/{id}/atendido` | JWT | Marcar atendido |
 
+| Plazos | `GET /plazos/caso/{casoId}` | JWT | Listar plazos/audiencias de un caso |
+| | `POST /plazos` | JWT | Crear plazo |
+| | `PATCH /plazos/{id}/cumplido` | JWT | Marcar cumplido |
+| Pagos | `GET /pagos/caso/{casoId}` | JWT (**Administrador**) | Listar honorarios de un caso |
+| | `POST /pagos` | JWT (**Administrador**) | Registrar pago |
+| Usuarios | `GET /usuarios` | JWT (**Administrador**) | Listar personal |
+| | `POST /usuarios` | JWT (**Administrador**) | Alta de personal (Asistente/Administrador) |
+| Portal | `GET /portal/{token}` | Anónimo | Datos del caso vía enlace mágico |
+| | `POST /portal/{token}/documentos` | Anónimo | Subida de documento por el cliente |
+| Casos | `PATCH /casos/checklist/{itemId}` | JWT | Marcar requisito del checklist |
+
 Swagger UI disponible en `http://localhost:5080/swagger`.
+
+## 4.1 Roles y autorización
+
+El JWT incluye el claim de rol (`Administrador` o `Asistente`). Restricciones aplicadas a nivel de controller:
+- Cerrar un expediente (`PATCH /casos/{id}/estatus` con `Cerrado`) requiere rol `Administrador` (verificación inline en `CasosController`).
+- Todo el controller de `Pagos` y `Usuarios` requiere `[Authorize(Roles = "Administrador")]`.
+
+## 4.2 Notificaciones por correo (gratis)
+
+`IEmailSender` (Infrastructure/Notifications/SmtpEmailSender.cs) usa `System.Net.Mail.SmtpClient`, incluido en .NET — sin paquetes ni costo adicional. Si `Smtp:Host` está vacío en `appsettings.json`, los correos solo se registran en el log de la API (modo desarrollo). Para activarlos de verdad, configura una cuenta gratuita:
+
+- **Gmail**: activa verificación en 2 pasos y genera una "contraseña de aplicación" en https://myaccount.google.com/apppasswords. `Smtp:Host` = `smtp.gmail.com`, puerto `587`.
+- **Brevo (ex Sendinblue)**: plan gratuito de 300 correos/día, sin tarjeta. https://www.brevo.com
+
+Configura también `Notificaciones:StaffEmail` con el correo del despacho que debe recibir los avisos (mensajes nuevos, citas nuevas, recordatorio de citas a 24h, alertas de plazos a 3 días). El envío corre en `RecordatorioBackgroundService`, un `BackgroundService` nativo de .NET (sin Hangfire) que revisa cada 30 minutos.
+
+## 4.3 Analítica y SEO (gratis)
+
+- Define `NEXT_PUBLIC_GA_ID` (Google Analytics 4, gratis) y/o `NEXT_PUBLIC_META_PIXEL_ID` (Meta Pixel, gratis) en `frontend/web/.env.local` para activar el tracking en el sitio público; si se dejan vacíos, no se carga ningún script.
+- `NEXT_PUBLIC_SITE_URL` controla el dominio usado en `sitemap.xml`, `robots.txt` y metadatos OpenGraph.
+- El sitio ya expone `/sitemap.xml`, `/robots.txt` y datos estructurados `schema.org/Attorney` en la portada.
+
+## 4.4 Portal del cliente
+
+Cada caso genera un `TokenAcceso` (GUID) al crearse. El link `{sitio}/portal/{token}` (sin login) muestra estatus, checklist y documentos del caso, y permite subir nuevos documentos. Está pensado para compartirse por WhatsApp; no tiene expiración ni revocación en esta primera versión — considerarlo antes de un uso con datos muy sensibles.
+
+## 4.5 Mediador propio (sin MediatR)
+
+El proyecto usaba **MediatR 14.2.0**, que a partir de cierto release requiere licencia comercial de pago (Lucky Penny Software) para producción. Se reemplazó por una implementación propia y gratuita en `ECAbogados.Application/Mediation/`:
+
+- `IRequest` / `IRequest<TResponse>`: mismas marcas que usaban los Commands/Queries.
+- `IRequestHandler<TRequest>` / `IRequestHandler<TRequest, TResponse>`: mismo contrato que implementan los handlers existentes.
+- `ISender` / `Sender`: resuelve el handler correspondiente vía el contenedor de DI de ASP.NET Core y lo invoca por reflexión (`serviceProvider.GetRequiredService(handlerType)` + `MethodInfo.Invoke`).
+
+El registro de handlers es manual y explícito en `ECAbogados.Application/DependencyInjection.cs`: escanea el propio ensamblado de Application buscando clases que implementen `IRequestHandler<>`/`IRequestHandler<,>` y las da de alta contra su interfaz — sin ninguna librería de terceros ni dependencia de licencia. Todos los Commands, Queries, Handlers y Controllers existentes siguen igual (solo cambió el `using`, de `MediatR` a `ECAbogados.Application.Mediation`); el comportamiento es idéntico y fue verificado end-to-end (login, CRUD de casos con checklist, plazos, pagos, usuarios, portal por token, restricciones de rol).
 
 ## 4. Autenticación
 
@@ -57,7 +103,7 @@ Swagger UI disponible en `http://localhost:5080/swagger`.
 
 SQL Server. Esquema completo en `backend/database/schema.sql`.
 
-**Tablas:** `Usuarios`, `Casos`, `Citas`, `Documentos`, `MensajesContacto`.
+**Tablas:** `Usuarios`, `Casos`, `Citas`, `Documentos`, `MensajesContacto`, `ChecklistItems`, `Plazos`, `Pagos`.
 
 El script es idempotente (usa `IF NOT EXISTS`) e incluye datos semilla:
 - Usuario administrador: `erika@ecabogados.mx` / contraseña `Cambiar123!` (hash bcrypt ya incluido).
@@ -121,8 +167,9 @@ CORS está configurado en la API y el Gateway solo para permitir `http://localho
 ## 8. Limitaciones técnicas conocidas
 
 - Secreto JWT hardcodeado en `appsettings.json` (solo válido para desarrollo).
-- No hay gestión de usuarios vía API (altas/bajas de personal requieren acceso directo a SQL).
+- Bajas de personal aún requieren acceso directo a SQL (solo hay alta y listado vía API).
 - No hay pruebas automatizadas (unitarias/integración) en el repo.
 - No hay pipeline de CI/CD configurado.
 - Almacenamiento de documentos en disco local del servidor de la API (no apto para múltiples instancias o despliegue sin volumen persistente compartido).
 - Sin auditoría/histórico de cambios sobre casos, citas o documentos.
+- El enlace del portal de cliente no expira ni se puede revocar en esta versión.

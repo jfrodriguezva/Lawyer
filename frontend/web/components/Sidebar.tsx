@@ -1,10 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Monogram from "./Monogram";
-import { IconPanel, IconFolder, IconCalendar, IconChat, IconLogout } from "./icons";
-import { deleteCookie } from "@/lib/cookies";
+import { IconPanel, IconFolder, IconCalendar, IconChat, IconLogout, IconUser } from "./icons";
+import { deleteCookie, getCookie } from "@/lib/cookies";
 
 const NAV = [
   { href: "/dashboard", label: "Panel", icon: IconPanel },
@@ -12,6 +13,8 @@ const NAV = [
   { href: "/agenda", label: "Agenda", icon: IconCalendar },
   { href: "/mensajes", label: "Mensajes", icon: IconChat },
 ];
+
+const NAV_ADMIN = { href: "/usuarios", label: "Usuarios", icon: IconUser };
 
 export default function Sidebar({
   open = false,
@@ -22,6 +25,20 @@ export default function Sidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const raw = getCookie("ec_user");
+    if (raw) {
+      try {
+        setIsAdmin(JSON.parse(raw).rol === "Administrador");
+      } catch {
+        // ignore malformed cookie
+      }
+    }
+  }, []);
+
+  const items = isAdmin ? [...NAV, NAV_ADMIN] : NAV;
 
   function handleLogout() {
     deleteCookie("ec_token");
@@ -59,7 +76,7 @@ export default function Sidebar({
 
         <nav className="flex-1 px-3 py-6">
           <ul className="space-y-1">
-            {NAV.map(({ href, label, icon: Icon }) => {
+            {items.map(({ href, label, icon: Icon }) => {
               const active = pathname?.startsWith(href);
               return (
                 <li key={href}>

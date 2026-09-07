@@ -21,4 +21,37 @@ public class UsuarioRepository(SqlConnectionFactory connectionFactory) : IUsuari
             return await connection.QuerySingleOrDefaultAsync<Usuario>(sql, new { Email = email });
         });
     }
+
+    public async Task<IReadOnlyList<Usuario>> GetAllAsync()
+    {
+        return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            const string sql = """
+                SELECT Id, Email, PasswordHash, Nombre, Rol
+                FROM dbo.Usuarios
+                ORDER BY Nombre
+                """;
+
+            var rows = await connection.QueryAsync<Usuario>(sql);
+            return rows.ToList();
+        });
+    }
+
+    public async Task<int> CreateAsync(Usuario usuario)
+    {
+        return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            const string sql = """
+                INSERT INTO dbo.Usuarios (Email, PasswordHash, Nombre, Rol)
+                OUTPUT INSERTED.Id
+                VALUES (@Email, @PasswordHash, @Nombre, @Rol)
+                """;
+
+            return await connection.ExecuteScalarAsync<int>(sql, usuario);
+        });
+    }
 }

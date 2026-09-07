@@ -1,4 +1,4 @@
-using MediatR;
+using ECAbogados.Application.Mediation;
 
 namespace ECAbogados.Application.Contacto.Commands.CrearMensajeContacto;
 

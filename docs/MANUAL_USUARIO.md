@@ -19,11 +19,25 @@ Si la sesión no existe o expira, cualquier intento de entrar a una sección del
 
 | Sección | Ruta | Qué permite |
 |---|---|---|
-| **Panel de casos** | `/dashboard` | Ver resumen: casos activos, en revisión y próximas citas, con accesos rápidos a cada uno. |
-| **Casos** | `/casos` | Listar todos los expedientes y crear uno nuevo (cliente, tipo de caso, notas iniciales). |
-| **Detalle de caso** | `/casos/{id}` | Ver notas del expediente, cambiar su estatus (Activo / En revisión / Cerrado) y subir/consultar documentos (hasta 50 MB por archivo). |
-| **Agenda** | `/agenda` | Ver todas las citas ordenadas por fecha, agendar una nueva (opcionalmente ligada a un caso existente) y confirmar o cancelar citas. |
-| **Mensajes** | `/mensajes` | Ver los mensajes recibidos desde el formulario público, separados en "Pendientes" y "Atendidos", y marcarlos como atendidos. |
+| **Panel de casos** | `/dashboard` | Resumen: casos activos, en revisión, próximas citas, casos cerrados, tasa de confirmación de citas y % de mensajes atendidos. |
+| **Casos** | `/casos` | Listar todos los expedientes y crear uno nuevo (cliente, tipo de caso, notas iniciales). Al crearlo se genera automáticamente un checklist de requisitos según el tipo de trámite. |
+| **Detalle de caso** | `/casos/{id}` | Notas, checklist de requisitos, documentos, plazos/audiencias, cambio de estatus, y el enlace del portal del cliente. Si tu cuenta es **Administrador** también ves y registras **Honorarios**. |
+| **Agenda** | `/agenda` | Calendario visual (mes/semana/día/lista) de todas las citas, coloreadas por estatus. Agendar una nueva (opcionalmente ligada a un caso) y confirmar o cancelar al hacer clic en una cita. |
+| **Mensajes** | `/mensajes` | Mensajes recibidos desde el formulario público, separados en "Pendientes" y "Atendidos". |
+| **Usuarios** | `/usuarios` | Solo visible para el rol **Administrador**: dar de alta personal (Asistente o Administrador) y ver el equipo actual. |
+
+### Roles
+
+- **Administrador**: acceso total, incluida la sección de Honorarios y la capacidad de cerrar un expediente.
+- **Asistente**: gestiona casos, citas, checklist y plazos, pero no puede cerrar un expediente ni ver información financiera.
+
+### Portal del cliente (sin necesidad de cuenta)
+
+Cada expediente genera automáticamente un **enlace mágico** (botón "Copiar enlace" en el detalle del caso). Compártelo por WhatsApp con el cliente: podrá ver el estatus de su caso, su checklist de requisitos y subir documentos, sin registrarse ni tener contraseña.
+
+### Notificaciones automáticas
+
+El sistema avisa por correo al despacho cuando: llega un mensaje de contacto, se agenda una cita, una cita confirmada está a menos de 24 horas, o un plazo/audiencia está por vencer. Requiere configurar una cuenta de correo gratuita (ver `MANUAL_TECNICO.md`).
 
 ## 4. Estatus del negocio
 

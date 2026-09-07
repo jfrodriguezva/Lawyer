@@ -13,7 +13,7 @@ public class CitaRepository(SqlConnectionFactory connectionFactory) : ICitaRepos
             using var connection = await connectionFactory.CreateOpenConnectionAsync();
 
             const string sql = """
-                SELECT Id, CasoId, NombreCliente, Telefono, FechaHora, Estatus
+                SELECT Id, CasoId, NombreCliente, Telefono, FechaHora, Estatus, RecordatorioEnviado
                 FROM dbo.Citas
                 ORDER BY FechaHora
                 """;
@@ -30,7 +30,7 @@ public class CitaRepository(SqlConnectionFactory connectionFactory) : ICitaRepos
             using var connection = await connectionFactory.CreateOpenConnectionAsync();
 
             const string sql = """
-                SELECT Id, CasoId, NombreCliente, Telefono, FechaHora, Estatus
+                SELECT Id, CasoId, NombreCliente, Telefono, FechaHora, Estatus, RecordatorioEnviado
                 FROM dbo.Citas
                 WHERE Id = @Id
                 """;
@@ -79,6 +79,17 @@ public class CitaRepository(SqlConnectionFactory connectionFactory) : ICitaRepos
         });
     }
 
+    public async Task MarkRecordatorioEnviadoAsync(int id)
+    {
+        await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            const string sql = "UPDATE dbo.Citas SET RecordatorioEnviado = 1 WHERE Id = @Id";
+            await connection.ExecuteAsync(sql, new { Id = id });
+        });
+    }
+
     private static Cita MapToEntity(CitaRow row) => new()
     {
         Id = row.Id,
@@ -86,7 +97,8 @@ public class CitaRepository(SqlConnectionFactory connectionFactory) : ICitaRepos
         NombreCliente = row.NombreCliente,
         Telefono = row.Telefono,
         FechaHora = row.FechaHora,
-        Estatus = Enum.Parse<EstatusCita>(row.Estatus)
+        Estatus = Enum.Parse<EstatusCita>(row.Estatus),
+        RecordatorioEnviado = row.RecordatorioEnviado
     };
 
     private sealed class CitaRow
@@ -97,5 +109,6 @@ public class CitaRepository(SqlConnectionFactory connectionFactory) : ICitaRepos
         public string Telefono { get; init; } = string.Empty;
         public DateTime FechaHora { get; init; }
         public string Estatus { get; init; } = string.Empty;
+        public bool RecordatorioEnviado { get; init; }
     }
 }

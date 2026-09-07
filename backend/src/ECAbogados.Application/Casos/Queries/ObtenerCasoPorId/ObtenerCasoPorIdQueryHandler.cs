@@ -1,13 +1,14 @@
 using ECAbogados.Application.Dtos;
 using ECAbogados.Application.Interfaces;
-using MediatR;
+using ECAbogados.Application.Mediation;
 
 namespace ECAbogados.Application.Casos.Queries.ObtenerCasoPorId;
 
 public class ObtenerCasoPorIdQueryHandler(
     ICasoRepository casoRepository,
     ICitaRepository citaRepository,
-    IDocumentoRepository documentoRepository)
+    IDocumentoRepository documentoRepository,
+    IChecklistItemRepository checklistItemRepository)
     : IRequestHandler<ObtenerCasoPorIdQuery, CasoDetalleDto?>
 {
     public async Task<CasoDetalleDto?> Handle(ObtenerCasoPorIdQuery request, CancellationToken cancellationToken)
@@ -20,6 +21,7 @@ public class ObtenerCasoPorIdQueryHandler(
 
         var citas = await citaRepository.GetAllAsync();
         var documentos = await documentoRepository.GetByCasoIdAsync(request.Id);
+        var checklist = await checklistItemRepository.GetByCasoIdAsync(request.Id);
 
         var citasDelCaso = citas
             .Where(c => c.CasoId == request.Id)
@@ -30,6 +32,10 @@ public class ObtenerCasoPorIdQueryHandler(
             .Select(d => new DocumentoDto(d.Id, d.CasoId, d.NombreArchivo, d.TipoContenido, d.TamanoBytes, d.FechaCarga, d.RutaAlmacenamiento))
             .ToList();
 
+        var checklistDelCaso = checklist
+            .Select(c => new ChecklistItemDto(c.Id, c.CasoId, c.Descripcion, c.Completado))
+            .ToList();
+
         return new CasoDetalleDto(
             caso.Id,
             caso.ClienteNombre,
@@ -37,7 +43,9 @@ public class ObtenerCasoPorIdQueryHandler(
             caso.Estatus,
             caso.FechaApertura,
             caso.Notas,
+            caso.TokenAcceso,
             citasDelCaso,
-            documentosDelCaso);
+            documentosDelCaso,
+            checklistDelCaso);
     }
 }

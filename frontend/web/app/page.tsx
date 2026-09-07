@@ -1,3 +1,4 @@
+import Link from "next/link";
 import GuestHeader from "@/components/GuestHeader";
 import GuestPanel from "@/components/GuestPanel";
 import Reveal from "@/components/Reveal";
@@ -12,6 +13,7 @@ import {
   IconUser,
   IconWhatsapp,
 } from "@/components/icons";
+import { SERVICIOS } from "@/lib/servicios";
 
 const BENEFICIOS = [
   {
@@ -59,9 +61,23 @@ const PROCESO = [
   },
 ];
 
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "Attorney",
+  name: "EC Abogados - Lic. Erika Cruz García",
+  description: "Despacho jurídico especializado en divorcio incausado y derecho familiar.",
+  telephone: "+525512592388",
+  email: "erika.c.abogada@gmail.com",
+  areaServed: "MX",
+};
+
 export default function GuestLandingPage() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-brand-ink">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+      />
       <div
         aria-hidden
         className="animate-drift pointer-events-none absolute -right-40 -top-40 h-96 w-96 rounded-full bg-brand-gold/10 blur-3xl"
@@ -194,6 +210,38 @@ export default function GuestLandingPage() {
                   {titulo}
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed text-brand-creamSoft">{texto}</p>
+              </Reveal>
+            ))}
+          </div>
+        </section>
+
+        {/* Otros servicios */}
+        <section className="mt-28 lg:mt-36">
+          <Reveal>
+            <p className="font-script text-lg italic text-brand-gold">También te acompañamos en</p>
+          </Reveal>
+          <Reveal delay={60}>
+            <h2 className="mt-1 text-balance font-display text-3xl font-bold text-brand-cream sm:text-4xl">
+              Otros servicios de derecho familiar
+            </h2>
+          </Reveal>
+
+          <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {SERVICIOS.map((s, i) => (
+              <Reveal key={s.slug} delay={100 + i * 70}>
+                <Link
+                  href={`/servicios/${s.slug}`}
+                  className="group flex h-full flex-col justify-between border border-brand-line bg-brand-ink2 p-6 transition-colors duration-300 hover:border-brand-gold/50"
+                >
+                  <div>
+                    <h3 className="font-display text-base font-bold text-brand-cream">{s.titulo}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-brand-creamSoft">{s.descripcion}</p>
+                  </div>
+                  <span className="mt-4 inline-flex items-center gap-1 text-xs uppercase tracking-widest text-brand-gold">
+                    Conocer más
+                    <IconArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                  </span>
+                </Link>
               </Reveal>
             ))}
           </div>

@@ -1,5 +1,5 @@
 using ECAbogados.Application.Dtos;
-using MediatR;
+using ECAbogados.Application.Mediation;
 
 namespace ECAbogados.Application.Citas.Queries.ObtenerCitaPorId;
 

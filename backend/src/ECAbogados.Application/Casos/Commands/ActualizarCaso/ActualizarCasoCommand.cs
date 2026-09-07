@@ -1,4 +1,4 @@
-using MediatR;
+using ECAbogados.Application.Mediation;
 
 namespace ECAbogados.Application.Casos.Commands.ActualizarCaso;
 

@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { Calendar, dateFnsLocalizer, type View } from "react-big-calendar";
+import { format, parse, startOfWeek, getDay } from "date-fns";
+import { es } from "date-fns/locale";
+import "react-big-calendar/lib/css/react-big-calendar.css";
 import StatusPill from "@/components/StatusPill";
 import {
   cambiarEstatusCita,
@@ -9,11 +13,49 @@ import {
   type Cita,
 } from "@/lib/api";
 
+const locales = { es };
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek: () => startOfWeek(new Date(), { locale: es }),
+  getDay,
+  locales,
+});
+
+const MENSAJES = {
+  next: "Siguiente",
+  previous: "Anterior",
+  today: "Hoy",
+  month: "Mes",
+  week: "Semana",
+  day: "Día",
+  agenda: "Lista",
+  date: "Fecha",
+  time: "Hora",
+  event: "Cita",
+  noEventsInRange: "Sin citas en este rango.",
+};
+
+const COLOR_POR_ESTATUS: Record<Cita["estatus"], string> = {
+  Pendiente: "#c9a24a",
+  Confirmada: "#8c6b1f",
+  Cancelada: "#3a3226",
+};
+
+interface CitaEvento {
+  resource: Cita;
+  title: string;
+  start: Date;
+  end: Date;
+}
+
 export default function AgendaPage() {
   const [citas, setCitas] = useState<Cita[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [seleccionada, setSeleccionada] = useState<Cita | null>(null);
+  const [view, setView] = useState<View>("week");
 
   const [nombreCliente, setNombreCliente] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -30,12 +72,21 @@ export default function AgendaPage() {
 
   useEffect(load, []);
 
-  const citasOrdenadas = useMemo(
+  const eventos: CitaEvento[] = useMemo(
     () =>
-      [...citas].sort(
-        (a, b) => new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime()
-      ),
+      citas.map((c) => {
+        const start = new Date(c.fechaHora);
+        const end = new Date(start.getTime() + 60 * 60 * 1000);
+        return { resource: c, title: c.nombreCliente, start, end };
+      }),
     [citas]
+  );
+
+  const eventPropGetter = useCallback(
+    (event: CitaEvento) => ({
+      style: { backgroundColor: COLOR_POR_ESTATUS[event.resource.estatus] },
+    }),
+    []
   );
 
   async function handleCreate(e: FormEvent) {
@@ -64,6 +115,7 @@ export default function AgendaPage() {
     try {
       await cambiarEstatusCita(id, estatus);
       setCitas((prev) => prev.map((c) => (c.id === id ? { ...c, estatus } : c)));
+      setSeleccionada((prev) => (prev?.id === id ? { ...prev, estatus } : prev));
     } catch {
       setError("No se pudo actualizar la cita.");
     }
@@ -143,59 +195,68 @@ export default function AgendaPage() {
           >
             {saving ? "Agendando…" : "Agendar cita"}
           </button>
+
+          {seleccionada && (
+            <div className="border-t border-brand-line pt-4">
+              <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+                Cita seleccionada
+              </p>
+              <p className="mt-2 text-sm text-brand-cream">{seleccionada.nombreCliente}</p>
+              <p className="text-xs text-brand-creamSoft">
+                {new Date(seleccionada.fechaHora).toLocaleString("es-MX")}
+              </p>
+              <div className="mt-3 flex gap-2">
+                {seleccionada.estatus !== "Confirmada" && (
+                  <button
+                    onClick={() => handleEstatus(seleccionada.id, "Confirmada")}
+                    className="border border-brand-gold px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-brand-gold hover:bg-brand-gold hover:text-brand-ink"
+                  >
+                    Confirmar
+                  </button>
+                )}
+                {seleccionada.estatus !== "Cancelada" && (
+                  <button
+                    onClick={() => handleEstatus(seleccionada.id, "Cancelada")}
+                    className="border border-brand-line px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-brand-creamSoft hover:border-brand-goldDeep hover:text-brand-goldDeep"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </form>
 
         <div className="lg:col-span-2">
-          <div className="border border-brand-line">
-            <div className="grid grid-cols-[1.4fr_1fr_1.2fr_1fr_1.4fr] gap-4 border-b border-brand-line px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
-              <span>Cliente</span>
-              <span>Teléfono</span>
-              <span>Fecha</span>
-              <span>Estatus</span>
-              <span>Acciones</span>
+          {loading ? (
+            <p className="text-sm text-brand-creamSoft">Cargando citas…</p>
+          ) : (
+            <div className="border border-brand-line bg-brand-ink2 p-4" style={{ height: 620 }}>
+              <Calendar
+                localizer={localizer}
+                culture="es"
+                messages={MENSAJES}
+                events={eventos}
+                view={view}
+                onView={setView}
+                views={["month", "week", "day", "agenda"]}
+                style={{ height: "100%" }}
+                className="ec-calendar"
+                eventPropGetter={eventPropGetter}
+                onSelectEvent={(event) => setSeleccionada((event as CitaEvento).resource)}
+              />
             </div>
-            {loading && (
-              <p className="px-5 py-6 text-sm text-brand-creamSoft">Cargando citas…</p>
-            )}
-            {!loading && citasOrdenadas.length === 0 && (
-              <p className="px-5 py-6 text-sm text-brand-creamSoft">Sin citas agendadas.</p>
-            )}
-            {citasOrdenadas.map((c) => (
-              <div
-                key={c.id}
-                className="grid grid-cols-[1.4fr_1fr_1.2fr_1fr_1.4fr] items-center gap-4 border-b border-brand-line px-5 py-4 text-sm text-brand-cream last:border-b-0"
-              >
-                <span className="font-medium">{c.nombreCliente}</span>
-                <span className="text-brand-creamSoft">{c.telefono}</span>
-                <span className="text-brand-creamSoft">
-                  {new Date(c.fechaHora).toLocaleString("es-MX", {
-                    day: "2-digit",
-                    month: "short",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-                <StatusPill estatus={c.estatus} />
-                <div className="flex gap-2">
-                  {c.estatus !== "Confirmada" && (
-                    <button
-                      onClick={() => handleEstatus(c.id, "Confirmada")}
-                      className="border border-brand-gold px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-brand-gold hover:bg-brand-gold hover:text-brand-ink"
-                    >
-                      Confirmar
-                    </button>
-                  )}
-                  {c.estatus !== "Cancelada" && (
-                    <button
-                      onClick={() => handleEstatus(c.id, "Cancelada")}
-                      className="border border-brand-line px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-brand-creamSoft hover:border-brand-goldDeep hover:text-brand-goldDeep"
-                    >
-                      Cancelar
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
+          )}
+          <div className="mt-3 flex flex-wrap gap-4 text-[11px] uppercase tracking-widest text-brand-creamSoft">
+            <span className="flex items-center gap-1.5">
+              <StatusPill estatus="Pendiente" /> pendiente
+            </span>
+            <span className="flex items-center gap-1.5">
+              <StatusPill estatus="Confirmada" /> confirmada
+            </span>
+            <span className="flex items-center gap-1.5">
+              <StatusPill estatus="Cancelada" /> cancelada
+            </span>
           </div>
         </div>
       </div>

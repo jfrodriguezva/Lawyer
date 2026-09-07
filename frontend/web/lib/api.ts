@@ -15,6 +15,53 @@ export interface Caso {
   notas: string | null;
 }
 
+export interface ChecklistItem {
+  id: number;
+  casoId: number;
+  descripcion: string;
+  completado: boolean;
+}
+
+export interface Plazo {
+  id: number;
+  casoId: number;
+  descripcion: string;
+  fechaLimite: string;
+  cumplido: boolean;
+}
+
+export interface Pago {
+  id: number;
+  casoId: number;
+  concepto: string;
+  monto: number;
+  fecha: string;
+}
+
+export interface Usuario {
+  id: number;
+  email: string;
+  nombre: string;
+  rol: string;
+}
+
+export interface CasoDetalle extends Caso {
+  tokenAcceso: string | null;
+  citas: Cita[];
+  documentos: Documento[];
+  checklist: ChecklistItem[];
+}
+
+export interface PortalCaso {
+  id: number;
+  clienteNombre: string;
+  tipo: string;
+  estatus: EstatusCaso;
+  fechaApertura: string;
+  checklist: ChecklistItem[];
+  documentos: Documento[];
+}
+
 export interface Cita {
   id: number;
   casoId: number | null;
@@ -113,7 +160,7 @@ export function getCasos() {
 }
 
 export function getCaso(id: number | string) {
-  return request<Caso>(`/api/casos/${id}`);
+  return request<CasoDetalle>(`/api/casos/${id}`);
 }
 
 export function createCaso(data: {
@@ -206,5 +253,75 @@ export function getMensajesContacto() {
 export function marcarMensajeAtendido(id: number | string) {
   return request<void>(`/api/contacto/${id}/atendido`, {
     method: "PATCH",
+  });
+}
+
+// ---- Checklist ----
+
+export function marcarChecklistItem(itemId: number | string, completado: boolean) {
+  return request<void>(`/api/casos/checklist/${itemId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ completado }),
+  });
+}
+
+// ---- Plazos ----
+
+export function getPlazosPorCaso(casoId: number | string) {
+  return request<Plazo[]>(`/api/plazos/caso/${casoId}`);
+}
+
+export function crearPlazo(data: { casoId: number; descripcion: string; fechaLimite: string }) {
+  return request<{ id: number }>("/api/plazos", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function marcarPlazoCumplido(id: number | string, cumplido: boolean) {
+  return request<void>(`/api/plazos/${id}/cumplido`, {
+    method: "PATCH",
+    body: JSON.stringify({ cumplido }),
+  });
+}
+
+// ---- Pagos (honorarios) ----
+
+export function getPagosPorCaso(casoId: number | string) {
+  return request<Pago[]>(`/api/pagos/caso/${casoId}`);
+}
+
+export function registrarPago(data: { casoId: number; concepto: string; monto: number }) {
+  return request<{ id: number }>("/api/pagos", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+// ---- Usuarios (staff) ----
+
+export function getUsuarios() {
+  return request<Usuario[]>("/api/usuarios");
+}
+
+export function crearUsuario(data: { email: string; password: string; nombre: string; rol: string }) {
+  return request<{ id: number }>("/api/usuarios", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+// ---- Portal del cliente (enlace mágico, sin autenticación) ----
+
+export function getCasoPorToken(token: string) {
+  return request<PortalCaso>(`/api/portal/${token}`);
+}
+
+export function subirDocumentoPortal(token: string, file: File) {
+  const formData = new FormData();
+  formData.append("File", file);
+  return request<{ id: number }>(`/api/portal/${token}/documentos`, {
+    method: "POST",
+    body: formData,
   });
 }

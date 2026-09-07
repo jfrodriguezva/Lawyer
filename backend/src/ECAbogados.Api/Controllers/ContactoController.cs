@@ -1,7 +1,7 @@
 using ECAbogados.Application.Contacto.Commands.CrearMensajeContacto;
 using ECAbogados.Application.Contacto.Commands.MarcarMensajeAtendido;
 using ECAbogados.Application.Contacto.Queries.ListarMensajesContacto;
-using MediatR;
+using ECAbogados.Application.Mediation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

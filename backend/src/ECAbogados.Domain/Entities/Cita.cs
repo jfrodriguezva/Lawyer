@@ -15,4 +15,5 @@ public class Cita
     public string Telefono { get; set; } = string.Empty;
     public DateTime FechaHora { get; set; }
     public EstatusCita Estatus { get; set; }
+    public bool RecordatorioEnviado { get; set; }
 }

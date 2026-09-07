@@ -1,10 +1,12 @@
 using ECAbogados.Application.Interfaces;
 using ECAbogados.Domain.Entities;
-using MediatR;
+using ECAbogados.Application.Mediation;
 
 namespace ECAbogados.Application.Casos.Commands.CrearCaso;
 
-public class CrearCasoCommandHandler(ICasoRepository casoRepository) : IRequestHandler<CrearCasoCommand, int>
+public class CrearCasoCommandHandler(
+    ICasoRepository casoRepository,
+    IChecklistItemRepository checklistItemRepository) : IRequestHandler<CrearCasoCommand, int>
 {
     public async Task<int> Handle(CrearCasoCommand request, CancellationToken cancellationToken)
     {
@@ -14,9 +16,19 @@ public class CrearCasoCommandHandler(ICasoRepository casoRepository) : IRequestH
             Tipo = request.Tipo,
             Estatus = EstatusCaso.Activo,
             FechaApertura = DateTime.UtcNow,
-            Notas = request.Notas
+            Notas = request.Notas,
+            TokenAcceso = Guid.NewGuid().ToString("N"),
+            TokenGeneradoEn = DateTime.UtcNow
         };
 
-        return await casoRepository.CreateAsync(caso);
+        var id = await casoRepository.CreateAsync(caso);
+
+        var requisitos = RequisitosPorTipo.Obtener(request.Tipo);
+        if (requisitos.Length > 0)
+        {
+            await checklistItemRepository.CreateManyAsync(id, requisitos);
+        }
+
+        return id;
     }
 }

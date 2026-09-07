@@ -1,6 +1,6 @@
 using ECAbogados.Application.Interfaces;
 using ECAbogados.Domain.Entities;
-using MediatR;
+using ECAbogados.Application.Mediation;
 
 namespace ECAbogados.Application.Documentos.Commands.SubirDocumento;
 

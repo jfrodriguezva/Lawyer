@@ -1,10 +1,12 @@
 using ECAbogados.Application.Interfaces;
 using ECAbogados.Domain.Entities;
-using MediatR;
+using ECAbogados.Application.Mediation;
 
 namespace ECAbogados.Application.Contacto.Commands.CrearMensajeContacto;
 
-public class CrearMensajeContactoCommandHandler(IMensajeContactoRepository mensajeContactoRepository)
+public class CrearMensajeContactoCommandHandler(
+    IMensajeContactoRepository mensajeContactoRepository,
+    IStaffNotifier staffNotifier)
     : IRequestHandler<CrearMensajeContactoCommand, int>
 {
     public async Task<int> Handle(CrearMensajeContactoCommand request, CancellationToken cancellationToken)
@@ -19,6 +21,13 @@ public class CrearMensajeContactoCommandHandler(IMensajeContactoRepository mensa
             Atendido = false
         };
 
-        return await mensajeContactoRepository.CreateAsync(mensaje);
+        var id = await mensajeContactoRepository.CreateAsync(mensaje);
+
+        await staffNotifier.NotifyAsync(
+            "Nuevo mensaje de contacto",
+            $"{request.Nombre} ({request.Telefono}) escribió: {request.Mensaje}",
+            cancellationToken);
+
+        return id;
     }
 }

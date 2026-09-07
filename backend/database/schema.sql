@@ -137,3 +137,86 @@ BEGIN
         (@CasoCustodiaId, 'Carlos Alberto Ramírez', '5598765432', DATEADD(DAY, 4, SYSUTCDATETIME()), 'Pendiente');
 END
 GO
+
+-- =========================================================
+-- Ampliación: notificaciones, roles, checklist, portal de
+-- cliente, plazos procesales y honorarios (todo gratuito).
+-- =========================================================
+
+-- Recordatorio de citas (background service de correo)
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Citas') AND name = 'RecordatorioEnviado')
+BEGIN
+    ALTER TABLE dbo.Citas ADD RecordatorioEnviado BIT NOT NULL DEFAULT 0;
+END
+GO
+
+-- Enlace mágico del portal de cliente
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Casos') AND name = 'TokenAcceso')
+BEGIN
+    ALTER TABLE dbo.Casos ADD TokenAcceso NVARCHAR(64) NULL;
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Casos') AND name = 'TokenGeneradoEn')
+BEGIN
+    ALTER TABLE dbo.Casos ADD TokenGeneradoEn DATETIME2 NULL;
+END
+GO
+
+-- Asigna token a casos existentes que no tengan uno (para que el portal funcione con datos ya cargados)
+UPDATE dbo.Casos
+SET TokenAcceso = LOWER(REPLACE(CONVERT(NVARCHAR(36), NEWID()), '-', '')),
+    TokenGeneradoEn = SYSUTCDATETIME()
+WHERE TokenAcceso IS NULL;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'UX_Casos_TokenAcceso' AND object_id = OBJECT_ID('dbo.Casos'))
+BEGIN
+    CREATE UNIQUE INDEX UX_Casos_TokenAcceso ON dbo.Casos(TokenAcceso);
+END
+GO
+
+-- Checklist de requisitos por caso
+IF OBJECT_ID(N'dbo.ChecklistItems', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.ChecklistItems (
+        Id INT IDENTITY PRIMARY KEY,
+        CasoId INT NOT NULL REFERENCES dbo.Casos(Id),
+        Descripcion NVARCHAR(300) NOT NULL,
+        Completado BIT NOT NULL DEFAULT 0
+    );
+
+    CREATE INDEX IX_ChecklistItems_CasoId ON dbo.ChecklistItems(CasoId);
+END
+GO
+
+-- Plazos y audiencias (calendario procesal)
+IF OBJECT_ID(N'dbo.Plazos', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Plazos (
+        Id INT IDENTITY PRIMARY KEY,
+        CasoId INT NOT NULL REFERENCES dbo.Casos(Id),
+        Descripcion NVARCHAR(300) NOT NULL,
+        FechaLimite DATETIME2 NOT NULL,
+        Cumplido BIT NOT NULL DEFAULT 0,
+        AlertaEnviada BIT NOT NULL DEFAULT 0
+    );
+
+    CREATE INDEX IX_Plazos_FechaLimite ON dbo.Plazos(FechaLimite);
+END
+GO
+
+-- Honorarios y pagos por caso
+IF OBJECT_ID(N'dbo.Pagos', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Pagos (
+        Id INT IDENTITY PRIMARY KEY,
+        CasoId INT NOT NULL REFERENCES dbo.Casos(Id),
+        Concepto NVARCHAR(200) NOT NULL,
+        Monto DECIMAL(10,2) NOT NULL,
+        Fecha DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+    );
+
+    CREATE INDEX IX_Pagos_CasoId ON dbo.Pagos(CasoId);
+END
+GO

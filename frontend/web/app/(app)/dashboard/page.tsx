@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import StatTile from "@/components/StatTile";
 import StatusPill from "@/components/StatusPill";
-import { getCasos, getCitas, type Caso, type Cita } from "@/lib/api";
+import { getCasos, getCitas, getMensajesContacto, type Caso, type Cita, type MensajeContacto } from "@/lib/api";
 import { getCookie } from "@/lib/cookies";
 
 function saludo(): string {
@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const [nombre, setNombre] = useState("");
   const [casos, setCasos] = useState<Caso[]>([]);
   const [citas, setCitas] = useState<Cita[]>([]);
+  const [mensajes, setMensajes] = useState<MensajeContacto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,10 +45,11 @@ export default function DashboardPage() {
       }
     }
 
-    Promise.all([getCasos(), getCitas()])
-      .then(([casosData, citasData]) => {
+    Promise.all([getCasos(), getCitas(), getMensajesContacto()])
+      .then(([casosData, citasData, mensajesData]) => {
         setCasos(casosData);
         setCitas(citasData);
+        setMensajes(mensajesData);
       })
       .catch(() => setError("No se pudieron cargar los datos del panel."))
       .finally(() => setLoading(false));
@@ -55,10 +57,20 @@ export default function DashboardPage() {
 
   const activos = casos.filter((c) => c.estatus === "Activo");
   const revision = casos.filter((c) => c.estatus === "Revision");
+  const cerrados = casos.filter((c) => c.estatus === "Cerrado");
   const proximasCitas = citas
     .filter((c) => c.estatus !== "Cancelada")
     .sort((a, b) => new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime())
     .slice(0, 5);
+
+  const tasaConfirmacion =
+    citas.length > 0
+      ? Math.round((citas.filter((c) => c.estatus === "Confirmada").length / citas.length) * 100)
+      : 0;
+  const tasaAtencionMensajes =
+    mensajes.length > 0
+      ? Math.round((mensajes.filter((m) => m.atendido).length / mensajes.length) * 100)
+      : 0;
 
   return (
     <div>
@@ -79,6 +91,12 @@ export default function DashboardPage() {
         <StatTile label="Casos activos" value={loading ? "—" : activos.length} />
         <StatTile label="En revisión" value={loading ? "—" : revision.length} />
         <StatTile label="Próximas citas" value={loading ? "—" : proximasCitas.length} />
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatTile label="Casos cerrados" value={loading ? "—" : cerrados.length} />
+        <StatTile label="Tasa de confirmación de citas" value={loading ? "—" : `${tasaConfirmacion}%`} />
+        <StatTile label="Mensajes atendidos" value={loading ? "—" : `${tasaAtencionMensajes}%`} />
       </div>
 
       <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-2">

@@ -1,6 +1,6 @@
 using ECAbogados.Application.Auth.Commands.Login;
 using ECAbogados.Application.Dtos;
-using MediatR;
+using ECAbogados.Application.Mediation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

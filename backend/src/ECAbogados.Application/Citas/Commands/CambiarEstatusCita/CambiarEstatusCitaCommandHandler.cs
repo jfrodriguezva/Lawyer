@@ -1,5 +1,5 @@
 using ECAbogados.Application.Interfaces;
-using MediatR;
+using ECAbogados.Application.Mediation;
 
 namespace ECAbogados.Application.Citas.Commands.CambiarEstatusCita;
 

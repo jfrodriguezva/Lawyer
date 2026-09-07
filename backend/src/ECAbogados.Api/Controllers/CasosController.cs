@@ -1,10 +1,11 @@
 using ECAbogados.Application.Casos.Commands.ActualizarCaso;
 using ECAbogados.Application.Casos.Commands.CambiarEstatusCaso;
 using ECAbogados.Application.Casos.Commands.CrearCaso;
+using ECAbogados.Application.Casos.Commands.MarcarChecklistItem;
 using ECAbogados.Application.Casos.Queries.ListarCasos;
 using ECAbogados.Application.Casos.Queries.ObtenerCasoPorId;
 using ECAbogados.Domain.Entities;
-using MediatR;
+using ECAbogados.Application.Mediation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -53,6 +54,12 @@ public class CasosController(ISender sender) : ControllerBase
     [HttpPatch("{id:int}/estatus")]
     public async Task<IActionResult> CambiarEstatus(int id, [FromBody] CambiarEstatusCasoRequest request)
     {
+        // Cerrar un expediente es una decisión que solo el rol Administrador puede tomar.
+        if (request.Estatus == EstatusCaso.Cerrado && !User.IsInRole("Administrador"))
+        {
+            return Forbid();
+        }
+
         try
         {
             await sender.Send(new CambiarEstatusCasoCommand(id, request.Estatus));
@@ -63,8 +70,17 @@ public class CasosController(ISender sender) : ControllerBase
             return NotFound();
         }
     }
+
+    [HttpPatch("checklist/{itemId:int}")]
+    public async Task<IActionResult> MarcarChecklistItem(int itemId, [FromBody] MarcarChecklistItemRequest request)
+    {
+        await sender.Send(new MarcarChecklistItemCommand(itemId, request.Completado));
+        return NoContent();
+    }
 }
 
 public record ActualizarCasoRequest(string ClienteNombre, string Tipo, string? Notas);
 
 public record CambiarEstatusCasoRequest(EstatusCaso Estatus);
+
+public record MarcarChecklistItemRequest(bool Completado);

@@ -1,6 +1,6 @@
 using ECAbogados.Application.Documentos.Commands.SubirDocumento;
 using ECAbogados.Application.Documentos.Queries.ListarDocumentosPorCaso;
-using MediatR;
+using ECAbogados.Application.Mediation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

@@ -1,17 +1,26 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import StatusPill from "@/components/StatusPill";
 import { IconFile, IconUpload } from "@/components/icons";
+import { getCookie } from "@/lib/cookies";
 import {
   cambiarEstatusCaso,
+  crearPlazo,
   getCaso,
   getDocumentosPorCaso,
+  getPagosPorCaso,
+  getPlazosPorCaso,
+  marcarChecklistItem,
+  marcarPlazoCumplido,
+  registrarPago,
   subirDocumento,
-  type Caso,
+  type CasoDetalle,
   type Documento,
   type EstatusCaso,
+  type Pago,
+  type Plazo,
 } from "@/lib/api";
 
 const ESTATUSES: EstatusCaso[] = ["Activo", "Revision", "Cerrado"];
@@ -22,30 +31,68 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function formatMoney(monto: number): string {
+  return monto.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
+}
+
 export default function CasoDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [caso, setCaso] = useState<Caso | null>(null);
+  const [caso, setCaso] = useState<CasoDetalle | null>(null);
   const [documentos, setDocumentos] = useState<Documento[]>([]);
+  const [plazos, setPlazos] = useState<Plazo[]>([]);
+  const [pagos, setPagos] = useState<Pago[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingEstatus, setUpdatingEstatus] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [copiado, setCopiado] = useState(false);
+
+  const [plazoDescripcion, setPlazoDescripcion] = useState("");
+  const [plazoFecha, setPlazoFecha] = useState("");
+  const [savingPlazo, setSavingPlazo] = useState(false);
+
+  const [pagoConcepto, setPagoConcepto] = useState("");
+  const [pagoMonto, setPagoMonto] = useState("");
+  const [savingPago, setSavingPago] = useState(false);
 
   function load() {
     setLoading(true);
-    Promise.all([getCaso(params.id), getDocumentosPorCaso(params.id)])
-      .then(([c, docs]) => {
+    Promise.all([
+      getCaso(params.id),
+      getDocumentosPorCaso(params.id),
+      getPlazosPorCaso(params.id),
+    ])
+      .then(([c, docs, pl]) => {
         setCaso(c);
         setDocumentos(docs);
+        setPlazos(pl);
       })
       .catch(() => setError("No se pudo cargar el expediente."))
       .finally(() => setLoading(false));
   }
 
   useEffect(load, [params.id]);
+
+  useEffect(() => {
+    const raw = getCookie("ec_user");
+    if (raw) {
+      try {
+        const admin = JSON.parse(raw).rol === "Administrador";
+        setIsAdmin(admin);
+        if (admin) {
+          getPagosPorCaso(params.id)
+            .then(setPagos)
+            .catch(() => undefined);
+        }
+      } catch {
+        // ignore malformed cookie
+      }
+    }
+  }, [params.id]);
 
   async function handleEstatusChange(estatus: EstatusCaso) {
     if (!caso) return;
@@ -54,7 +101,7 @@ export default function CasoDetailPage() {
       await cambiarEstatusCaso(caso.id, estatus);
       setCaso({ ...caso, estatus });
     } catch {
-      setError("No se pudo actualizar el estatus.");
+      setError("No se pudo actualizar el estatus (cerrar un expediente requiere rol Administrador).");
     } finally {
       setUpdatingEstatus(false);
     }
@@ -76,6 +123,75 @@ export default function CasoDetailPage() {
     }
   }
 
+  async function handleChecklistToggle(itemId: number, completado: boolean) {
+    if (!caso) return;
+    try {
+      await marcarChecklistItem(itemId, completado);
+      setCaso({
+        ...caso,
+        checklist: caso.checklist.map((c) => (c.id === itemId ? { ...c, completado } : c)),
+      });
+    } catch {
+      setError("No se pudo actualizar el requisito.");
+    }
+  }
+
+  async function handleCrearPlazo(e: FormEvent) {
+    e.preventDefault();
+    if (!caso) return;
+    setSavingPlazo(true);
+    try {
+      await crearPlazo({
+        casoId: caso.id,
+        descripcion: plazoDescripcion,
+        fechaLimite: new Date(plazoFecha).toISOString(),
+      });
+      setPlazoDescripcion("");
+      setPlazoFecha("");
+      const pl = await getPlazosPorCaso(caso.id);
+      setPlazos(pl);
+    } catch {
+      setError("No se pudo agregar el plazo.");
+    } finally {
+      setSavingPlazo(false);
+    }
+  }
+
+  async function handlePlazoCumplido(id: number, cumplido: boolean) {
+    try {
+      await marcarPlazoCumplido(id, cumplido);
+      setPlazos((prev) => prev.map((p) => (p.id === id ? { ...p, cumplido } : p)));
+    } catch {
+      setError("No se pudo actualizar el plazo.");
+    }
+  }
+
+  async function handleRegistrarPago(e: FormEvent) {
+    e.preventDefault();
+    if (!caso) return;
+    setSavingPago(true);
+    try {
+      await registrarPago({ casoId: caso.id, concepto: pagoConcepto, monto: Number(pagoMonto) });
+      setPagoConcepto("");
+      setPagoMonto("");
+      const p = await getPagosPorCaso(caso.id);
+      setPagos(p);
+    } catch {
+      setError("No se pudo registrar el pago.");
+    } finally {
+      setSavingPago(false);
+    }
+  }
+
+  function handleCopiarLink() {
+    if (!caso?.tokenAcceso || typeof window === "undefined") return;
+    const url = `${window.location.origin}/portal/${caso.tokenAcceso}`;
+    navigator.clipboard?.writeText(url).then(() => {
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    });
+  }
+
   if (loading) {
     return <p className="text-sm text-brand-creamSoft">Cargando expediente…</p>;
   }
@@ -95,6 +211,8 @@ export default function CasoDetailPage() {
       </div>
     );
   }
+
+  const totalCobrado = pagos.reduce((sum, p) => sum + p.monto, 0);
 
   return (
     <div>
@@ -133,6 +251,33 @@ export default function CasoDetailPage() {
               {caso.notas || "Sin notas registradas."}
             </p>
           </div>
+
+          {caso.checklist.length > 0 && (
+            <div className="border border-brand-line bg-brand-ink2 p-6">
+              <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+                Checklist de requisitos
+              </h2>
+              <ul className="mt-4 space-y-2">
+                {caso.checklist.map((item) => (
+                  <li key={item.id} className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={item.completado}
+                      onChange={(e) => handleChecklistToggle(item.id, e.target.checked)}
+                      className="h-4 w-4 accent-[var(--brand-gold,#c9a24a)]"
+                    />
+                    <span
+                      className={`text-sm ${
+                        item.completado ? "text-brand-creamSoft line-through" : "text-brand-cream"
+                      }`}
+                    >
+                      {item.descripcion}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div>
             <div className="flex items-center justify-between border-b border-brand-line pb-3">
@@ -174,27 +319,174 @@ export default function CasoDetailPage() {
               ))}
             </ul>
           </div>
+
+          <div>
+            <h2 className="border-b border-brand-line pb-3 text-xs font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+              Plazos y audiencias
+            </h2>
+            <form onSubmit={handleCrearPlazo} className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1fr_auto]">
+              <input
+                required
+                placeholder="Descripción (ej. Audiencia preliminar)"
+                value={plazoDescripcion}
+                onChange={(e) => setPlazoDescripcion(e.target.value)}
+                className="border border-brand-line bg-transparent px-4 py-2.5 text-sm text-brand-cream outline-none focus:border-brand-gold"
+              />
+              <input
+                required
+                type="date"
+                value={plazoFecha}
+                onChange={(e) => setPlazoFecha(e.target.value)}
+                className="border border-brand-line bg-transparent px-4 py-2.5 text-sm text-brand-cream outline-none focus:border-brand-gold"
+              />
+              <button
+                type="submit"
+                disabled={savingPlazo}
+                className="border border-brand-gold px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-brand-gold transition-colors hover:bg-brand-gold hover:text-brand-ink disabled:opacity-60"
+              >
+                {savingPlazo ? "Agregando…" : "Agregar"}
+              </button>
+            </form>
+            <ul className="mt-4 space-y-2">
+              {plazos.length === 0 && (
+                <li className="text-sm text-brand-creamSoft">Sin plazos registrados.</li>
+              )}
+              {plazos.map((p) => {
+                const vencido = !p.cumplido && new Date(p.fechaLimite) < new Date();
+                return (
+                  <li
+                    key={p.id}
+                    className={`flex items-center justify-between border px-4 py-3 ${
+                      vencido ? "border-red-500/50 bg-red-500/10" : "border-brand-line"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={p.cumplido}
+                        onChange={(e) => handlePlazoCumplido(p.id, e.target.checked)}
+                        className="h-4 w-4"
+                      />
+                      <div>
+                        <p
+                          className={`text-sm ${
+                            p.cumplido ? "text-brand-creamSoft line-through" : "text-brand-cream"
+                          }`}
+                        >
+                          {p.descripcion}
+                        </p>
+                        <p className={`text-xs ${vencido ? "text-red-400" : "text-brand-creamSoft"}`}>
+                          {new Date(p.fechaLimite).toLocaleDateString("es-MX")}
+                          {vencido ? " · vencido" : ""}
+                        </p>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
+          {isAdmin && (
+            <div>
+              <h2 className="border-b border-brand-line pb-3 text-xs font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+                Honorarios
+              </h2>
+              <form onSubmit={handleRegistrarPago} className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1fr_auto]">
+                <input
+                  required
+                  placeholder="Concepto (ej. Anticipo)"
+                  value={pagoConcepto}
+                  onChange={(e) => setPagoConcepto(e.target.value)}
+                  className="border border-brand-line bg-transparent px-4 py-2.5 text-sm text-brand-cream outline-none focus:border-brand-gold"
+                />
+                <input
+                  required
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Monto"
+                  value={pagoMonto}
+                  onChange={(e) => setPagoMonto(e.target.value)}
+                  className="border border-brand-line bg-transparent px-4 py-2.5 text-sm text-brand-cream outline-none focus:border-brand-gold"
+                />
+                <button
+                  type="submit"
+                  disabled={savingPago}
+                  className="border border-brand-gold px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-brand-gold transition-colors hover:bg-brand-gold hover:text-brand-ink disabled:opacity-60"
+                >
+                  {savingPago ? "Guardando…" : "Registrar"}
+                </button>
+              </form>
+              <div className="mt-4 border border-brand-line">
+                {pagos.length === 0 && (
+                  <p className="px-4 py-3 text-sm text-brand-creamSoft">Sin pagos registrados.</p>
+                )}
+                {pagos.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between border-b border-brand-line px-4 py-3 text-sm last:border-b-0"
+                  >
+                    <span className="text-brand-cream">{p.concepto}</span>
+                    <span className="text-brand-creamSoft">
+                      {formatMoney(p.monto)} · {new Date(p.fecha).toLocaleDateString("es-MX")}
+                    </span>
+                  </div>
+                ))}
+                {pagos.length > 0 && (
+                  <div className="flex items-center justify-between px-4 py-3 text-sm font-semibold text-brand-gold">
+                    <span>Total cobrado</span>
+                    <span>{formatMoney(totalCobrado)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </section>
 
-        <section className="border border-brand-line bg-brand-ink2 p-6">
-          <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
-            Estatus del expediente
-          </h2>
-          <p className="mt-2 text-xs text-brand-creamSoft">
-            Apertura: {new Date(caso.fechaApertura).toLocaleDateString("es-MX")}
-          </p>
-          <select
-            value={caso.estatus}
-            disabled={updatingEstatus}
-            onChange={(e) => handleEstatusChange(e.target.value as EstatusCaso)}
-            className="mt-4 w-full border border-brand-line bg-brand-ink px-4 py-2.5 text-sm text-brand-cream outline-none focus:border-brand-gold"
-          >
-            {ESTATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s === "Revision" ? "En revisión" : s}
-              </option>
-            ))}
-          </select>
+        <section className="space-y-6">
+          <div className="border border-brand-line bg-brand-ink2 p-6">
+            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+              Estatus del expediente
+            </h2>
+            <p className="mt-2 text-xs text-brand-creamSoft">
+              Apertura: {new Date(caso.fechaApertura).toLocaleDateString("es-MX")}
+            </p>
+            <select
+              value={caso.estatus}
+              disabled={updatingEstatus}
+              onChange={(e) => handleEstatusChange(e.target.value as EstatusCaso)}
+              className="mt-4 w-full border border-brand-line bg-brand-ink px-4 py-2.5 text-sm text-brand-cream outline-none focus:border-brand-gold"
+            >
+              {ESTATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s === "Revision" ? "En revisión" : s}
+                </option>
+              ))}
+            </select>
+            {!isAdmin && (
+              <p className="mt-2 text-[11px] text-brand-creamSoft">
+                Cerrar un expediente requiere rol Administrador.
+              </p>
+            )}
+          </div>
+
+          {caso.tokenAcceso && (
+            <div className="border border-brand-line bg-brand-ink2 p-6">
+              <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+                Portal del cliente
+              </h2>
+              <p className="mt-2 text-xs leading-relaxed text-brand-creamSoft">
+                Comparte este enlace por WhatsApp para que el cliente vea el estatus de su caso sin necesidad de cuenta.
+              </p>
+              <button
+                onClick={handleCopiarLink}
+                className="mt-4 w-full border border-brand-gold px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-brand-gold transition-colors hover:bg-brand-gold hover:text-brand-ink"
+              >
+                {copiado ? "¡Copiado!" : "Copiar enlace"}
+              </button>
+            </div>
+          )}
         </section>
       </div>
     </div>

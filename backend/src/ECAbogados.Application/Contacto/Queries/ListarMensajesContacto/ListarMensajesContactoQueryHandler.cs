@@ -1,6 +1,6 @@
 using ECAbogados.Application.Dtos;
 using ECAbogados.Application.Interfaces;
-using MediatR;
+using ECAbogados.Application.Mediation;
 
 namespace ECAbogados.Application.Contacto.Queries.ListarMensajesContacto;
 

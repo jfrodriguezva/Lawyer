@@ -1,10 +1,12 @@
 using ECAbogados.Application.Interfaces;
 using ECAbogados.Domain.Entities;
-using MediatR;
+using ECAbogados.Application.Mediation;
 
 namespace ECAbogados.Application.Citas.Commands.CrearCita;
 
-public class CrearCitaCommandHandler(ICitaRepository citaRepository) : IRequestHandler<CrearCitaCommand, int>
+public class CrearCitaCommandHandler(
+    ICitaRepository citaRepository,
+    IStaffNotifier staffNotifier) : IRequestHandler<CrearCitaCommand, int>
 {
     public async Task<int> Handle(CrearCitaCommand request, CancellationToken cancellationToken)
     {
@@ -17,6 +19,13 @@ public class CrearCitaCommandHandler(ICitaRepository citaRepository) : IRequestH
             Estatus = EstatusCita.Pendiente
         };
 
-        return await citaRepository.CreateAsync(cita);
+        var id = await citaRepository.CreateAsync(cita);
+
+        await staffNotifier.NotifyAsync(
+            "Nueva solicitud de cita",
+            $"{request.NombreCliente} ({request.Telefono}) solicitó una cita para el {request.FechaHora:dd/MM/yyyy HH:mm}.",
+            cancellationToken);
+
+        return id;
     }
 }

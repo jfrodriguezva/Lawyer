@@ -8,4 +8,5 @@ public interface ICitaRepository
     Task<Cita?> GetByIdAsync(int id);
     Task<int> CreateAsync(Cita cita);
     Task UpdateEstatusAsync(int id, EstatusCita estatus);
+    Task MarkRecordatorioEnviadoAsync(int id);
 }

@@ -17,5 +17,7 @@ public record CasoDetalleDto(
     EstatusCaso Estatus,
     DateTime FechaApertura,
     string? Notas,
+    string? TokenAcceso,
     IReadOnlyList<CitaDto> Citas,
-    IReadOnlyList<DocumentoDto> Documentos);
+    IReadOnlyList<DocumentoDto> Documentos,
+    IReadOnlyList<ChecklistItemDto> Checklist);

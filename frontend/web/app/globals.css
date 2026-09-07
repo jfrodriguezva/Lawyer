@@ -64,6 +64,61 @@ body {
   transform: translateY(0);
 }
 
+/* react-big-calendar: tema oscuro/dorado para que combine con la marca */
+.ec-calendar.rbc-calendar {
+  color: #f3ead4;
+}
+.ec-calendar .rbc-toolbar button {
+  color: #b7a582;
+  border-color: #3a3226;
+  border-radius: 0;
+}
+.ec-calendar .rbc-toolbar button:hover,
+.ec-calendar .rbc-toolbar button.rbc-active {
+  background: #c9a24a;
+  color: #12100d;
+  border-color: #c9a24a;
+}
+.ec-calendar .rbc-toolbar-label {
+  color: #f3ead4;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.8rem;
+}
+.ec-calendar .rbc-month-view,
+.ec-calendar .rbc-time-view,
+.ec-calendar .rbc-header,
+.ec-calendar .rbc-day-bg,
+.ec-calendar .rbc-time-content,
+.ec-calendar .rbc-time-header-content,
+.ec-calendar .rbc-timeslot-group,
+.ec-calendar .rbc-agenda-view table {
+  border-color: #3a3226 !important;
+}
+.ec-calendar .rbc-header {
+  color: #b7a582;
+  padding: 8px 4px;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+}
+.ec-calendar .rbc-off-range-bg {
+  background: #1c1810;
+}
+.ec-calendar .rbc-today {
+  background: rgba(201, 162, 74, 0.08);
+}
+.ec-calendar .rbc-event {
+  border: none;
+  border-radius: 0;
+  padding: 2px 6px;
+}
+.ec-calendar .rbc-show-more {
+  color: #c9a24a;
+  background: transparent;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-drift,
   .animate-shimmer {

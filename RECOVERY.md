@@ -47,14 +47,34 @@ Documentación completa:
 - No existe gestión de usuarios vía API; altas de personal se hacen directo por SQL contra `dbo.Usuarios`.
 - Evaluación de madurez ya hecha (ver `docs/EVALUACION_FUNCIONAL.md`): es una herramienta interna válida para este despacho, **no** un producto de mercado (SaaS) listo para vender a otros despachos sin inversión adicional considerable (multi-tenancy, roles reales, facturación, integraciones de notificación, tests, CI/CD).
 
+## Mejoras de negocio implementadas (2026-09-07, plan "prancy-inventing-pinwheel")
+
+El usuario pidió implementar las 11 mejoras de la evaluación funcional, con la restricción explícita de que todo fuera **gratis** (sin servicios de pago) antes de publicar a Azure. Se implementó todo el batch en una sola sesión, verificado con build limpio de backend y frontend, y smoke tests reales vía curl (login, crear caso con checklist auto-generado, portal por token, restricciones de rol 403/204, etc.). Detalle técnico completo en `docs/MANUAL_TECNICO.md` (secciones 4.1 a 4.5) y funcional en `docs/MANUAL_USUARIO.md`.
+
+Resumen de lo agregado:
+- **Notificaciones por correo** (SMTP nativo .NET, gratis) al staff: mensaje nuevo, cita nueva, recordatorio 24h antes de cita confirmada, alerta 3 días antes de un plazo. Requiere que el usuario configure `Smtp:*` y `Notificaciones:StaffEmail` en `appsettings.json` con una cuenta gratuita (Gmail app password o Brevo free tier) — sin configurar, solo se loguea en consola.
+- **Analítica gratuita** (GA4 + Meta Pixel) vía `NEXT_PUBLIC_GA_ID`/`NEXT_PUBLIC_META_PIXEL_ID`, opt-in.
+- **SEO básico**: `sitemap.ts`, `robots.ts`, metadata OpenGraph, JSON-LD `Attorney` en la landing.
+- **Calendario visual** en `/agenda` con `react-big-calendar` + `date-fns` (MIT).
+- **Roles reales** (Administrador/Asistente): cerrar un caso y gestionar Honorarios requiere Administrador (verificado con 403 real). Alta de personal vía `/usuarios` (antes solo por SQL).
+- **Checklist de requisitos** por tipo de trámite, auto-generado al crear un caso.
+- **Portal del cliente** por enlace mágico (`TokenAcceso` por caso, sin login) en `/portal/{token}`.
+- **Plazos y audiencias** con alerta automática por correo.
+- **Honorarios/pagos** por caso (solo Administrador).
+- **KPIs de negocio** en el dashboard (tasa de confirmación de citas, % mensajes atendidos, casos cerrados) — calculados en cliente, sin backend nuevo.
+- **Nuevas landings de servicio** (`/servicios/[slug]`: pensión alimenticia, custodia, régimen de visitas, violencia familiar) con copy de marketing borrador que la abogada debe revisar antes de publicar.
+
+**Hallazgo y resolución de MediatR:** el log de la API reveló que **MediatR 14.2.0** (dependencia preexistente, no agregada en este batch) requiere licencia de pago (Lucky Penny Software) para uso en producción. Esto entraba en conflicto directo con el requisito de "gratis" del usuario, quien pidió reemplazarlo por una solución manual. **Se resolvió**: se construyó un mediador propio en `backend/src/ECAbogados.Application/Mediation/` (`IRequest`, `IRequestHandler`, `ISender`/`Sender` resuelto vía DI + reflexión, registro manual por escaneo del propio ensamblado en `DependencyInjection.cs`). Se reemplazó `using MediatR;` por `using ECAbogados.Application.Mediation;` en 57 archivos (cambio mecánico, misma forma de tipos). Verificado con build limpio (0 errores) y smoke test completo de todos los endpoints (paridad funcional confirmada). El paquete MediatR ya no está referenciado en ningún `.csproj`. Detalle técnico en `docs/MANUAL_TECNICO.md` sección 4.5.
+
+**Estado de git en este momento:** los cambios de este batch (64 archivos) están en el working tree **sin commitear** — el usuario no pidió commit para este batch específico. Antes de continuar, correr `git status` para confirmar si ya se comiteó en una sesión posterior.
+
 ## Próximos pasos sugeridos (pendientes, no iniciados)
 
 Ninguno de estos ha sido solicitado explícitamente todavía — están aquí solo como posibles continuaciones mencionadas en la conversación, no como plan aprobado:
-- Mejorar la vista de Agenda a calendario visual en vez de tabla.
-- Integrar notificaciones automáticas (WhatsApp/email) al confirmar citas o recibir mensajes.
 - Agregar pruebas automatizadas y pipeline CI/CD.
 - Mover secretos (JWT, connection string) a variables de entorno / secret manager.
-- Definir roles y permisos reales más allá de "autenticado sí/no".
+- Revisar y ajustar el copy de marketing de las nuevas landings de servicio antes de publicarlas.
+- Definir expiración/revocación para los enlaces del portal de cliente.
 
 ## Cómo retomar el trabajo en un chat nuevo
 

@@ -13,7 +13,7 @@ public class CasoRepository(SqlConnectionFactory connectionFactory) : ICasoRepos
             using var connection = await connectionFactory.CreateOpenConnectionAsync();
 
             const string sql = """
-                SELECT Id, ClienteNombre, Tipo, Estatus, FechaApertura, Notas
+                SELECT Id, ClienteNombre, Tipo, Estatus, FechaApertura, Notas, TokenAcceso, TokenGeneradoEn
                 FROM dbo.Casos
                 ORDER BY FechaApertura DESC
                 """;
@@ -30,12 +30,29 @@ public class CasoRepository(SqlConnectionFactory connectionFactory) : ICasoRepos
             using var connection = await connectionFactory.CreateOpenConnectionAsync();
 
             const string sql = """
-                SELECT Id, ClienteNombre, Tipo, Estatus, FechaApertura, Notas
+                SELECT Id, ClienteNombre, Tipo, Estatus, FechaApertura, Notas, TokenAcceso, TokenGeneradoEn
                 FROM dbo.Casos
                 WHERE Id = @Id
                 """;
 
             var row = await connection.QuerySingleOrDefaultAsync<CasoRow>(sql, new { Id = id });
+            return row is null ? null : MapToEntity(row);
+        });
+    }
+
+    public async Task<Caso?> GetByTokenAsync(string token)
+    {
+        return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            const string sql = """
+                SELECT Id, ClienteNombre, Tipo, Estatus, FechaApertura, Notas, TokenAcceso, TokenGeneradoEn
+                FROM dbo.Casos
+                WHERE TokenAcceso = @Token
+                """;
+
+            var row = await connection.QuerySingleOrDefaultAsync<CasoRow>(sql, new { Token = token });
             return row is null ? null : MapToEntity(row);
         });
     }
@@ -47,9 +64,9 @@ public class CasoRepository(SqlConnectionFactory connectionFactory) : ICasoRepos
             using var connection = await connectionFactory.CreateOpenConnectionAsync();
 
             const string sql = """
-                INSERT INTO dbo.Casos (ClienteNombre, Tipo, Estatus, FechaApertura, Notas)
+                INSERT INTO dbo.Casos (ClienteNombre, Tipo, Estatus, FechaApertura, Notas, TokenAcceso, TokenGeneradoEn)
                 OUTPUT INSERTED.Id
-                VALUES (@ClienteNombre, @Tipo, @Estatus, @FechaApertura, @Notas)
+                VALUES (@ClienteNombre, @Tipo, @Estatus, @FechaApertura, @Notas, @TokenAcceso, @TokenGeneradoEn)
                 """;
 
             return await connection.ExecuteScalarAsync<int>(sql, new
@@ -58,7 +75,9 @@ public class CasoRepository(SqlConnectionFactory connectionFactory) : ICasoRepos
                 caso.Tipo,
                 Estatus = caso.Estatus.ToString(),
                 caso.FechaApertura,
-                caso.Notas
+                caso.Notas,
+                caso.TokenAcceso,
+                caso.TokenGeneradoEn
             });
         });
     }
@@ -96,7 +115,9 @@ public class CasoRepository(SqlConnectionFactory connectionFactory) : ICasoRepos
         Tipo = row.Tipo,
         Estatus = Enum.Parse<EstatusCaso>(row.Estatus),
         FechaApertura = row.FechaApertura,
-        Notas = row.Notas
+        Notas = row.Notas,
+        TokenAcceso = row.TokenAcceso,
+        TokenGeneradoEn = row.TokenGeneradoEn
     };
 
     private sealed class CasoRow
@@ -107,5 +128,7 @@ public class CasoRepository(SqlConnectionFactory connectionFactory) : ICasoRepos
         public string Estatus { get; init; } = string.Empty;
         public DateTime FechaApertura { get; init; }
         public string? Notas { get; init; }
+        public string? TokenAcceso { get; init; }
+        public DateTime? TokenGeneradoEn { get; init; }
     }
 }
