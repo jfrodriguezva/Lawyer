@@ -1,0 +1,11 @@
+using ECAbogados.Domain.Entities;
+
+namespace ECAbogados.Application.Interfaces;
+
+public interface ICasoRepository
+{
+    Task<IReadOnlyList<Caso>> GetAllAsync();
+    Task<Caso?> GetByIdAsync(int id);
+    Task<int> CreateAsync(Caso caso);
+    Task UpdateAsync(Caso caso);
+}

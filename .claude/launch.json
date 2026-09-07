@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "backend/src/ECAbogados.Api/ECAbogados.Api.csproj"],
+      "port": 5080
+    },
+    {
+      "name": "gateway",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "backend/src/ECAbogados.Gateway/ECAbogados.Gateway.csproj"],
+      "port": 5000
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "frontend/web", "run", "dev"],
+      "port": 3000
+    }
+  ]
+}

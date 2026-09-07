@@ -1,0 +1,21 @@
+# ---- .NET (backend) ----
+bin/
+obj/
+*.user
+*.suo
+.vs/
+backend/src/**/App_Data/
+
+# ---- Node / Next.js (frontend) ----
+node_modules/
+.next/
+out/
+next-env.d.ts
+npm-debug.log*
+.env.local
+!.env.local.example
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+*.log
