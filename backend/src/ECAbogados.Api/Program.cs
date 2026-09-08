@@ -1,6 +1,7 @@
 using System.Text;
 using ECAbogados.Application;
 using ECAbogados.Infrastructure;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -100,6 +101,30 @@ app.UseSwaggerUI(options =>
 });
 
 app.UseCors("Frontend");
+
+// Convierte los ValidationException de FluentValidation (lanzados por el Sender
+// propio en ECAbogados.Application.Mediation) en un 400 con el detalle de campos.
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (ValidationException ex)
+    {
+        var errors = ex.Errors
+            .GroupBy(e => e.PropertyName)
+            .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
+
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await context.Response.WriteAsJsonAsync(new
+        {
+            title = "One or more validation errors occurred.",
+            status = 400,
+            errors
+        });
+    }
+});
 
 app.UseAuthentication();
 app.UseAuthorization();

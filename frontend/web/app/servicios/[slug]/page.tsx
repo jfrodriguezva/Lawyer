@@ -3,8 +3,31 @@ import { notFound } from "next/navigation";
 import GuestHeader from "@/components/GuestHeader";
 import GuestPanel from "@/components/GuestPanel";
 import Reveal from "@/components/Reveal";
-import { IconCheck, IconMail, IconPhone, IconWhatsapp } from "@/components/icons";
-import { getServicioPorSlug, SERVICIOS } from "@/lib/servicios";
+import {
+  IconClock,
+  IconDocumentLegal,
+  IconFamily,
+  IconGavel,
+  IconHandHeart,
+  IconLock,
+  IconMail,
+  IconPhone,
+  IconPin,
+  IconScale,
+  IconWhatsapp,
+} from "@/components/icons";
+import { getServicioPorSlug, SERVICIOS, type IconoBeneficio } from "@/lib/servicios";
+
+const ICONOS_BENEFICIO: Record<IconoBeneficio, typeof IconScale> = {
+  scale: IconScale,
+  gavel: IconGavel,
+  document: IconDocumentLegal,
+  family: IconFamily,
+  clock: IconClock,
+  lock: IconLock,
+  handHeart: IconHandHeart,
+  pin: IconPin,
+};
 
 export function generateStaticParams() {
   return SERVICIOS.map((s) => ({ slug: s.slug }));
@@ -110,15 +133,18 @@ export default async function ServicioPage({
           </Reveal>
 
           <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {servicio.beneficios.map((b, i) => (
-              <Reveal key={b.titulo} delay={100 + i * 70} className="border border-brand-line bg-brand-ink2 p-6">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-brand-gold/60 text-brand-gold">
-                  <IconCheck className="h-4 w-4" />
-                </span>
-                <h3 className="mt-4 font-display text-base font-bold text-brand-cream">{b.titulo}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-brand-creamSoft">{b.texto}</p>
-              </Reveal>
-            ))}
+            {servicio.beneficios.map((b, i) => {
+              const Icono = ICONOS_BENEFICIO[b.icono];
+              return (
+                <Reveal key={b.titulo} delay={100 + i * 70} className="border border-brand-line bg-brand-ink2 p-6">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full border border-brand-gold/60 text-brand-gold">
+                    <Icono className="h-4 w-4" />
+                  </span>
+                  <h3 className="mt-4 font-display text-base font-bold text-brand-cream">{b.titulo}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-brand-creamSoft">{b.texto}</p>
+                </Reveal>
+              );
+            })}
           </div>
         </section>
 

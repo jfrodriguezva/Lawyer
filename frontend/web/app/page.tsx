@@ -5,34 +5,35 @@ import Reveal from "@/components/Reveal";
 import {
   IconArrowRight,
   IconCheck,
-  IconChat,
+  IconFamily,
+  IconGavel,
+  IconHandHeart,
   IconMail,
   IconPhone,
   IconPin,
-  IconShield,
-  IconUser,
+  IconScale,
   IconWhatsapp,
 } from "@/components/icons";
 import { SERVICIOS } from "@/lib/servicios";
 
 const BENEFICIOS = [
   {
-    icon: IconUser,
+    icon: IconGavel,
     titulo: "Sin consentimiento del otro",
     texto: "No necesitas que tu pareja esté de acuerdo ni firme nada para iniciar el proceso.",
   },
   {
-    icon: IconChat,
+    icon: IconScale,
     titulo: "Asesoría personalizada",
     texto: "Analizamos tu situación particular antes de trazar la estrategia legal.",
   },
   {
-    icon: IconCheck,
+    icon: IconHandHeart,
     titulo: "Acompañamiento total",
     texto: "Damos seguimiento a tu expediente desde el primer trámite hasta la sentencia.",
   },
   {
-    icon: IconShield,
+    icon: IconFamily,
     titulo: "Protección familiar",
     texto: "Cuidamos tus derechos patrimoniales y los de tus hijas e hijos en todo momento.",
   },

@@ -193,3 +193,85 @@ export function IconFile({ className }: IconProps) {
     </svg>
   );
 }
+
+// ---- Iconografía temática de abogacía (usada en tarjetas de beneficios) ----
+
+export function IconScale({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 3v13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M4 6h12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M4 6 2 10.2a2 2 0 0 0 4 0z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" />
+      <path d="M16 6 14 10.2a2 2 0 0 0 4 0z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" />
+      <path d="M6.5 16.5h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <circle cx="10" cy="3" r="1" fill="currentColor" fillOpacity="0.7" />
+    </svg>
+  );
+}
+
+export function IconGavel({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+      <rect x="10.5" y="2.4" width="4" height="6.6" rx="0.4" transform="rotate(45 12.5 5.7)" stroke="currentColor" strokeWidth="1.1" />
+      <path d="M9.2 9 4.8 13.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M3 17h6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconDocumentLegal({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+      <path d="M5 2.5h7l3.5 3.5v11.5h-10.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d="M12 2.5V6h3.5" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d="M6.8 11.3 8.5 13l3.7-3.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function IconFamily({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+      <circle cx="6" cy="5.3" r="2" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="14" cy="5.3" r="2" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="10" cy="8.6" r="1.4" stroke="currentColor" strokeWidth="1.1" />
+      <path d="M2.3 17c.4-2.6 2-4 3.7-4s2.7.9 3.1 2.1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M11 15.3c.4-1.1 1.5-2 3-2s3.2 1.4 3.7 3.9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M7.9 17c.3-1.4 1.1-2.1 2.1-2.1s1.8.7 2.1 2.1" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconClock({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+      <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M10 6.2v4l3 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function IconLock({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+      <rect x="4.5" y="9" width="11" height="8" rx="0.6" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M6.5 9V6.3a3.5 3.5 0 0 1 7 0V9" stroke="currentColor" strokeWidth="1.3" />
+      <circle cx="10" cy="12.7" r="1" fill="currentColor" fillOpacity="0.75" />
+    </svg>
+  );
+}
+
+export function IconHandHeart({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M10 7.6c-1-2.1-4.3-1.7-4.3.6 0 2.1 2.8 3.6 4.3 5 1.5-1.4 4.3-2.9 4.3-5 0-2.3-3.3-2.7-4.3-.6z"
+        stroke="currentColor"
+        strokeWidth="1.1"
+        strokeLinejoin="round"
+      />
+      <path d="M2.7 16.3c.9-1.9 2.8-2.4 4.2-1.3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M17.3 16.3c-.9-1.9-2.8-2.4-4.2-1.3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}

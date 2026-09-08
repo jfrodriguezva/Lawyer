@@ -1,4 +1,5 @@
 using ECAbogados.Application.Mediation;
+using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ECAbogados.Application.Tests;
@@ -57,6 +58,34 @@ public class SenderTests
         await sender.Send(new Marcar(log));
 
         Assert.Equal(["ejecutado"], log);
+    }
+
+    public record ConNombre(string Nombre) : IRequest;
+
+    public class ConNombreValidator : AbstractValidator<ConNombre>
+    {
+        public ConNombreValidator() => RuleFor(x => x.Nombre).NotEmpty();
+    }
+
+    public class ConNombreHandler : IRequestHandler<ConNombre>
+    {
+        public Task Handle(ConNombre request, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task Send_ejecuta_el_validador_registrado_y_rechaza_datos_invalidos()
+    {
+        var services = new ServiceCollection();
+        services.AddScoped<ISender, Sender>();
+        services.AddTransient<IRequestHandler<ConNombre>, ConNombreHandler>();
+        services.AddTransient<IValidator<ConNombre>, ConNombreValidator>();
+        var provider = services.BuildServiceProvider();
+        var sender = provider.GetRequiredService<ISender>();
+
+        await Assert.ThrowsAsync<ValidationException>(() => sender.Send(new ConNombre("")));
+
+        // Con datos válidos no debe lanzar y sí debe ejecutar el handler.
+        await sender.Send(new ConNombre("ok"));
     }
 
     [Fact]
