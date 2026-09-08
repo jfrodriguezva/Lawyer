@@ -8,6 +8,9 @@ public class FakeChecklistItemRepository : IChecklistItemRepository
     private readonly List<ChecklistItem> _items = [];
     private int _nextId = 1;
 
+    public Task<ChecklistItem?> GetByIdAsync(int id) =>
+        Task.FromResult(_items.FirstOrDefault(i => i.Id == id));
+
     public Task<IReadOnlyList<ChecklistItem>> GetByCasoIdAsync(int casoId) =>
         Task.FromResult<IReadOnlyList<ChecklistItem>>(_items.Where(i => i.CasoId == casoId).ToList());
 

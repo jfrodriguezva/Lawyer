@@ -6,7 +6,9 @@ namespace ECAbogados.Application.Casos.Commands.CrearCaso;
 
 public class CrearCasoCommandHandler(
     ICasoRepository casoRepository,
-    IChecklistItemRepository checklistItemRepository) : IRequestHandler<CrearCasoCommand, int>
+    IChecklistItemRepository checklistItemRepository,
+    IAuditoriaRepository auditoriaRepository,
+    ICurrentUserAccessor currentUser) : IRequestHandler<CrearCasoCommand, int>
 {
     public async Task<int> Handle(CrearCasoCommand request, CancellationToken cancellationToken)
     {
@@ -28,6 +30,8 @@ public class CrearCasoCommandHandler(
         {
             await checklistItemRepository.CreateManyAsync(id, requisitos);
         }
+
+        await auditoriaRepository.RegistrarAsync(currentUser, "Caso", id, "Creó el expediente");
 
         return id;
     }

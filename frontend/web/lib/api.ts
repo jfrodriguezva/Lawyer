@@ -54,6 +54,14 @@ export interface CasoDetalle extends Caso {
   checklist: ChecklistItem[];
 }
 
+export interface AuditoriaEntry {
+  id: number;
+  accion: string;
+  detalle: string | null;
+  usuarioNombre: string | null;
+  fecha: string;
+}
+
 export interface PortalCaso {
   id: number;
   clienteNombre: string;
@@ -324,6 +332,22 @@ export function cambiarEstatusUsuario(id: number | string, activo: boolean) {
     method: "PATCH",
     body: JSON.stringify({ activo }),
   });
+}
+
+export function actualizarUsuario(
+  id: number | string,
+  data: { nombre: string; rol: string; nuevaPassword?: string | null }
+) {
+  return request<void>(`/api/usuarios/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+// ---- Auditoría (historial de cambios) ----
+
+export function getAuditoriaPorCaso(casoId: number | string) {
+  return request<AuditoriaEntry[]>(`/api/auditoria/caso/${casoId}`);
 }
 
 // ---- Portal del cliente (enlace mágico, sin autenticación) ----

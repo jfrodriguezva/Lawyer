@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { cambiarEstatusUsuario, crearUsuario, getUsuarios, type Usuario } from "@/lib/api";
+import { actualizarUsuario, cambiarEstatusUsuario, crearUsuario, getUsuarios, type Usuario } from "@/lib/api";
 import { getCookie } from "@/lib/cookies";
 
 export default function UsuariosPage() {
@@ -15,6 +15,12 @@ export default function UsuariosPage() {
   const [password, setPassword] = useState("");
   const [nombre, setNombre] = useState("");
   const [rol, setRol] = useState("Asistente");
+
+  const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [editNombre, setEditNombre] = useState("");
+  const [editRol, setEditRol] = useState("Asistente");
+  const [editPassword, setEditPassword] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   function load() {
     setLoading(true);
@@ -45,6 +51,31 @@ export default function UsuariosPage() {
       );
     } catch {
       setError("No se pudo actualizar el estatus del usuario.");
+    }
+  }
+
+  function handleStartEdit(u: Usuario) {
+    setEditandoId(u.id);
+    setEditNombre(u.nombre);
+    setEditRol(u.rol);
+    setEditPassword("");
+  }
+
+  async function handleSaveEdit(id: number) {
+    setSavingEdit(true);
+    setError(null);
+    try {
+      await actualizarUsuario(id, {
+        nombre: editNombre,
+        rol: editRol,
+        nuevaPassword: editPassword || null,
+      });
+      setEditandoId(null);
+      load();
+    } catch {
+      setError("No se pudo actualizar el usuario (si es tu propia cuenta, no puedes cambiar tu rol).");
+    } finally {
+      setSavingEdit(false);
     }
   }
 
@@ -153,6 +184,55 @@ export default function UsuariosPage() {
         {!loading &&
           usuarios.map((u) => {
             const esMiCuenta = u.email === miCorreo;
+
+            if (editandoId === u.id) {
+              return (
+                <div
+                  key={u.id}
+                  className="grid grid-cols-1 gap-3 border-b border-brand-line bg-brand-ink px-5 py-4 last:border-b-0 sm:grid-cols-[2fr_2fr_1fr_1fr]"
+                >
+                  <input
+                    value={editNombre}
+                    onChange={(e) => setEditNombre(e.target.value)}
+                    className="border border-brand-line bg-transparent px-3 py-2 text-sm text-brand-cream outline-none focus:border-brand-gold"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Nueva contraseña (opcional)"
+                    value={editPassword}
+                    onChange={(e) => setEditPassword(e.target.value)}
+                    minLength={8}
+                    className="border border-brand-line bg-transparent px-3 py-2 text-sm text-brand-cream outline-none focus:border-brand-gold"
+                  />
+                  <select
+                    value={editRol}
+                    disabled={esMiCuenta}
+                    onChange={(e) => setEditRol(e.target.value)}
+                    title={esMiCuenta ? "No puedes cambiar tu propio rol" : undefined}
+                    className="border border-brand-line bg-brand-ink px-3 py-2 text-sm text-brand-cream outline-none focus:border-brand-gold disabled:opacity-50"
+                  >
+                    <option value="Asistente">Asistente</option>
+                    <option value="Administrador">Administrador</option>
+                  </select>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleSaveEdit(u.id)}
+                      disabled={savingEdit}
+                      className="flex-1 border border-brand-gold px-2.5 py-2 text-[10px] font-semibold uppercase tracking-widest text-brand-gold hover:bg-brand-gold hover:text-brand-ink disabled:opacity-60"
+                    >
+                      {savingEdit ? "Guardando…" : "Guardar"}
+                    </button>
+                    <button
+                      onClick={() => setEditandoId(null)}
+                      className="flex-1 border border-brand-line px-2.5 py-2 text-[10px] font-semibold uppercase tracking-widest text-brand-creamSoft hover:border-brand-goldDeep"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
             return (
               <div
                 key={u.id}
@@ -164,14 +244,22 @@ export default function UsuariosPage() {
                 <span className={u.activo ? "text-brand-gold" : "text-brand-creamSoft/60"}>
                   {u.activo ? "Activo" : "Desactivado"}
                 </span>
-                <button
-                  onClick={() => handleToggleActivo(u)}
-                  disabled={esMiCuenta && u.activo}
-                  title={esMiCuenta && u.activo ? "No puedes desactivar tu propia cuenta" : undefined}
-                  className="border border-brand-line px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-brand-creamSoft transition-colors hover:border-brand-gold hover:text-brand-gold disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {u.activo ? "Desactivar" : "Activar"}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleStartEdit(u)}
+                    className="border border-brand-line px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-brand-creamSoft transition-colors hover:border-brand-gold hover:text-brand-gold"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => handleToggleActivo(u)}
+                    disabled={esMiCuenta && u.activo}
+                    title={esMiCuenta && u.activo ? "No puedes desactivar tu propia cuenta" : undefined}
+                    className="border border-brand-line px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-brand-creamSoft transition-colors hover:border-brand-gold hover:text-brand-gold disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {u.activo ? "Desactivar" : "Activar"}
+                  </button>
+                </div>
               </div>
             );
           })}

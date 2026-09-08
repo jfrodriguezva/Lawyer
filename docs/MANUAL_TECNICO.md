@@ -55,6 +55,8 @@ Base: `/api`
 | Casos | `PATCH /casos/checklist/{itemId}` | JWT | Marcar requisito del checklist |
 | | `POST /casos/{id}/regenerar-token` | JWT (**Administrador**) | Invalida el enlace del portal actual y genera uno nuevo |
 | Usuarios | `PATCH /usuarios/{id}/estatus` | JWT (**Administrador**) | Activar/desactivar una cuenta de personal |
+| | `PUT /usuarios/{id}` | JWT (**Administrador**) | Editar nombre/rol/contraseña (no puede cambiar su propio rol) |
+| Auditoría | `GET /auditoria/caso/{casoId}` | JWT (**Administrador**) | Historial de cambios sobre el caso |
 
 Swagger UI disponible en `http://localhost:5080/swagger`.
 
@@ -95,9 +97,17 @@ El proyecto usaba **MediatR 14.2.0**, que a partir de cierto release requiere li
 
 El registro de handlers es manual y explícito en `ECAbogados.Application/DependencyInjection.cs`: escanea el propio ensamblado de Application buscando clases que implementen `IRequestHandler<>`/`IRequestHandler<,>` y las da de alta contra su interfaz — sin ninguna librería de terceros ni dependencia de licencia. Todos los Commands, Queries, Handlers y Controllers existentes siguen igual (solo cambió el `using`, de `MediatR` a `ECAbogados.Application.Mediation`); el comportamiento es idéntico y fue verificado end-to-end (login, CRUD de casos con checklist, plazos, pagos, usuarios, portal por token, restricciones de rol).
 
-## 4.6 Activar/desactivar personal
+## 4.6 Activar/desactivar y editar personal
 
 `Usuarios.Activo` (BIT, default `1`). Un login con `Activo = 0` responde igual que credenciales inválidas (no revela que la cuenta existe). `PATCH /usuarios/{id}/estatus` (solo `Administrador`) activa o desactiva; el propio controller bloquea que un administrador se desactive a sí mismo (comparando el `id` contra el `ClaimTypes.NameIdentifier` del JWT).
+
+`PUT /usuarios/{id}` edita nombre, rol y opcionalmente la contraseña (se re-hashea con `IPasswordHasher`). Mismo patrón de auto-bloqueo: un usuario puede editar su propio nombre/contraseña, pero no su propio `Rol` (evita quedarse sin administradores por accidente) — se compara `request.Rol` contra el claim `ClaimTypes.Role` del JWT actual.
+
+## 4.8 Historial de cambios (auditoría)
+
+Tabla `Auditoria` (Entidad, EntidadId, Accion, Detalle, UsuarioId, UsuarioNombre, Fecha) — insert-only. `ICurrentUserAccessor` (Application) / `CurrentUserAccessor` (Infrastructure, vía `IHttpContextAccessor` — se agregó `FrameworkReference` a `Microsoft.AspNetCore.App` en `ECAbogados.Infrastructure.csproj`, sin costo, es parte del runtime) expone quién hace la solicitud actual leyendo los mismos claims del JWT; si no hay sesión (rutas anónimas: cita pública, subida vía portal), se registra como `"Público (sin sesión)"`.
+
+Handlers que registran auditoría sobre el caso: crear/actualizar caso, cambiar estatus, marcar checklist, regenerar token del portal, agendar/cambiar estatus de una cita ligada al caso, subir documento, registrar pago. `GET /api/auditoria/caso/{casoId}` (solo `Administrador`, es información sensible del staff) alimenta la sección "Historial" en `casos/[id]/page.tsx`.
 
 ## 4.7 Pruebas automatizadas y CI
 
@@ -189,6 +199,5 @@ CORS está configurado en la API y el Gateway solo para permitir `http://localho
 ## 8. Limitaciones técnicas conocidas
 
 - Almacenamiento de documentos en disco local del servidor de la API — no apto para múltiples instancias sin un volumen persistente compartido (relevante al planear el despliegue a Azure: considerar Blob Storage).
-- Sin auditoría/histórico de cambios sobre casos, citas o documentos.
-- Edición de datos de un usuario (nombre, rol, contraseña) no expuesta vía API — solo alta, listado y activar/desactivar. Cambios de esos campos siguen requiriendo SQL directo.
 - Cobertura de pruebas automatizadas es representativa, no exhaustiva (ver 4.7).
+- El historial de auditoría cubre el ciclo de vida del caso (creación, estatus, checklist, citas ligadas, documentos, pagos, portal) — no absolutamente todas las mutaciones del sistema (ej. marcar un mensaje de contacto como atendido no se audita).

@@ -65,4 +65,26 @@ public class UsuarioRepository(SqlConnectionFactory connectionFactory) : IUsuari
             await connection.ExecuteAsync(sql, new { Id = id, Activo = activo });
         });
     }
+
+    public async Task UpdateAsync(Usuario usuario)
+    {
+        await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            const string sql = "UPDATE dbo.Usuarios SET Nombre = @Nombre, Rol = @Rol WHERE Id = @Id";
+            await connection.ExecuteAsync(sql, new { usuario.Id, usuario.Nombre, usuario.Rol });
+        });
+    }
+
+    public async Task UpdatePasswordHashAsync(int id, string passwordHash)
+    {
+        await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            const string sql = "UPDATE dbo.Usuarios SET PasswordHash = @PasswordHash WHERE Id = @Id";
+            await connection.ExecuteAsync(sql, new { Id = id, PasswordHash = passwordHash });
+        });
+    }
 }

@@ -6,6 +6,22 @@ namespace ECAbogados.Infrastructure.Persistence.Repositories;
 
 public class ChecklistItemRepository(SqlConnectionFactory connectionFactory) : IChecklistItemRepository
 {
+    public async Task<ChecklistItem?> GetByIdAsync(int id)
+    {
+        return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            const string sql = """
+                SELECT Id, CasoId, Descripcion, Completado
+                FROM dbo.ChecklistItems
+                WHERE Id = @Id
+                """;
+
+            return await connection.QuerySingleOrDefaultAsync<ChecklistItem>(sql, new { Id = id });
+        });
+    }
+
     public async Task<IReadOnlyList<ChecklistItem>> GetByCasoIdAsync(int casoId)
     {
         return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>

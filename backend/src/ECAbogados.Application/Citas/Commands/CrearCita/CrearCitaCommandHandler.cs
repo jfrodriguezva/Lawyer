@@ -6,7 +6,9 @@ namespace ECAbogados.Application.Citas.Commands.CrearCita;
 
 public class CrearCitaCommandHandler(
     ICitaRepository citaRepository,
-    IStaffNotifier staffNotifier) : IRequestHandler<CrearCitaCommand, int>
+    IStaffNotifier staffNotifier,
+    IAuditoriaRepository auditoriaRepository,
+    ICurrentUserAccessor currentUser) : IRequestHandler<CrearCitaCommand, int>
 {
     public async Task<int> Handle(CrearCitaCommand request, CancellationToken cancellationToken)
     {
@@ -25,6 +27,11 @@ public class CrearCitaCommandHandler(
             "Nueva solicitud de cita",
             $"{request.NombreCliente} ({request.Telefono}) solicitó una cita para el {request.FechaHora:dd/MM/yyyy HH:mm}.",
             cancellationToken);
+
+        if (request.CasoId is int casoId)
+        {
+            await auditoriaRepository.RegistrarAsync(currentUser, "Caso", casoId, $"Se agendó una cita para el {request.FechaHora:dd/MM/yyyy HH:mm}");
+        }
 
         return id;
     }

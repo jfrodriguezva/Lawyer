@@ -10,7 +10,8 @@ public class CrearCasoCommandHandlerTests
     {
         var casos = new FakeCasoRepository();
         var checklist = new FakeChecklistItemRepository();
-        var handler = new CrearCasoCommandHandler(casos, checklist);
+        var auditoria = new FakeAuditoriaRepository();
+        var handler = new CrearCasoCommandHandler(casos, checklist, auditoria, new FakeCurrentUserAccessor());
 
         var id = await handler.Handle(new CrearCasoCommand("Cliente Prueba", "Custodia", "notas"), CancellationToken.None);
 
@@ -22,6 +23,8 @@ public class CrearCasoCommandHandlerTests
         var items = await checklist.GetByCasoIdAsync(id);
         Assert.NotEmpty(items);
         Assert.Contains(items, i => i.Descripcion.Contains("convivencia", StringComparison.OrdinalIgnoreCase));
+
+        Assert.Contains(auditoria.Entradas, e => e.EntidadId == id && e.Accion == "Creó el expediente");
     }
 
     [Fact]
@@ -29,7 +32,7 @@ public class CrearCasoCommandHandlerTests
     {
         var casos = new FakeCasoRepository();
         var checklist = new FakeChecklistItemRepository();
-        var handler = new CrearCasoCommandHandler(casos, checklist);
+        var handler = new CrearCasoCommandHandler(casos, checklist, new FakeAuditoriaRepository(), new FakeCurrentUserAccessor());
 
         var id = await handler.Handle(new CrearCasoCommand("Cliente Prueba", "Otro", null), CancellationToken.None);
 

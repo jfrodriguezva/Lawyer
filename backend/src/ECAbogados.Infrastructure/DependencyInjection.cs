@@ -3,6 +3,7 @@ using ECAbogados.Infrastructure.Notifications;
 using ECAbogados.Infrastructure.Persistence;
 using ECAbogados.Infrastructure.Persistence.Repositories;
 using ECAbogados.Infrastructure.Security;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -22,9 +23,13 @@ public static class DependencyInjection
         services.AddScoped<IChecklistItemRepository, ChecklistItemRepository>();
         services.AddScoped<IPlazoRepository, PlazoRepository>();
         services.AddScoped<IPagoRepository, PagoRepository>();
+        services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
 
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
+
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUserAccessor, CurrentUserAccessor>();
 
         services.AddSingleton<IEmailSender, SmtpEmailSender>();
         services.AddScoped<IStaffNotifier, StaffNotifier>();

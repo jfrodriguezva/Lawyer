@@ -3,7 +3,10 @@ using ECAbogados.Application.Mediation;
 
 namespace ECAbogados.Application.Casos.Commands.ActualizarCaso;
 
-public class ActualizarCasoCommandHandler(ICasoRepository casoRepository) : IRequestHandler<ActualizarCasoCommand>
+public class ActualizarCasoCommandHandler(
+    ICasoRepository casoRepository,
+    IAuditoriaRepository auditoriaRepository,
+    ICurrentUserAccessor currentUser) : IRequestHandler<ActualizarCasoCommand>
 {
     public async Task Handle(ActualizarCasoCommand request, CancellationToken cancellationToken)
     {
@@ -15,5 +18,7 @@ public class ActualizarCasoCommandHandler(ICasoRepository casoRepository) : IReq
         caso.Notas = request.Notas;
 
         await casoRepository.UpdateAsync(caso);
+
+        await auditoriaRepository.RegistrarAsync(currentUser, "Caso", caso.Id, "Actualizó los datos del caso");
     }
 }

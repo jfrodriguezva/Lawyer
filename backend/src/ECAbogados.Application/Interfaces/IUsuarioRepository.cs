@@ -8,4 +8,6 @@ public interface IUsuarioRepository
     Task<IReadOnlyList<Usuario>> GetAllAsync();
     Task<int> CreateAsync(Usuario usuario);
     Task SetActivoAsync(int id, bool activo);
+    Task UpdateAsync(Usuario usuario);
+    Task UpdatePasswordHashAsync(int id, string passwordHash);
 }

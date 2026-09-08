@@ -3,7 +3,10 @@ using ECAbogados.Application.Mediation;
 
 namespace ECAbogados.Application.Casos.Commands.CambiarEstatusCaso;
 
-public class CambiarEstatusCasoCommandHandler(ICasoRepository casoRepository) : IRequestHandler<CambiarEstatusCasoCommand>
+public class CambiarEstatusCasoCommandHandler(
+    ICasoRepository casoRepository,
+    IAuditoriaRepository auditoriaRepository,
+    ICurrentUserAccessor currentUser) : IRequestHandler<CambiarEstatusCasoCommand>
 {
     public async Task Handle(CambiarEstatusCasoCommand request, CancellationToken cancellationToken)
     {
@@ -13,5 +16,7 @@ public class CambiarEstatusCasoCommandHandler(ICasoRepository casoRepository) : 
         caso.Estatus = request.Estatus;
 
         await casoRepository.UpdateAsync(caso);
+
+        await auditoriaRepository.RegistrarAsync(currentUser, "Caso", caso.Id, $"Cambió el estatus a {request.Estatus}");
     }
 }

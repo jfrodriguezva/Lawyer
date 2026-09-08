@@ -118,6 +118,13 @@
       "DownstreamPathTemplate": "/api/portal/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5080 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/api/auditoria/{everything}",
+      "UpstreamHttpMethod": [ "GET" ],
+      "DownstreamPathTemplate": "/api/auditoria/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 5080 } ]
     }
   ],
   "GlobalConfiguration": {

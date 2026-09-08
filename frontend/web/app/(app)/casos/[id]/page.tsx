@@ -8,6 +8,7 @@ import { getCookie } from "@/lib/cookies";
 import {
   cambiarEstatusCaso,
   crearPlazo,
+  getAuditoriaPorCaso,
   getCaso,
   getDocumentosPorCaso,
   getPagosPorCaso,
@@ -17,6 +18,7 @@ import {
   regenerarTokenCaso,
   registrarPago,
   subirDocumento,
+  type AuditoriaEntry,
   type CasoDetalle,
   type Documento,
   type EstatusCaso,
@@ -45,6 +47,7 @@ export default function CasoDetailPage() {
   const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [plazos, setPlazos] = useState<Plazo[]>([]);
   const [pagos, setPagos] = useState<Pago[]>([]);
+  const [auditoria, setAuditoria] = useState<AuditoriaEntry[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -88,6 +91,9 @@ export default function CasoDetailPage() {
         if (admin) {
           getPagosPorCaso(params.id)
             .then(setPagos)
+            .catch(() => undefined);
+          getAuditoriaPorCaso(params.id)
+            .then(setAuditoria)
             .catch(() => undefined);
         }
       } catch {
@@ -456,6 +462,34 @@ export default function CasoDetailPage() {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {isAdmin && auditoria.length > 0 && (
+            <div>
+              <h2 className="border-b border-brand-line pb-3 text-xs font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+                Historial
+              </h2>
+              <ul className="mt-4 space-y-2">
+                {auditoria.map((entry) => (
+                  <li key={entry.id} className="border border-brand-line px-4 py-3 text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-brand-cream">{entry.accion}</span>
+                      <span className="text-xs text-brand-creamSoft">
+                        {new Date(entry.fecha).toLocaleString("es-MX", {
+                          day: "2-digit",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-brand-creamSoft">
+                      {entry.usuarioNombre ?? "Público (sin sesión)"}
+                    </p>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </section>

@@ -4,7 +4,10 @@ using ECAbogados.Application.Mediation;
 
 namespace ECAbogados.Application.Pagos.Commands.RegistrarPago;
 
-public class RegistrarPagoCommandHandler(IPagoRepository pagoRepository) : IRequestHandler<RegistrarPagoCommand, int>
+public class RegistrarPagoCommandHandler(
+    IPagoRepository pagoRepository,
+    IAuditoriaRepository auditoriaRepository,
+    ICurrentUserAccessor currentUser) : IRequestHandler<RegistrarPagoCommand, int>
 {
     public async Task<int> Handle(RegistrarPagoCommand request, CancellationToken cancellationToken)
     {
@@ -16,6 +19,10 @@ public class RegistrarPagoCommandHandler(IPagoRepository pagoRepository) : IRequ
             Fecha = DateTime.UtcNow
         };
 
-        return await pagoRepository.CreateAsync(pago);
+        var id = await pagoRepository.CreateAsync(pago);
+
+        await auditoriaRepository.RegistrarAsync(currentUser, "Caso", request.CasoId, $"Registró un pago: {request.Concepto} ({request.Monto:C})");
+
+        return id;
     }
 }

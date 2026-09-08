@@ -82,14 +82,25 @@ Tras el batch anterior, el usuario pidió el resto de los pendientes (excepto to
 
 **Nota operativa:** durante esta sesión el sistema se quedó sin memoria y mató los 3 servicios en segundo plano (API/Gateway/frontend) más de una vez — quedaron varios procesos `node.exe`/`dotnet.exe` huérfanos de reinicios previos que había que limpiar manualmente. Si se retoma el trabajo y algo no responde en los puertos 3000/5000/5080, revisar procesos huérfanos (`tasklist`/`netstat -ano`) antes de asumir que el código está roto.
 
+Este batch quedó comiteado y pusheado a `main` (commit `ffc6f00`); CI confirmado en verde en GitHub Actions.
+
+## Edición de usuarios + auditoría (2026-09-08, mismo día, batch siguiente)
+
+El usuario pidió avanzar los pendientes 2, 3, 4, 5 y 7 de la lista anterior:
+- **Punto 4** (CI): confirmado en verde vía API de GitHub (`conclusion: success`) — no requirió código.
+- **Puntos 2 y 3** (credenciales SMTP/GA/Pixel, revisión de copy): resueltos fuera de código — instrucciones para que el usuario configure sus propias credenciales vía `dotnet user-secrets`/`.env.local`, y un Artifact con el copy de las 4 landings para que la abogada lo revise cómodamente.
+- **Punto 5 — Editar usuario existente**: `PUT /api/usuarios/{id}` (nombre, rol, contraseña opcional). Igual que con desactivación, un usuario **no puede cambiar su propio rol** (sí su nombre/contraseña) — verificado con curl (400 al intentar cambiar su propio rol, 204 en los demás casos). UI: botón "Editar" en `/usuarios` con formulario inline.
+- **Punto 7 — Historial de cambios (auditoría)**: nueva tabla `Auditoria` (insert-only) + `ICurrentUserAccessor`/`CurrentUserAccessor` (Infrastructure, vía `IHttpContextAccessor`, requirió agregar `FrameworkReference` a `Microsoft.AspNetCore.App` en `ECAbogados.Infrastructure.csproj` — gratis, parte del runtime). Se audita: crear/actualizar caso, cambiar estatus, checklist, regenerar token, cita ligada a un caso (creación/estatus), subir documento, registrar pago. Acciones sin sesión (formulario público, portal) se registran como `"Público (sin sesión)"` — **verificado end-to-end con curl**: crear caso + cambiar estatus (autenticado) + agendar cita sin token (anónimo) ligada al mismo caso → el historial mostró las 3 entradas con el usuario correcto en cada una. `GET /api/auditoria/caso/{casoId}` (solo Administrador) alimenta la sección "Historial" en `/casos/{id}`.
+- 12/12 tests siguen en verde (se actualizaron 2 tests existentes cuyos handlers cambiaron de firma, y se agregaron fakes `FakeAuditoriaRepository`/`FakeCurrentUserAccessor`).
+
+**Nota de una falsa alarma durante las pruebas:** un curl con el nombre "García" (acento) dio 400 por un problema de codificación de la propia terminal bash de Windows al pasar `-d`, no un bug real — se confirmó reintentando con `--data-binary @archivo.json` en UTF-8. Si algo similar vuelve a pasar con acentos/ñ en pruebas manuales, sospechar primero de la codificación de la shell antes que del código.
+
 ## Próximos pasos sugeridos (pendientes, no iniciados)
 
 Ninguno de estos ha sido solicitado explícitamente todavía:
-- El propio despliegue a Azure (explícitamente pospuesto en las dos últimas sesiones) — incluye decidir sobre Blob Storage para documentos.
+- El propio despliegue a Azure (explícitamente pospuesto tres veces) — incluye decidir sobre Blob Storage para documentos.
 - Configurar credenciales reales de SMTP/`Notificaciones:StaffEmail`/GA4/Meta Pixel (el usuario pidió dejarlas listas, no configurarlas ahora).
-- Revisión final del copy de marketing por la Lic. Erika Cruz García.
-- Confirmar que el workflow de GitHub Actions corre correctamente una vez pusheado (no verificable localmente).
-- Edición de datos de usuario existente (nombre/rol/password) vía API — hoy solo alta/listado/activar-desactivar.
+- Revisión final del copy de marketing por la Lic. Erika Cruz García (hay un Artifact preparado para facilitárselo — buscar con `action: list` si no se tiene la URL a la mano).
 
 ## Cómo retomar el trabajo en un chat nuevo
 

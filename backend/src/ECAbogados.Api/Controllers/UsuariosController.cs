@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using ECAbogados.Application.Usuarios.Commands.ActualizarUsuario;
 using ECAbogados.Application.Usuarios.Commands.CambiarEstatusUsuario;
 using ECAbogados.Application.Usuarios.Commands.CrearUsuario;
 using ECAbogados.Application.Usuarios.Queries.ListarUsuarios;
@@ -47,6 +48,22 @@ public class UsuariosController(ISender sender) : ControllerBase
         await sender.Send(new CambiarEstatusUsuarioCommand(id, request.Activo));
         return NoContent();
     }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Actualizar(int id, [FromBody] ActualizarUsuarioRequest request)
+    {
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var currentRole = User.FindFirstValue(ClaimTypes.Role);
+        if (currentUserId == id.ToString() && request.Rol != currentRole)
+        {
+            return BadRequest(new { message = "No puedes cambiar tu propio rol. Pide a otro Administrador que lo haga." });
+        }
+
+        await sender.Send(new ActualizarUsuarioCommand(id, request.Nombre, request.Rol, request.NuevaPassword));
+        return NoContent();
+    }
 }
 
 public record CambiarEstatusUsuarioRequest(bool Activo);
+
+public record ActualizarUsuarioRequest(string Nombre, string Rol, string? NuevaPassword);

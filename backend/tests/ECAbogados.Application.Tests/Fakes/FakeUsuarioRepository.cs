@@ -34,4 +34,18 @@ public class FakeUsuarioRepository : IUsuarioRepository
         usuario.Activo = activo;
         return Task.CompletedTask;
     }
+
+    public Task UpdateAsync(Usuario usuario)
+    {
+        var existente = _usuarios.First(u => u.Id == usuario.Id);
+        existente.Nombre = usuario.Nombre;
+        existente.Rol = usuario.Rol;
+        return Task.CompletedTask;
+    }
+
+    public Task UpdatePasswordHashAsync(int id, string passwordHash)
+    {
+        _usuarios.First(u => u.Id == id).PasswordHash = passwordHash;
+        return Task.CompletedTask;
+    }
 }

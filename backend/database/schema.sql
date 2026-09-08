@@ -213,6 +213,24 @@ BEGIN
 END
 GO
 
+-- Historial de cambios (auditoría) sobre casos, citas y documentos
+IF OBJECT_ID(N'dbo.Auditoria', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Auditoria (
+        Id INT IDENTITY PRIMARY KEY,
+        Entidad NVARCHAR(50) NOT NULL,
+        EntidadId INT NOT NULL,
+        Accion NVARCHAR(200) NOT NULL,
+        Detalle NVARCHAR(1000) NULL,
+        UsuarioId INT NULL,
+        UsuarioNombre NVARCHAR(200) NULL,
+        Fecha DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+    );
+
+    CREATE INDEX IX_Auditoria_Entidad_EntidadId ON dbo.Auditoria(Entidad, EntidadId);
+END
+GO
+
 -- Honorarios y pagos por caso
 IF OBJECT_ID(N'dbo.Pagos', N'U') IS NULL
 BEGIN

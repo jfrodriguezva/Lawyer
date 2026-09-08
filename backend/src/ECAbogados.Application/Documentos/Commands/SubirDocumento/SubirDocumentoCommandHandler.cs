@@ -4,8 +4,10 @@ using ECAbogados.Application.Mediation;
 
 namespace ECAbogados.Application.Documentos.Commands.SubirDocumento;
 
-public class SubirDocumentoCommandHandler(IDocumentoRepository documentoRepository)
-    : IRequestHandler<SubirDocumentoCommand, int>
+public class SubirDocumentoCommandHandler(
+    IDocumentoRepository documentoRepository,
+    IAuditoriaRepository auditoriaRepository,
+    ICurrentUserAccessor currentUser) : IRequestHandler<SubirDocumentoCommand, int>
 {
     public async Task<int> Handle(SubirDocumentoCommand request, CancellationToken cancellationToken)
     {
@@ -19,6 +21,10 @@ public class SubirDocumentoCommandHandler(IDocumentoRepository documentoReposito
             RutaAlmacenamiento = request.RutaAlmacenamiento
         };
 
-        return await documentoRepository.CreateAsync(documento);
+        var id = await documentoRepository.CreateAsync(documento);
+
+        await auditoriaRepository.RegistrarAsync(currentUser, "Caso", request.CasoId, $"Subió el documento: {request.NombreArchivo}");
+
+        return id;
     }
 }

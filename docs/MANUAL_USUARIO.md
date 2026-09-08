@@ -21,10 +21,10 @@ Si la sesión no existe o expira, cualquier intento de entrar a una sección del
 |---|---|---|
 | **Panel de casos** | `/dashboard` | Resumen: casos activos, en revisión, próximas citas, casos cerrados, tasa de confirmación de citas y % de mensajes atendidos. |
 | **Casos** | `/casos` | Listar todos los expedientes y crear uno nuevo (cliente, tipo de caso, notas iniciales). Al crearlo se genera automáticamente un checklist de requisitos según el tipo de trámite. |
-| **Detalle de caso** | `/casos/{id}` | Notas, checklist de requisitos, documentos, plazos/audiencias, cambio de estatus, y el enlace del portal del cliente. Si tu cuenta es **Administrador** también ves y registras **Honorarios**. |
+| **Detalle de caso** | `/casos/{id}` | Notas, checklist de requisitos, documentos, plazos/audiencias, cambio de estatus, y el enlace del portal del cliente. Si tu cuenta es **Administrador** también ves y registras **Honorarios**, y ves el **Historial** de todo lo que ha pasado con el caso (quién hizo qué y cuándo). |
 | **Agenda** | `/agenda` | Calendario visual (mes/semana/día/lista) de todas las citas, coloreadas por estatus. Agendar una nueva (opcionalmente ligada a un caso) y confirmar o cancelar al hacer clic en una cita. |
 | **Mensajes** | `/mensajes` | Mensajes recibidos desde el formulario público, separados en "Pendientes" y "Atendidos". |
-| **Usuarios** | `/usuarios` | Solo visible para el rol **Administrador**: dar de alta personal (Asistente o Administrador) y ver el equipo actual. |
+| **Usuarios** | `/usuarios` | Solo visible para el rol **Administrador**: dar de alta personal, editar nombre/rol/contraseña, y activar/desactivar cuentas. No puedes cambiar tu propio rol ni desactivarte a ti mismo. |
 
 ### Roles
 
