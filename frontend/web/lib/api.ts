@@ -43,10 +43,12 @@ export interface Usuario {
   email: string;
   nombre: string;
   rol: string;
+  activo: boolean;
 }
 
 export interface CasoDetalle extends Caso {
   tokenAcceso: string | null;
+  tokenGeneradoEn: string | null;
   citas: Cita[];
   documentos: Documento[];
   checklist: ChecklistItem[];
@@ -191,6 +193,12 @@ export function cambiarEstatusCaso(id: number | string, estatus: EstatusCaso) {
   });
 }
 
+export function regenerarTokenCaso(id: number | string) {
+  return request<{ token: string }>(`/api/casos/${id}/regenerar-token`, {
+    method: "POST",
+  });
+}
+
 // ---- Citas ----
 
 export function getCitas() {
@@ -308,6 +316,13 @@ export function crearUsuario(data: { email: string; password: string; nombre: st
   return request<{ id: number }>("/api/usuarios", {
     method: "POST",
     body: JSON.stringify(data),
+  });
+}
+
+export function cambiarEstatusUsuario(id: number | string, activo: boolean) {
+  return request<void>(`/api/usuarios/${id}/estatus`, {
+    method: "PATCH",
+    body: JSON.stringify({ activo }),
   });
 }
 

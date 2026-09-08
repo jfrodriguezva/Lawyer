@@ -206,6 +206,13 @@ BEGIN
 END
 GO
 
+-- Activar/desactivar cuentas de personal
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Usuarios') AND name = 'Activo')
+BEGIN
+    ALTER TABLE dbo.Usuarios ADD Activo BIT NOT NULL DEFAULT 1;
+END
+GO
+
 -- Honorarios y pagos por caso
 IF OBJECT_ID(N'dbo.Pagos', N'U') IS NULL
 BEGIN

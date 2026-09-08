@@ -108,6 +108,31 @@ public class CasoRepository(SqlConnectionFactory connectionFactory) : ICasoRepos
         });
     }
 
+    public async Task<string> RegenerarTokenAsync(int id)
+    {
+        return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            var nuevoToken = Guid.NewGuid().ToString("N");
+
+            const string sql = """
+                UPDATE dbo.Casos
+                SET TokenAcceso = @TokenAcceso, TokenGeneradoEn = @TokenGeneradoEn
+                WHERE Id = @Id
+                """;
+
+            await connection.ExecuteAsync(sql, new
+            {
+                Id = id,
+                TokenAcceso = nuevoToken,
+                TokenGeneradoEn = DateTime.UtcNow
+            });
+
+            return nuevoToken;
+        });
+    }
+
     private static Caso MapToEntity(CasoRow row) => new()
     {
         Id = row.Id,

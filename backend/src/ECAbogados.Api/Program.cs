@@ -31,8 +31,13 @@ builder.Services.AddCors(options =>
 });
 
 // JWT Authentication
-var jwtSecret = builder.Configuration["Jwt:Secret"]
-    ?? throw new InvalidOperationException("No se encontró la configuración 'Jwt:Secret'.");
+var jwtSecret = builder.Configuration["Jwt:Secret"];
+if (string.IsNullOrWhiteSpace(jwtSecret))
+{
+    throw new InvalidOperationException(
+        "No se encontró 'Jwt:Secret'. Configúralo con 'dotnet user-secrets set \"Jwt:Secret\" \"<valor>\"' " +
+        "en desarrollo, o con la variable de entorno Jwt__Secret en cualquier otro ambiente.");
+}
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 

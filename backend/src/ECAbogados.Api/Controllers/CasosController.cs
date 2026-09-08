@@ -2,6 +2,7 @@ using ECAbogados.Application.Casos.Commands.ActualizarCaso;
 using ECAbogados.Application.Casos.Commands.CambiarEstatusCaso;
 using ECAbogados.Application.Casos.Commands.CrearCaso;
 using ECAbogados.Application.Casos.Commands.MarcarChecklistItem;
+using ECAbogados.Application.Casos.Commands.RegenerarTokenCaso;
 using ECAbogados.Application.Casos.Queries.ListarCasos;
 using ECAbogados.Application.Casos.Queries.ObtenerCasoPorId;
 using ECAbogados.Domain.Entities;
@@ -76,6 +77,15 @@ public class CasosController(ISender sender) : ControllerBase
     {
         await sender.Send(new MarcarChecklistItemCommand(itemId, request.Completado));
         return NoContent();
+    }
+
+    // Invalida el enlace anterior del portal del cliente y genera uno nuevo.
+    [Authorize(Roles = "Administrador")]
+    [HttpPost("{id:int}/regenerar-token")]
+    public async Task<IActionResult> RegenerarToken(int id)
+    {
+        var token = await sender.Send(new RegenerarTokenCasoCommand(id));
+        return Ok(new { token });
     }
 }
 

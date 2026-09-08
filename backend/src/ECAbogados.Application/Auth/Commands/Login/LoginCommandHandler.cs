@@ -18,6 +18,12 @@ public class LoginCommandHandler(
             throw new UnauthorizedAccessException("Credenciales inválidas.");
         }
 
+        if (!usuario.Activo)
+        {
+            // Mismo mensaje que credenciales inválidas: no revelar que la cuenta existe pero está desactivada.
+            throw new UnauthorizedAccessException("Credenciales inválidas.");
+        }
+
         var token = jwtTokenGenerator.GenerateToken(usuario);
 
         return new LoginResponse(token, usuario.Nombre, usuario.Email, usuario.Rol);

@@ -18,6 +18,7 @@ public record CasoDetalleDto(
     DateTime FechaApertura,
     string? Notas,
     string? TokenAcceso,
+    DateTime? TokenGeneradoEn,
     IReadOnlyList<CitaDto> Citas,
     IReadOnlyList<DocumentoDto> Documentos,
     IReadOnlyList<ChecklistItemDto> Checklist);

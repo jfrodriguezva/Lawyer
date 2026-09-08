@@ -10,10 +10,19 @@ public class ObtenerCasoPorTokenQueryHandler(
     IChecklistItemRepository checklistItemRepository)
     : IRequestHandler<ObtenerCasoPorTokenQuery, PortalCasoDto?>
 {
+    // Vigencia del enlace mágico del portal: pasado este tiempo, el staff debe
+    // regenerarlo desde el panel (evita un link eternamente válido).
+    private static readonly TimeSpan VigenciaToken = TimeSpan.FromDays(180);
+
     public async Task<PortalCasoDto?> Handle(ObtenerCasoPorTokenQuery request, CancellationToken cancellationToken)
     {
         var caso = await casoRepository.GetByTokenAsync(request.Token);
         if (caso is null)
+        {
+            return null;
+        }
+
+        if (caso.TokenGeneradoEn is null || DateTime.UtcNow - caso.TokenGeneradoEn > VigenciaToken)
         {
             return null;
         }

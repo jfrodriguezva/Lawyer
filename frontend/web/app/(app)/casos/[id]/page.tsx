@@ -14,6 +14,7 @@ import {
   getPlazosPorCaso,
   marcarChecklistItem,
   marcarPlazoCumplido,
+  regenerarTokenCaso,
   registrarPago,
   subirDocumento,
   type CasoDetalle,
@@ -50,6 +51,7 @@ export default function CasoDetailPage() {
   const [updatingEstatus, setUpdatingEstatus] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [copiado, setCopiado] = useState(false);
+  const [regenerando, setRegenerando] = useState(false);
 
   const [plazoDescripcion, setPlazoDescripcion] = useState("");
   const [plazoFecha, setPlazoFecha] = useState("");
@@ -190,6 +192,20 @@ export default function CasoDetailPage() {
       setCopiado(true);
       setTimeout(() => setCopiado(false), 2000);
     });
+  }
+
+  async function handleRegenerarLink() {
+    if (!caso) return;
+    if (!window.confirm("El enlace anterior dejará de funcionar de inmediato. ¿Continuar?")) return;
+    setRegenerando(true);
+    try {
+      const { token } = await regenerarTokenCaso(caso.id);
+      setCaso({ ...caso, tokenAcceso: token, tokenGeneradoEn: new Date().toISOString() });
+    } catch {
+      setError("No se pudo regenerar el enlace.");
+    } finally {
+      setRegenerando(false);
+    }
   }
 
   if (loading) {
@@ -479,12 +495,26 @@ export default function CasoDetailPage() {
               <p className="mt-2 text-xs leading-relaxed text-brand-creamSoft">
                 Comparte este enlace por WhatsApp para que el cliente vea el estatus de su caso sin necesidad de cuenta.
               </p>
+              {caso.tokenGeneradoEn && (
+                <p className="mt-2 text-[11px] text-brand-creamSoft/70">
+                  Generado el {new Date(caso.tokenGeneradoEn).toLocaleDateString("es-MX")} · vigente 180 días
+                </p>
+              )}
               <button
                 onClick={handleCopiarLink}
                 className="mt-4 w-full border border-brand-gold px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-brand-gold transition-colors hover:bg-brand-gold hover:text-brand-ink"
               >
                 {copiado ? "¡Copiado!" : "Copiar enlace"}
               </button>
+              {isAdmin && (
+                <button
+                  onClick={handleRegenerarLink}
+                  disabled={regenerando}
+                  className="mt-2 w-full border border-brand-line px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-brand-creamSoft transition-colors hover:border-brand-goldDeep hover:text-brand-goldDeep disabled:opacity-60"
+                >
+                  {regenerando ? "Regenerando…" : "Regenerar enlace"}
+                </button>
+              )}
             </div>
           )}
         </section>

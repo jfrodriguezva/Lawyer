@@ -4,4 +4,5 @@ public record UsuarioDto(
     int Id,
     string Email,
     string Nombre,
-    string Rol);
+    string Rol,
+    bool Activo);

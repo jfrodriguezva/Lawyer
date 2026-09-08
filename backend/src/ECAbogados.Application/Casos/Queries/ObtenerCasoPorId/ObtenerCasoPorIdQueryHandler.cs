@@ -44,6 +44,7 @@ public class ObtenerCasoPorIdQueryHandler(
             caso.FechaApertura,
             caso.Notas,
             caso.TokenAcceso,
+            caso.TokenGeneradoEn,
             citasDelCaso,
             documentosDelCaso,
             checklistDelCaso);

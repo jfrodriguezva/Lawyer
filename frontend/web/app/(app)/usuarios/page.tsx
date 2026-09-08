@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { crearUsuario, getUsuarios, type Usuario } from "@/lib/api";
+import { cambiarEstatusUsuario, crearUsuario, getUsuarios, type Usuario } from "@/lib/api";
+import { getCookie } from "@/lib/cookies";
 
 export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [miCorreo, setMiCorreo] = useState<string | null>(null);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,6 +25,28 @@ export default function UsuariosPage() {
   }
 
   useEffect(load, []);
+
+  useEffect(() => {
+    const raw = getCookie("ec_user");
+    if (raw) {
+      try {
+        setMiCorreo(JSON.parse(raw).email ?? null);
+      } catch {
+        // ignore malformed cookie
+      }
+    }
+  }, []);
+
+  async function handleToggleActivo(usuario: Usuario) {
+    try {
+      await cambiarEstatusUsuario(usuario.id, !usuario.activo);
+      setUsuarios((prev) =>
+        prev.map((u) => (u.id === usuario.id ? { ...u, activo: !usuario.activo } : u))
+      );
+    } catch {
+      setError("No se pudo actualizar el estatus del usuario.");
+    }
+  }
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
@@ -118,23 +142,39 @@ export default function UsuariosPage() {
       </form>
 
       <div className="mt-8 border border-brand-line">
-        <div className="grid grid-cols-[2fr_2fr_1fr] gap-4 border-b border-brand-line px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+        <div className="grid grid-cols-[2fr_2fr_1fr_1fr_auto] gap-4 border-b border-brand-line px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
           <span>Nombre</span>
           <span>Correo</span>
           <span>Rol</span>
+          <span>Estatus</span>
+          <span>Acciones</span>
         </div>
         {loading && <p className="px-5 py-6 text-sm text-brand-creamSoft">Cargando…</p>}
         {!loading &&
-          usuarios.map((u) => (
-            <div
-              key={u.id}
-              className="grid grid-cols-[2fr_2fr_1fr] items-center gap-4 border-b border-brand-line px-5 py-4 text-sm text-brand-cream last:border-b-0"
-            >
-              <span className="font-medium">{u.nombre}</span>
-              <span className="text-brand-creamSoft">{u.email}</span>
-              <span className="text-brand-creamSoft">{u.rol}</span>
-            </div>
-          ))}
+          usuarios.map((u) => {
+            const esMiCuenta = u.email === miCorreo;
+            return (
+              <div
+                key={u.id}
+                className="grid grid-cols-[2fr_2fr_1fr_1fr_auto] items-center gap-4 border-b border-brand-line px-5 py-4 text-sm text-brand-cream last:border-b-0"
+              >
+                <span className="font-medium">{u.nombre}</span>
+                <span className="text-brand-creamSoft">{u.email}</span>
+                <span className="text-brand-creamSoft">{u.rol}</span>
+                <span className={u.activo ? "text-brand-gold" : "text-brand-creamSoft/60"}>
+                  {u.activo ? "Activo" : "Desactivado"}
+                </span>
+                <button
+                  onClick={() => handleToggleActivo(u)}
+                  disabled={esMiCuenta && u.activo}
+                  title={esMiCuenta && u.activo ? "No puedes desactivar tu propia cuenta" : undefined}
+                  className="border border-brand-line px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-brand-creamSoft transition-colors hover:border-brand-gold hover:text-brand-gold disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {u.activo ? "Desactivar" : "Activar"}
+                </button>
+              </div>
+            );
+          })}
       </div>
     </div>
   );

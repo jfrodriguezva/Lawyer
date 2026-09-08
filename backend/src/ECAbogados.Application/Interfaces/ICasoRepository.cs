@@ -9,4 +9,5 @@ public interface ICasoRepository
     Task<Caso?> GetByTokenAsync(string token);
     Task<int> CreateAsync(Caso caso);
     Task UpdateAsync(Caso caso);
+    Task<string> RegenerarTokenAsync(int id);
 }

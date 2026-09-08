@@ -50,9 +50,11 @@ Base: `/api`
 | | `POST /pagos` | JWT (**Administrador**) | Registrar pago |
 | Usuarios | `GET /usuarios` | JWT (**Administrador**) | Listar personal |
 | | `POST /usuarios` | JWT (**Administrador**) | Alta de personal (Asistente/Administrador) |
-| Portal | `GET /portal/{token}` | Anónimo | Datos del caso vía enlace mágico |
+| Portal | `GET /portal/{token}` | Anónimo | Datos del caso vía enlace mágico (expira a los 180 días) |
 | | `POST /portal/{token}/documentos` | Anónimo | Subida de documento por el cliente |
 | Casos | `PATCH /casos/checklist/{itemId}` | JWT | Marcar requisito del checklist |
+| | `POST /casos/{id}/regenerar-token` | JWT (**Administrador**) | Invalida el enlace del portal actual y genera uno nuevo |
+| Usuarios | `PATCH /usuarios/{id}/estatus` | JWT (**Administrador**) | Activar/desactivar una cuenta de personal |
 
 Swagger UI disponible en `http://localhost:5080/swagger`.
 
@@ -79,7 +81,9 @@ Configura también `Notificaciones:StaffEmail` con el correo del despacho que de
 
 ## 4.4 Portal del cliente
 
-Cada caso genera un `TokenAcceso` (GUID) al crearse. El link `{sitio}/portal/{token}` (sin login) muestra estatus, checklist y documentos del caso, y permite subir nuevos documentos. Está pensado para compartirse por WhatsApp; no tiene expiración ni revocación en esta primera versión — considerarlo antes de un uso con datos muy sensibles.
+Cada caso genera un `TokenAcceso` (GUID) al crearse. El link `{sitio}/portal/{token}` (sin login) muestra estatus, checklist y documentos del caso, y permite subir nuevos documentos. Está pensado para compartirse por WhatsApp.
+
+El enlace **expira a los 180 días** de generado (`ObtenerCasoPorTokenQueryHandler`, constante `VigenciaToken`): pasado ese tiempo el portal responde como si el caso no existiera. El botón "Regenerar enlace" en `/casos/{id}` (solo `Administrador`) invalida el link anterior de inmediato y genera uno nuevo — útil también si el enlace se compartió por error.
 
 ## 4.5 Mediador propio (sin MediatR)
 
@@ -91,11 +95,21 @@ El proyecto usaba **MediatR 14.2.0**, que a partir de cierto release requiere li
 
 El registro de handlers es manual y explícito en `ECAbogados.Application/DependencyInjection.cs`: escanea el propio ensamblado de Application buscando clases que implementen `IRequestHandler<>`/`IRequestHandler<,>` y las da de alta contra su interfaz — sin ninguna librería de terceros ni dependencia de licencia. Todos los Commands, Queries, Handlers y Controllers existentes siguen igual (solo cambió el `using`, de `MediatR` a `ECAbogados.Application.Mediation`); el comportamiento es idéntico y fue verificado end-to-end (login, CRUD de casos con checklist, plazos, pagos, usuarios, portal por token, restricciones de rol).
 
+## 4.6 Activar/desactivar personal
+
+`Usuarios.Activo` (BIT, default `1`). Un login con `Activo = 0` responde igual que credenciales inválidas (no revela que la cuenta existe). `PATCH /usuarios/{id}/estatus` (solo `Administrador`) activa o desactiva; el propio controller bloquea que un administrador se desactive a sí mismo (comparando el `id` contra el `ClaimTypes.NameIdentifier` del JWT).
+
+## 4.7 Pruebas automatizadas y CI
+
+- `backend/tests/ECAbogados.Application.Tests`: proyecto xUnit con **fakes escritos a mano** (sin Moq/NSubstitute) para los repositorios — mismo espíritu "manual" que el mediador propio. Cubre `LoginCommandHandler` (éxito, password incorrecto, usuario inactivo), `CrearCasoCommandHandler` (checklist auto-generado), `CambiarEstatusCasoCommandHandler`, `CrearUsuarioCommandHandler` (email duplicado) y el propio `Sender`/registro de `AddApplication()`. Correr con `dotnet test backend/ECAbogados.sln`.
+- `.github/workflows/ci.yml`: GitHub Actions (gratis en repos públicos) — build + test del backend y lint + build del frontend en cada push/PR a `main`. No requiere SQL Server real (tests unitarios contra fakes en memoria).
+
 ## 4. Autenticación
 
-- JWT Bearer emitido en `/auth/login` tras verificar la contraseña con **BCrypt** contra `Usuarios.PasswordHash`.
-- Configuración en `backend/src/ECAbogados.Api/appsettings.json`: `Jwt:Secret`, `Issuer`, `Audience`, `ExpiryMinutes` (480 min = 8 h).
-- ⚠️ El secreto de desarrollo está en texto plano en el repo — **debe reemplazarse por un valor seguro fuera del control de versiones antes de producción** (variable de entorno o secret manager).
+- JWT Bearer emitido en `/auth/login` tras verificar la contraseña con **BCrypt** contra `Usuarios.PasswordHash`, y que la cuenta esté `Activo`.
+- Configuración en `backend/src/ECAbogados.Api/appsettings.json`: `Jwt:Issuer`, `Audience`, `ExpiryMinutes` (480 min = 8 h). **`Jwt:Secret` ya no se commitea** (queda `""` en el repo); `Program.cs` falla explícitamente al arrancar si no hay un valor real.
+  - **Desarrollo**: `dotnet user-secrets set "Jwt:Secret" "<valor-aleatorio>"` desde `backend/src/ECAbogados.Api` (ya configurado en esta máquina; cada desarrollador nuevo debe correrlo una vez).
+  - **Cualquier otro ambiente**: variable de entorno `Jwt__Secret` (doble guion bajo, convención de ASP.NET Core para configuración anidada).
 - El frontend guarda el token en la cookie `ec_token` y lo envía como `Authorization: Bearer <token>` en cada request (`frontend/web/lib/api.ts`).
 - El guard de rutas del panel (`app/(app)/layout.tsx`) solo verifica la **presencia** de la cookie del lado del cliente; no valida expiración ni firma en el navegador (la API sí la valida en cada request).
 
@@ -126,13 +140,17 @@ La tabla `Documentos` solo referencia `RutaAlmacenamiento`.
 frontend/web/app/
 ├── page.tsx                → landing pública
 ├── login/page.tsx          → login
+├── portal/[token]/page.tsx → portal del cliente (enlace mágico, sin login)
+├── servicios/[slug]/page.tsx → landings de servicio (pensión, custodia, etc.)
+├── sitemap.ts / robots.ts  → SEO nativo de Next.js
 └── (app)/                  → grupo de rutas protegidas
     ├── layout.tsx           → guard: redirige a /login si no hay cookie ec_token
     ├── dashboard/page.tsx
     ├── casos/page.tsx
     ├── casos/[id]/page.tsx
     ├── agenda/page.tsx
-    └── mensajes/page.tsx
+    ├── mensajes/page.tsx
+    └── usuarios/page.tsx    → solo Administrador
 ```
 
 - `lib/api.ts`: cliente HTTP centralizado (fetch wrapper), define los tipos TS (`Caso`, `Cita`, `Documento`, `MensajeContacto`), inyecta el JWT y maneja errores (`ApiError`).
@@ -148,15 +166,19 @@ frontend/web/app/
 # 1. Crear la base de datos y datos semilla
 sqlcmd -S localhost -i backend/database/schema.sql
 
-# 2. Levantar la API
+# 2. Configurar el secreto JWT (una sola vez por máquina de desarrollo)
 cd backend/src/ECAbogados.Api
+dotnet user-secrets init
+dotnet user-secrets set "Jwt:Secret" "<genera-un-valor-aleatorio-largo>"
+
+# 3. Levantar la API
 dotnet run                       # http://localhost:5080
 
-# 3. (Opcional) Levantar el Gateway
+# 4. (Opcional) Levantar el Gateway
 cd backend/src/ECAbogados.Gateway
 dotnet run                       # http://localhost:5000
 
-# 4. Levantar el frontend
+# 5. Levantar el frontend
 cd frontend/web
 npm install
 npm run dev                      # http://localhost:3000
@@ -166,10 +188,7 @@ CORS está configurado en la API y el Gateway solo para permitir `http://localho
 
 ## 8. Limitaciones técnicas conocidas
 
-- Secreto JWT hardcodeado en `appsettings.json` (solo válido para desarrollo).
-- Bajas de personal aún requieren acceso directo a SQL (solo hay alta y listado vía API).
-- No hay pruebas automatizadas (unitarias/integración) en el repo.
-- No hay pipeline de CI/CD configurado.
-- Almacenamiento de documentos en disco local del servidor de la API (no apto para múltiples instancias o despliegue sin volumen persistente compartido).
+- Almacenamiento de documentos en disco local del servidor de la API — no apto para múltiples instancias sin un volumen persistente compartido (relevante al planear el despliegue a Azure: considerar Blob Storage).
 - Sin auditoría/histórico de cambios sobre casos, citas o documentos.
-- El enlace del portal de cliente no expira ni se puede revocar en esta versión.
+- Edición de datos de un usuario (nombre, rol, contraseña) no expuesta vía API — solo alta, listado y activar/desactivar. Cambios de esos campos siguen requiriendo SQL directo.
+- Cobertura de pruebas automatizadas es representativa, no exhaustiva (ver 4.7).

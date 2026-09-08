@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using ECAbogados.Application.Usuarios.Commands.CambiarEstatusUsuario;
 using ECAbogados.Application.Usuarios.Commands.CrearUsuario;
 using ECAbogados.Application.Usuarios.Queries.ListarUsuarios;
 using ECAbogados.Application.Mediation;
@@ -32,4 +34,19 @@ public class UsuariosController(ISender sender) : ControllerBase
             return Conflict(new { message = ex.Message });
         }
     }
+
+    [HttpPatch("{id:int}/estatus")]
+    public async Task<IActionResult> CambiarEstatus(int id, [FromBody] CambiarEstatusUsuarioRequest request)
+    {
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!request.Activo && currentUserId == id.ToString())
+        {
+            return BadRequest(new { message = "No puedes desactivar tu propia cuenta." });
+        }
+
+        await sender.Send(new CambiarEstatusUsuarioCommand(id, request.Activo));
+        return NoContent();
+    }
 }
+
+public record CambiarEstatusUsuarioRequest(bool Activo);

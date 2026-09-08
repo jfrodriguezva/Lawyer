@@ -47,7 +47,7 @@ export const SERVICIOS: ServicioContenido[] = [
     ],
     proceso: [
       { numero: "01", titulo: "Asesoría inicial", texto: "Evaluamos la situación actual de convivencia y viabilidad del caso." },
-      { numero: "02", titulo: "Presentación de la demanda", texto: "Preparamos el expediente y lo presentamos ante el juzgado familiar." },
+      { numero: "02", titulo: "Presentación de la demanda", texto: "Reunimos la documentación necesaria y presentamos la demanda ante el juzgado familiar." },
       { numero: "03", titulo: "Resolución", texto: "Te acompañamos en cada audiencia hasta la sentencia." },
     ],
   },
@@ -62,7 +62,7 @@ export const SERVICIOS: ServicioContenido[] = [
       { titulo: "Acuerdos claros", texto: "Proponemos calendarios de convivencia realistas y respetuosos." },
       { titulo: "Resolución de conflictos", texto: "Te apoyamos si el régimen actual no se está respetando." },
       { titulo: "Rapidez", texto: "Buscamos la vía más ágil posible para resolver tu situación." },
-      { titulo: "Acompañamiento total", texto: "Seguimiento desde la solicitud hasta que el acuerdo esté vigente." },
+      { titulo: "Seguimiento cercano", texto: "Te acompañamos desde la solicitud hasta que el acuerdo quede vigente." },
     ],
     proceso: [
       { numero: "01", titulo: "Asesoría inicial", texto: "Revisamos tu situación actual de convivencia con tus hijas e hijos." },

@@ -12,7 +12,7 @@ public class ListarUsuariosQueryHandler(IUsuarioRepository usuarioRepository)
         var usuarios = await usuarioRepository.GetAllAsync();
 
         return usuarios
-            .Select(u => new UsuarioDto(u.Id, u.Email, u.Nombre, u.Rol))
+            .Select(u => new UsuarioDto(u.Id, u.Email, u.Nombre, u.Rol, u.Activo))
             .ToList();
     }
 }
