@@ -1,3 +1,4 @@
+using ECAbogados.Application.Documentos;
 using ECAbogados.Application.Documentos.Commands.SubirDocumento;
 using ECAbogados.Application.Documentos.Queries.ListarDocumentosPorCaso;
 using ECAbogados.Application.Mediation;
@@ -28,6 +29,16 @@ public class DocumentosController(ISender sender, IWebHostEnvironment environmen
         if (file.Length == 0)
         {
             return BadRequest(new { message = "El archivo está vacío." });
+        }
+
+        if (!TiposPermitidos.EsExtensionPermitida(file.FileName))
+        {
+            return BadRequest(new { message = $"Tipo de archivo no permitido. Extensiones válidas: {TiposPermitidos.ExtensionesPermitidasTexto}." });
+        }
+
+        if (file.Length > TiposPermitidos.TamanoMaximoBytes)
+        {
+            return BadRequest(new { message = "El archivo excede el tamaño máximo permitido (50 MB)." });
         }
 
         var contentRoot = environment.ContentRootPath;

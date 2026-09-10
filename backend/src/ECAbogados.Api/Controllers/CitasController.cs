@@ -5,6 +5,7 @@ using ECAbogados.Domain.Entities;
 using ECAbogados.Application.Mediation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ECAbogados.Api.Controllers;
 
@@ -21,6 +22,7 @@ public class CitasController(ISender sender) : ControllerBase
     }
 
     [AllowAnonymous]
+    [EnableRateLimiting("public")]
     [HttpPost]
     public async Task<IActionResult> Crear([FromBody] CrearCitaCommand command)
     {

@@ -5,6 +5,7 @@ namespace ECAbogados.Application.Interfaces;
 public interface ICasoRepository
 {
     Task<IReadOnlyList<Caso>> GetAllAsync();
+    Task<(IReadOnlyList<Caso> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, string? search);
     Task<Caso?> GetByIdAsync(int id);
     Task<Caso?> GetByTokenAsync(string token);
     Task<int> CreateAsync(Caso caso);

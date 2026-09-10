@@ -1,22 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getMensajesContacto, marcarMensajeAtendido, type MensajeContacto } from "@/lib/api";
+import { getMensajesContactoPaginado, marcarMensajeAtendido, type MensajeContacto } from "@/lib/api";
+
+const PAGE_SIZE = 20;
 
 export default function MensajesPage() {
   const [mensajes, setMensajes] = useState<MensajeContacto[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
     setLoading(true);
-    getMensajesContacto()
-      .then(setMensajes)
+    getMensajesContactoPaginado(page, PAGE_SIZE)
+      .then((res) => {
+        setMensajes(res.items);
+        setTotalCount(res.totalCount);
+      })
       .catch(() => setError("No se pudieron cargar los mensajes."))
       .finally(() => setLoading(false));
   }
 
-  useEffect(load, []);
+  useEffect(load, [page]);
 
   async function handleAtendido(id: number) {
     try {
@@ -29,6 +36,7 @@ export default function MensajesPage() {
 
   const pendientes = mensajes.filter((m) => !m.atendido);
   const atendidos = mensajes.filter((m) => m.atendido);
+  const totalPaginas = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   return (
     <div>
@@ -74,6 +82,30 @@ export default function MensajesPage() {
             {atendidos.map((m) => (
               <MensajeCard key={m.id} mensaje={m} onAtendido={handleAtendido} />
             ))}
+          </div>
+        </div>
+      )}
+
+      {!loading && totalCount > 0 && (
+        <div className="mt-8 flex items-center justify-between text-xs text-brand-creamSoft">
+          <span>
+            {totalCount} mensaje{totalCount === 1 ? "" : "s"} en total · página {page} de {totalPaginas}
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="border border-brand-line px-3 py-1.5 uppercase tracking-widest hover:border-brand-gold hover:text-brand-gold disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Anterior
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPaginas, p + 1))}
+              disabled={page >= totalPaginas}
+              className="border border-brand-line px-3 py-1.5 uppercase tracking-widest hover:border-brand-gold hover:text-brand-gold disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Siguiente
+            </button>
           </div>
         </div>
       )}

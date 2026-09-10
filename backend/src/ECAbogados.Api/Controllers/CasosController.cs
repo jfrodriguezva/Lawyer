@@ -4,6 +4,7 @@ using ECAbogados.Application.Casos.Commands.CrearCaso;
 using ECAbogados.Application.Casos.Commands.MarcarChecklistItem;
 using ECAbogados.Application.Casos.Commands.RegenerarTokenCaso;
 using ECAbogados.Application.Casos.Queries.ListarCasos;
+using ECAbogados.Application.Casos.Queries.ListarCasosPaginado;
 using ECAbogados.Application.Casos.Queries.ObtenerCasoPorId;
 using ECAbogados.Domain.Entities;
 using ECAbogados.Application.Mediation;
@@ -22,6 +23,15 @@ public class CasosController(ISender sender) : ControllerBase
     {
         var casos = await sender.Send(new ListarCasosQuery());
         return Ok(casos);
+    }
+
+    // Endpoint paginado para la lista de expedientes (el `Listar()` de arriba sigue
+    // devolviendo todo sin paginar: lo usa el dashboard para calcular sus KPIs).
+    [HttpGet("pagina")]
+    public async Task<IActionResult> ListarPaginado([FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] string? search = null)
+    {
+        var resultado = await sender.Send(new ListarCasosPaginadoQuery(page, pageSize, search));
+        return Ok(resultado);
     }
 
     [HttpGet("{id:int}")]

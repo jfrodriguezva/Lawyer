@@ -1,9 +1,11 @@
 using ECAbogados.Application.Casos.Queries.ObtenerCasoPorToken;
+using ECAbogados.Application.Documentos;
 using ECAbogados.Application.Documentos.Commands.SubirDocumento;
 using ECAbogados.Application.Documentos.Queries.ListarDocumentosPorCaso;
 using ECAbogados.Application.Mediation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ECAbogados.Api.Controllers;
 
@@ -12,6 +14,7 @@ namespace ECAbogados.Api.Controllers;
 /// caso), sin registro ni contraseña. El staff comparte el link por WhatsApp/correo.
 /// </summary>
 [AllowAnonymous]
+[EnableRateLimiting("public")]
 [ApiController]
 [Route("api/[controller]")]
 public class PortalController(ISender sender, IWebHostEnvironment environment) : ControllerBase
@@ -37,6 +40,16 @@ public class PortalController(ISender sender, IWebHostEnvironment environment) :
         if (file.Length == 0)
         {
             return BadRequest(new { message = "El archivo está vacío." });
+        }
+
+        if (!TiposPermitidos.EsExtensionPermitida(file.FileName))
+        {
+            return BadRequest(new { message = $"Tipo de archivo no permitido. Extensiones válidas: {TiposPermitidos.ExtensionesPermitidasTexto}." });
+        }
+
+        if (file.Length > TiposPermitidos.TamanoMaximoBytes)
+        {
+            return BadRequest(new { message = "El archivo excede el tamaño máximo permitido (50 MB)." });
         }
 
         var contentRoot = environment.ContentRootPath;

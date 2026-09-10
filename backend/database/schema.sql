@@ -213,6 +213,32 @@ BEGIN
 END
 GO
 
+-- Bloqueo de cuenta tras intentos fallidos de login
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Usuarios') AND name = 'IntentosFallidos')
+BEGIN
+    ALTER TABLE dbo.Usuarios ADD IntentosFallidos INT NOT NULL DEFAULT 0;
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Usuarios') AND name = 'BloqueadoHasta')
+BEGIN
+    ALTER TABLE dbo.Usuarios ADD BloqueadoHasta DATETIME2 NULL;
+END
+GO
+
+-- Recuperación de contraseña (enlace enviado por correo, sin exponer si el correo existe)
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Usuarios') AND name = 'ResetToken')
+BEGIN
+    ALTER TABLE dbo.Usuarios ADD ResetToken NVARCHAR(64) NULL;
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Usuarios') AND name = 'ResetTokenExpira')
+BEGIN
+    ALTER TABLE dbo.Usuarios ADD ResetTokenExpira DATETIME2 NULL;
+END
+GO
+
 -- Historial de cambios (auditoría) sobre casos, citas y documentos
 IF OBJECT_ID(N'dbo.Auditoria', N'U') IS NULL
 BEGIN

@@ -56,6 +56,7 @@ export default function AgendaPage() {
   const [saving, setSaving] = useState(false);
   const [seleccionada, setSeleccionada] = useState<Cita | null>(null);
   const [view, setView] = useState<View>("week");
+  const [busqueda, setBusqueda] = useState("");
 
   const [nombreCliente, setNombreCliente] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -72,14 +73,24 @@ export default function AgendaPage() {
 
   useEffect(load, []);
 
+  const citasFiltradas = useMemo(() => {
+    const termino = busqueda.trim().toLowerCase();
+    if (!termino) return citas;
+    return citas.filter(
+      (c) =>
+        c.nombreCliente.toLowerCase().includes(termino) ||
+        c.telefono.toLowerCase().includes(termino)
+    );
+  }, [citas, busqueda]);
+
   const eventos: CitaEvento[] = useMemo(
     () =>
-      citas.map((c) => {
+      citasFiltradas.map((c) => {
         const start = new Date(c.fechaHora);
         const end = new Date(start.getTime() + 60 * 60 * 1000);
         return { resource: c, title: c.nombreCliente, start, end };
       }),
-    [citas]
+    [citasFiltradas]
   );
 
   const eventPropGetter = useCallback(
@@ -228,6 +239,17 @@ export default function AgendaPage() {
         </form>
 
         <div className="lg:col-span-2">
+          <label htmlFor="buscar-cita" className="sr-only">
+            Buscar cita por nombre o teléfono
+          </label>
+          <input
+            id="buscar-cita"
+            type="search"
+            placeholder="Buscar por nombre o teléfono…"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="mb-4 w-full max-w-sm border border-brand-line bg-transparent px-4 py-2.5 text-sm text-brand-cream outline-none focus:border-brand-gold"
+          />
           {loading ? (
             <p className="text-sm text-brand-creamSoft">Cargando citas…</p>
           ) : (

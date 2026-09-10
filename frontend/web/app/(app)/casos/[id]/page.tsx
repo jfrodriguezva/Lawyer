@@ -281,20 +281,22 @@ export default function CasoDetailPage() {
               </h2>
               <ul className="mt-4 space-y-2">
                 {caso.checklist.map((item) => (
-                  <li key={item.id} className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={item.completado}
-                      onChange={(e) => handleChecklistToggle(item.id, e.target.checked)}
-                      className="h-4 w-4 accent-[var(--brand-gold,#c9a24a)]"
-                    />
-                    <span
-                      className={`text-sm ${
-                        item.completado ? "text-brand-creamSoft line-through" : "text-brand-cream"
-                      }`}
-                    >
-                      {item.descripcion}
-                    </span>
+                  <li key={item.id}>
+                    <label className="flex cursor-pointer items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={item.completado}
+                        onChange={(e) => handleChecklistToggle(item.id, e.target.checked)}
+                        className="h-4 w-4 accent-[var(--brand-gold,#c9a24a)]"
+                      />
+                      <span
+                        className={`text-sm ${
+                          item.completado ? "text-brand-creamSoft line-through" : "text-brand-cream"
+                        }`}
+                      >
+                        {item.descripcion}
+                      </span>
+                    </label>
                   </li>
                 ))}
               </ul>
@@ -382,7 +384,7 @@ export default function CasoDetailPage() {
                       vencido ? "border-red-500/50 bg-red-500/10" : "border-brand-line"
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <label className="flex cursor-pointer items-center gap-3">
                       <input
                         type="checkbox"
                         checked={p.cumplido}
@@ -402,7 +404,7 @@ export default function CasoDetailPage() {
                           {vencido ? " · vencido" : ""}
                         </p>
                       </div>
-                    </div>
+                    </label>
                   </li>
                 );
               })}

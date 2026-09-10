@@ -95,6 +95,23 @@ El usuario pidió avanzar los pendientes 2, 3, 4, 5 y 7 de la lista anterior:
 
 **Nota de una falsa alarma durante las pruebas:** un curl con el nombre "García" (acento) dio 400 por un problema de codificación de la propia terminal bash de Windows al pasar `-d`, no un bug real — se confirmó reintentando con `--data-binary @archivo.json` en UTF-8. Si algo similar vuelve a pasar con acentos/ñ en pruebas manuales, sospechar primero de la codificación de la shell antes que del código.
 
+## Seguridad, escalabilidad, UX y tests (2026-09-10, plan "prancy-inventing-pinwheel" reutilizado de nuevo)
+
+El usuario pidió "mejora todo, menos el de azure, el de smtp" sobre una lista de pendientes que incluía: bloqueo de login, rate limiting, validación de archivos, "olvidé mi contraseña", CORS configurable, paginación/búsqueda, respaldos, accesibilidad/responsive y más cobertura de tests. Se implementó todo el batch (9 puntos), verificado con build + 27/27 tests en verde + smoke tests reales vía curl/PowerShell. Detalle técnico completo en `docs/MANUAL_TECNICO.md` (secciones 4.9 a 4.15) y funcional en `docs/MANUAL_USUARIO.md`.
+
+Resumen de lo agregado:
+- **Bloqueo de cuenta**: 5 intentos fallidos → 15 min de bloqueo (`Usuarios.IntentosFallidos`/`BloqueadoHasta`). Verificado en vivo: 5 logins fallidos + un 6º intento con la contraseña correcta → sigue rechazado.
+- **Rate limiting** (`Microsoft.AspNetCore.RateLimiting`, built-in del SDK, sin paquetes): 5/min en `/auth/login`, 20/min en endpoints públicos (citas, contacto, portal). Verificado en vivo: la propia prueba de bloqueo disparó el 429 de la política `auth` antes que el bloqueo de cuenta, y 25 `POST /citas` seguidos dispararon 429 a partir del request 21.
+- **Validación de archivos**: whitelist de extensiones + 50 MB máximo, verificada tanto en el validador (FluentValidation, corre vía el `Sender`) como en los controllers **antes** de escribir a disco (evita que un archivo inválido quede guardado). Verificado en vivo: subir un `.exe` → 400, sin crear el archivo.
+- **"Olvidé mi contraseña"** self-service, reutilizando el `IEmailSender` ya existente (sin tocar configuración de SMTP real): `POST /auth/olvide-password` + `POST /auth/restablecer-password`, página pública nueva `/restablecer-password/[token]`. Verificado en vivo end-to-end: se generó el enlace (visible en el log de la API porque no hay SMTP configurado), se restableció la contraseña con el token y se volvió a iniciar sesión con la nueva.
+- **CORS configurable** vía `Cors:AllowedOrigins` en `appsettings.json` (API y Gateway) en vez de hardcodeado.
+- **Paginación y búsqueda**: `GET /casos/pagina` y `GET /contacto/pagina` (nuevos, con `OFFSET/FETCH`); los endpoints sin paginar se conservaron intactos porque el Dashboard depende de ellos para las KPIs totales. Búsqueda client-side en Agenda (calendario, no se pagina). Verificado en vivo con curl.
+- **Respaldos gratis**: `backend/scripts/backup.ps1` (respalda la BD + comprime `App_Data/documentos`, con limpieza de respaldos >30 días), pensado para el Programador de tareas de Windows. **Hallazgo:** el `sqlcmd` clásico de Windows (Client SDK ODBC 17) tiene un bug real donde `-v Variable="C:\ruta"` se come la letra de unidad; se resolvió generando el `BACKUP DATABASE` como `-Q` directo en vez de usar sustitución de variables. Verificado ejecutando el script real: generó un `.bak` de ~5.8 MB sin error.
+- **Accesibilidad/responsive**: `:focus-visible` dorado global (antes dependía del outline default del navegador, poco visible en el tema oscuro), checklist del caso con `<label>` envolvente (clic en el texto también marca el checkbox), tabla de usuarios con `overflow-x-auto` para no romper en móvil.
+- **Cobertura de tests ampliada**: de 13 a 27 pruebas (bloqueo de login, validador de documentos, token de portal expirado, ambos handlers de reset de contraseña).
+
+Este batch aún no se ha comiteado/pusheado — pendiente al momento de escribir esta nota (ver `git status` para confirmar el estado real antes de asumir que ya se subió).
+
 ## Próximos pasos sugeridos (pendientes, no iniciados)
 
 Ninguno de estos ha sido solicitado explícitamente todavía:

@@ -48,4 +48,23 @@ public class FakeUsuarioRepository : IUsuarioRepository
         _usuarios.First(u => u.Id == id).PasswordHash = passwordHash;
         return Task.CompletedTask;
     }
+
+    public Task UpdateSeguridadLoginAsync(int id, int intentosFallidos, DateTime? bloqueadoHasta)
+    {
+        var usuario = _usuarios.First(u => u.Id == id);
+        usuario.IntentosFallidos = intentosFallidos;
+        usuario.BloqueadoHasta = bloqueadoHasta;
+        return Task.CompletedTask;
+    }
+
+    public Task SetResetTokenAsync(int id, string? resetToken, DateTime? resetTokenExpira)
+    {
+        var usuario = _usuarios.First(u => u.Id == id);
+        usuario.ResetToken = resetToken;
+        usuario.ResetTokenExpira = resetTokenExpira;
+        return Task.CompletedTask;
+    }
+
+    public Task<Usuario?> GetByResetTokenAsync(string resetToken) =>
+        Task.FromResult(_usuarios.FirstOrDefault(u => u.ResetToken == resetToken));
 }

@@ -23,6 +23,37 @@ public class CasoRepository(SqlConnectionFactory connectionFactory) : ICasoRepos
         });
     }
 
+    public async Task<(IReadOnlyList<Caso> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, string? search)
+    {
+        return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            var tieneFiltro = !string.IsNullOrWhiteSpace(search);
+            var filtro = tieneFiltro ? $"%{search}%" : null;
+
+            var sql = $"""
+                SELECT Id, ClienteNombre, Tipo, Estatus, FechaApertura, Notas, TokenAcceso, TokenGeneradoEn
+                FROM dbo.Casos
+                {(tieneFiltro ? "WHERE ClienteNombre LIKE @Filtro OR Tipo LIKE @Filtro" : "")}
+                ORDER BY FechaApertura DESC
+                OFFSET @Skip ROWS FETCH NEXT @PageSize ROWS ONLY
+                """;
+
+            var countSql = $"""
+                SELECT COUNT(*) FROM dbo.Casos
+                {(tieneFiltro ? "WHERE ClienteNombre LIKE @Filtro OR Tipo LIKE @Filtro" : "")}
+                """;
+
+            var parametros = new { Filtro = filtro, Skip = (page - 1) * pageSize, PageSize = pageSize };
+
+            var rows = await connection.QueryAsync<CasoRow>(sql, parametros);
+            var total = await connection.ExecuteScalarAsync<int>(countSql, parametros);
+
+            return ((IReadOnlyList<Caso>)rows.Select(MapToEntity).ToList(), total);
+        });
+    }
+
     public async Task<Caso?> GetByIdAsync(int id)
     {
         return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>

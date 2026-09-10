@@ -29,7 +29,10 @@ Base: `/api`
 | Recurso | Método/Ruta | Auth | Descripción |
 |---|---|---|---|
 | Auth | `POST /auth/login` | Anónimo | Devuelve JWT + datos de usuario |
-| Casos | `GET /casos` | JWT | Listar |
+| | `POST /auth/olvide-password` | Anónimo | Solicita enlace de restablecimiento (siempre responde 200, no revela si el correo existe) |
+| | `POST /auth/restablecer-password` | Anónimo | Establece nueva contraseña a partir del token del enlace |
+| Casos | `GET /casos` | JWT | Listar (todos, usado por el Dashboard para KPIs) |
+| | `GET /casos/pagina?page=&pageSize=&search=` | JWT | Listar paginado, con búsqueda opcional por cliente/tipo |
 | | `GET /casos/{id}` | JWT | Detalle |
 | | `POST /casos` | JWT | Crear |
 | | `PUT /casos/{id}` | JWT | Actualizar cliente/tipo/notas |
@@ -38,9 +41,10 @@ Base: `/api`
 | | `POST /citas` | Anónimo | Crear (usado por el sitio público) |
 | | `PATCH /citas/{id}/estatus` | JWT | Confirmar/cancelar |
 | Documentos | `GET /documentos/caso/{casoId}` | JWT | Listar por caso |
-| | `POST /documentos` (multipart, máx. 50 MB) | JWT | Subir archivo |
+| | `POST /documentos` (multipart, máx. 50 MB) | JWT | Subir archivo (extensión y tamaño se validan antes de escribir a disco — ver 4.15) |
 | Contacto | `POST /contacto` | Anónimo | Crear mensaje (formulario público) |
-| | `GET /contacto` | JWT | Listar mensajes |
+| | `GET /contacto` | JWT | Listar mensajes (todos) |
+| | `GET /contacto/pagina?page=&pageSize=` | JWT | Listar paginado |
 | | `PATCH /contacto/{id}/atendido` | JWT | Marcar atendido |
 
 | Plazos | `GET /plazos/caso/{casoId}` | JWT | Listar plazos/audiencias de un caso |
@@ -103,6 +107,49 @@ El registro de handlers es manual y explícito en `ECAbogados.Application/Depend
 
 `PUT /usuarios/{id}` edita nombre, rol y opcionalmente la contraseña (se re-hashea con `IPasswordHasher`). Mismo patrón de auto-bloqueo: un usuario puede editar su propio nombre/contraseña, pero no su propio `Rol` (evita quedarse sin administradores por accidente) — se compara `request.Rol` contra el claim `ClaimTypes.Role` del JWT actual.
 
+## 4.9 Bloqueo de cuenta por intentos fallidos
+
+`Usuarios.IntentosFallidos` / `BloqueadoHasta`. `LoginCommandHandler`: cada password incorrecto incrementa el contador; al llegar a 5 intentos, la cuenta queda bloqueada 15 minutos (`BloqueadoHasta = UtcNow + 15min`) y el contador se reinicia a 0. Mientras `BloqueadoHasta` sea futuro, el login se rechaza aunque la contraseña sea correcta, con un mensaje distinto ("cuenta bloqueada temporalmente") al de credenciales inválidas. Un login exitoso limpia ambos campos.
+
+## 4.10 Rate limiting (built-in de .NET, sin paquetes)
+
+`Microsoft.AspNetCore.RateLimiting` (incluido en el SDK, sin NuGet adicional). Dos políticas de ventana fija, particionadas por IP remota, configuradas en `Api/Program.cs`:
+
+| Política | Límite | Aplicada a |
+|---|---|---|
+| `auth` | 5 solicitudes / minuto | `POST /auth/login` |
+| `public` | 20 solicitudes / minuto | `POST /citas`, `POST /contacto`, endpoints de `PortalController` |
+
+Al superar el límite, la API responde `429 Too Many Requests`. Verificado en vivo: 21 `POST /citas` seguidos en menos de un minuto — las primeras se procesan (o rechazan por validación normal) y a partir de la solicitud 21 la respuesta es 429.
+
+## 4.11 Recuperar contraseña (self-service)
+
+Reutiliza `IEmailSender`/`IPasswordResetNotifier` (mismo mecanismo "gratis" que las demás notificaciones — ver 4.2: sin `Smtp:Host` configurado, el enlace solo se registra en el log de la API).
+
+Flujo:
+1. `POST /auth/olvide-password { email }` → si el correo existe y está activo, genera `ResetToken` (GUID) con vigencia de 1 hora (`Usuarios.ResetTokenExpira`) y envía `{Sitio:BaseUrl}/restablecer-password/{token}`. Siempre responde 200 con el mismo mensaje, exista o no la cuenta (no filtra qué correos están registrados).
+2. `POST /auth/restablecer-password { token, nuevaPassword }` → valida que el token exista y no haya expirado; si es válido, re-hashea la contraseña, limpia el token y resetea el bloqueo de login (4.9). Token inválido/expirado → 400.
+
+`appsettings.json`: nueva sección `"Sitio": { "BaseUrl": "http://localhost:3000" }` (usada para construir el enlace). Frontend: `/login` tiene un enlace "¿Olvidaste tu contraseña?" que abre un formulario inline; `/restablecer-password/[token]` es una página pública nueva con el formulario de nueva contraseña.
+
+## 4.12 CORS configurable
+
+`Cors:AllowedOrigins` (array) en `appsettings.json` de la API y del Gateway, en vez de un origen hardcodeado — para producción basta con agregar el dominio real ahí, sin tocar código. Default: `["http://localhost:3000"]`.
+
+## 4.13 Paginación y búsqueda
+
+`Casos` y `MensajesContacto` exponen un endpoint paginado adicional (`GET /casos/pagina`, `GET /contacto/pagina`) que corre `OFFSET/FETCH` + `COUNT(*)` en SQL Server. Los endpoints originales sin paginar (`GET /casos`, `GET /contacto`) **se conservaron intactos** porque el Dashboard depende de ellos para calcular KPIs sobre el total de registros — paginar esa fuente habría corrompido esos conteos. En Casos, `search` filtra por `ClienteNombre`/`Tipo` (`LIKE`). El frontend (`casos/page.tsx`, `mensajes/page.tsx`) agrega controles "Anterior/Siguiente" y, en Casos, un input de búsqueda con debounce. La Agenda no se pagina (es un calendario, se navega por fecha); ahí `agenda/page.tsx` filtra client-side sobre los eventos ya cargados por nombre/teléfono.
+
+## 4.14 Respaldos (gratis, sin servicios externos)
+
+- `backend/database/backup.sql`: referencia del `BACKUP DATABASE` para ejecución manual (usa una variable `$(BackupPath)` de `sqlcmd -v`, pensada para sqlcmd fuera de Windows o versiones donde esa sintaxis funciona correctamente).
+- `backend/scripts/backup.ps1`: script real usado para respaldar. Genera el `BACKUP DATABASE` como `-Q` directo (no `-v`) porque el sqlcmd clásico de Windows (Client SDK ODBC 17, el que trae `sqlcmd -?` → versión 16.0.1000.6) tiene un bug de parseo que se come la letra de unidad (`C:`) cuando el valor de una variable `-v` contiene `unidad:\ruta`. Comprime además `App_Data/documentos` a un `.zip` con el mismo timestamp, y borra respaldos con más de 30 días (parámetro `-DiasRetencion`). Todo se guarda en `backend/backups/` (excluida del repo por `.gitignore`).
+- **Programarlo con el Programador de tareas de Windows** (gratis, sin Azure): `taskschd.msc` → Crear tarea básica → Desencadenador diario (p. ej. 2:00 a.m.) → Acción "Iniciar un programa": programa `powershell.exe`, argumentos `-ExecutionPolicy Bypass -File "C:\ruta\al\repo\backend\scripts\backup.ps1"`. Verificado ejecutándolo manualmente: genera `ECAbogados_<timestamp>.bak` (~5.8 MB con los datos semilla) y limpia respaldos antiguos sin error.
+
+## 4.15 Validación de tipo y tamaño de documentos
+
+`Application/Documentos/TiposPermitidos.cs`: whitelist de extensiones (`.pdf .doc .docx .xls .xlsx .jpg .jpeg .png`) y tamaño máximo de 50 MB, usada tanto en `SubirDocumentoCommandValidator` (defensa a nivel de dominio, corre automáticamente vía el `Sender` — ver 4.5) como directamente en `DocumentosController`/`PortalController` **antes** de escribir el archivo a disco: si solo se validara en el comando, un archivo inválido ya habría quedado guardado en `App_Data/documentos` para cuando el `Sender` lo rechazara. Verificado en vivo: subir un `.exe` responde `400` sin crear el archivo.
+
 ## 4.8 Historial de cambios (auditoría)
 
 Tabla `Auditoria` (Entidad, EntidadId, Accion, Detalle, UsuarioId, UsuarioNombre, Fecha) — insert-only. `ICurrentUserAccessor` (Application) / `CurrentUserAccessor` (Infrastructure, vía `IHttpContextAccessor` — se agregó `FrameworkReference` a `Microsoft.AspNetCore.App` en `ECAbogados.Infrastructure.csproj`, sin costo, es parte del runtime) expone quién hace la solicitud actual leyendo los mismos claims del JWT; si no hay sesión (rutas anónimas: cita pública, subida vía portal), se registra como `"Público (sin sesión)"`.
@@ -111,7 +158,7 @@ Handlers que registran auditoría sobre el caso: crear/actualizar caso, cambiar 
 
 ## 4.7 Pruebas automatizadas y CI
 
-- `backend/tests/ECAbogados.Application.Tests`: proyecto xUnit con **fakes escritos a mano** (sin Moq/NSubstitute) para los repositorios — mismo espíritu "manual" que el mediador propio. Cubre `LoginCommandHandler` (éxito, password incorrecto, usuario inactivo), `CrearCasoCommandHandler` (checklist auto-generado), `CambiarEstatusCasoCommandHandler`, `CrearUsuarioCommandHandler` (email duplicado) y el propio `Sender`/registro de `AddApplication()`. Correr con `dotnet test backend/ECAbogados.sln`.
+- `backend/tests/ECAbogados.Application.Tests`: proyecto xUnit con **fakes escritos a mano** (sin Moq/NSubstitute) para los repositorios — mismo espíritu "manual" que el mediador propio. Cubre `LoginCommandHandler` (éxito, password incorrecto, usuario inactivo, bloqueo al 5º intento fallido, reseteo del contador en login exitoso), `CrearCasoCommandHandler` (checklist auto-generado), `CambiarEstatusCasoCommandHandler`, `CrearUsuarioCommandHandler` (email duplicado), `SubirDocumentoCommandValidator` (extensión no permitida, tamaño máximo), `ObtenerCasoPorTokenQueryHandler` (token expirado/inexistente/vigente), `SolicitarResetPasswordCommandHandler`/`RestablecerPasswordCommandHandler` (no revela si el correo existe, token expirado/inválido) y el propio `Sender`/registro de `AddApplication()`. 27 pruebas en total. Correr con `dotnet test backend/ECAbogados.sln`.
 - `.github/workflows/ci.yml`: GitHub Actions (gratis en repos públicos) — build + test del backend y lint + build del frontend en cada push/PR a `main`. No requiere SQL Server real (tests unitarios contra fakes en memoria).
 
 ## 4. Autenticación
@@ -197,7 +244,7 @@ npm install
 npm run dev                      # http://localhost:3000
 ```
 
-CORS está configurado en la API y el Gateway solo para permitir `http://localhost:3000`.
+CORS está configurado vía `Cors:AllowedOrigins` en `appsettings.json` de la API y el Gateway (default `http://localhost:3000` — ver 4.12).
 
 ## 8. Limitaciones técnicas conocidas
 

@@ -172,7 +172,8 @@ export default function UsuariosPage() {
         </div>
       </form>
 
-      <div className="mt-8 border border-brand-line">
+      <div className="mt-8 overflow-x-auto border border-brand-line">
+        <div className="min-w-[720px]">
         <div className="grid grid-cols-[2fr_2fr_1fr_1fr_auto] gap-4 border-b border-brand-line px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
           <span>Nombre</span>
           <span>Correo</span>
@@ -263,6 +264,7 @@ export default function UsuariosPage() {
               </div>
             );
           })}
+        </div>
       </div>
     </div>
   );

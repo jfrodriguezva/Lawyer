@@ -5,6 +5,7 @@ obj/
 *.suo
 .vs/
 backend/src/**/App_Data/
+backend/backups/
 
 # ---- Node / Next.js (frontend) ----
 node_modules/

@@ -107,6 +107,13 @@ export interface MensajeContacto {
   atendido: boolean;
 }
 
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
 export class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -163,10 +170,30 @@ export function login(email: string, password: string) {
   });
 }
 
+export function olvidePassword(email: string) {
+  return request<{ message: string }>("/api/auth/olvide-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function restablecerPassword(token: string, nuevaPassword: string) {
+  return request<void>("/api/auth/restablecer-password", {
+    method: "POST",
+    body: JSON.stringify({ token, nuevaPassword }),
+  });
+}
+
 // ---- Casos ----
 
 export function getCasos() {
   return request<Caso[]>("/api/casos");
+}
+
+export function getCasosPaginado(page: number, pageSize: number, search?: string) {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  if (search) params.set("search", search);
+  return request<PagedResult<Caso>>(`/api/casos/pagina?${params.toString()}`);
 }
 
 export function getCaso(id: number | string) {
@@ -264,6 +291,10 @@ export function enviarMensajeContacto(data: {
 
 export function getMensajesContacto() {
   return request<MensajeContacto[]>("/api/contacto");
+}
+
+export function getMensajesContactoPaginado(page: number, pageSize: number) {
+  return request<PagedResult<MensajeContacto>>(`/api/contacto/pagina?page=${page}&pageSize=${pageSize}`);
 }
 
 export function marcarMensajeAtendido(id: number | string) {

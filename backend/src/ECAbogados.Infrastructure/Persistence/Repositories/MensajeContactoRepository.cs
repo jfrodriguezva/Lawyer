@@ -23,6 +23,30 @@ public class MensajeContactoRepository(SqlConnectionFactory connectionFactory) :
         });
     }
 
+    public async Task<(IReadOnlyList<MensajeContacto> Items, int TotalCount)> GetPagedAsync(int page, int pageSize)
+    {
+        return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            const string sql = """
+                SELECT Id, Nombre, Telefono, Email, Mensaje, FechaEnvio, Atendido
+                FROM dbo.MensajesContacto
+                ORDER BY FechaEnvio DESC
+                OFFSET @Skip ROWS FETCH NEXT @PageSize ROWS ONLY
+                """;
+
+            const string countSql = "SELECT COUNT(*) FROM dbo.MensajesContacto";
+
+            var parametros = new { Skip = (page - 1) * pageSize, PageSize = pageSize };
+
+            var rows = await connection.QueryAsync<MensajeContacto>(sql, parametros);
+            var total = await connection.ExecuteScalarAsync<int>(countSql);
+
+            return ((IReadOnlyList<MensajeContacto>)rows.ToList(), total);
+        });
+    }
+
     public async Task<int> CreateAsync(MensajeContacto mensaje)
     {
         return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>

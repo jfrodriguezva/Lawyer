@@ -15,15 +15,21 @@ Acceso exclusivo para el personal del despacho, con correo y contraseña. Al ini
 
 Si la sesión no existe o expira, cualquier intento de entrar a una sección del panel redirige de vuelta a `/login`.
 
+Por seguridad, después de 5 intentos fallidos seguidos la cuenta se bloquea temporalmente durante 15 minutos (aunque después se escriba la contraseña correcta).
+
+### ¿Olvidaste tu contraseña?
+
+En `/login`, el enlace "¿Olvidaste tu contraseña?" abre un formulario donde escribes tu correo. Si el correo existe, recibirás un mensaje con un enlace para elegir una nueva contraseña (válido por 1 hora). Por seguridad, el sistema siempre muestra el mismo aviso de "enlace enviado", exista o no esa cuenta.
+
 ## 3. Panel interno
 
 | Sección | Ruta | Qué permite |
 |---|---|---|
 | **Panel de casos** | `/dashboard` | Resumen: casos activos, en revisión, próximas citas, casos cerrados, tasa de confirmación de citas y % de mensajes atendidos. |
-| **Casos** | `/casos` | Listar todos los expedientes y crear uno nuevo (cliente, tipo de caso, notas iniciales). Al crearlo se genera automáticamente un checklist de requisitos según el tipo de trámite. |
-| **Detalle de caso** | `/casos/{id}` | Notas, checklist de requisitos, documentos, plazos/audiencias, cambio de estatus, y el enlace del portal del cliente. Si tu cuenta es **Administrador** también ves y registras **Honorarios**, y ves el **Historial** de todo lo que ha pasado con el caso (quién hizo qué y cuándo). |
-| **Agenda** | `/agenda` | Calendario visual (mes/semana/día/lista) de todas las citas, coloreadas por estatus. Agendar una nueva (opcionalmente ligada a un caso) y confirmar o cancelar al hacer clic en una cita. |
-| **Mensajes** | `/mensajes` | Mensajes recibidos desde el formulario público, separados en "Pendientes" y "Atendidos". |
+| **Casos** | `/casos` | Listar todos los expedientes (con búsqueda por cliente/tipo y paginación) y crear uno nuevo (cliente, tipo de caso, notas iniciales). Al crearlo se genera automáticamente un checklist de requisitos según el tipo de trámite. |
+| **Detalle de caso** | `/casos/{id}` | Notas, checklist de requisitos, documentos (solo se aceptan PDF, Word, Excel o imágenes, hasta 50 MB), plazos/audiencias, cambio de estatus, y el enlace del portal del cliente. Si tu cuenta es **Administrador** también ves y registras **Honorarios**, y ves el **Historial** de todo lo que ha pasado con el caso (quién hizo qué y cuándo). |
+| **Agenda** | `/agenda` | Calendario visual (mes/semana/día/lista) de todas las citas, coloreadas por estatus, con buscador por cliente/teléfono. Agendar una nueva (opcionalmente ligada a un caso) y confirmar o cancelar al hacer clic en una cita. |
+| **Mensajes** | `/mensajes` | Mensajes recibidos desde el formulario público, separados en "Pendientes" y "Atendidos", con paginación. |
 | **Usuarios** | `/usuarios` | Solo visible para el rol **Administrador**: dar de alta personal, editar nombre/rol/contraseña, y activar/desactivar cuentas. No puedes cambiar tu propio rol ni desactivarte a ti mismo. |
 
 ### Roles

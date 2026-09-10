@@ -8,8 +8,26 @@ public class FakeCasoRepository : ICasoRepository
     private readonly List<Caso> _casos = [];
     private int _nextId = 1;
 
+    public void Seed(Caso caso)
+    {
+        caso.Id = _nextId++;
+        _casos.Add(caso);
+    }
+
     public Task<IReadOnlyList<Caso>> GetAllAsync() =>
         Task.FromResult<IReadOnlyList<Caso>>(_casos.ToList());
+
+    public Task<(IReadOnlyList<Caso> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, string? search)
+    {
+        var filtrados = string.IsNullOrWhiteSpace(search)
+            ? _casos
+            : _casos.Where(c =>
+                c.ClienteNombre.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                c.Tipo.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        var items = filtrados.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        return Task.FromResult<(IReadOnlyList<Caso>, int)>((items, filtrados.Count));
+    }
 
     public Task<Caso?> GetByIdAsync(int id) =>
         Task.FromResult(_casos.FirstOrDefault(c => c.Id == id));

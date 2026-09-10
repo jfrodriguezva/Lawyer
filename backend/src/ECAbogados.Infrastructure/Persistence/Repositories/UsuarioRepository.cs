@@ -13,12 +13,28 @@ public class UsuarioRepository(SqlConnectionFactory connectionFactory) : IUsuari
             using var connection = await connectionFactory.CreateOpenConnectionAsync();
 
             const string sql = """
-                SELECT Id, Email, PasswordHash, Nombre, Rol, Activo
+                SELECT Id, Email, PasswordHash, Nombre, Rol, Activo, IntentosFallidos, BloqueadoHasta, ResetToken, ResetTokenExpira
                 FROM dbo.Usuarios
                 WHERE Email = @Email
                 """;
 
             return await connection.QuerySingleOrDefaultAsync<Usuario>(sql, new { Email = email });
+        });
+    }
+
+    public async Task<Usuario?> GetByResetTokenAsync(string resetToken)
+    {
+        return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            const string sql = """
+                SELECT Id, Email, PasswordHash, Nombre, Rol, Activo, IntentosFallidos, BloqueadoHasta, ResetToken, ResetTokenExpira
+                FROM dbo.Usuarios
+                WHERE ResetToken = @ResetToken
+                """;
+
+            return await connection.QuerySingleOrDefaultAsync<Usuario>(sql, new { ResetToken = resetToken });
         });
     }
 
@@ -29,7 +45,7 @@ public class UsuarioRepository(SqlConnectionFactory connectionFactory) : IUsuari
             using var connection = await connectionFactory.CreateOpenConnectionAsync();
 
             const string sql = """
-                SELECT Id, Email, PasswordHash, Nombre, Rol, Activo
+                SELECT Id, Email, PasswordHash, Nombre, Rol, Activo, IntentosFallidos, BloqueadoHasta, ResetToken, ResetTokenExpira
                 FROM dbo.Usuarios
                 ORDER BY Nombre
                 """;
@@ -85,6 +101,38 @@ public class UsuarioRepository(SqlConnectionFactory connectionFactory) : IUsuari
 
             const string sql = "UPDATE dbo.Usuarios SET PasswordHash = @PasswordHash WHERE Id = @Id";
             await connection.ExecuteAsync(sql, new { Id = id, PasswordHash = passwordHash });
+        });
+    }
+
+    public async Task UpdateSeguridadLoginAsync(int id, int intentosFallidos, DateTime? bloqueadoHasta)
+    {
+        await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            const string sql = """
+                UPDATE dbo.Usuarios
+                SET IntentosFallidos = @IntentosFallidos, BloqueadoHasta = @BloqueadoHasta
+                WHERE Id = @Id
+                """;
+
+            await connection.ExecuteAsync(sql, new { Id = id, IntentosFallidos = intentosFallidos, BloqueadoHasta = bloqueadoHasta });
+        });
+    }
+
+    public async Task SetResetTokenAsync(int id, string? resetToken, DateTime? resetTokenExpira)
+    {
+        await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            const string sql = """
+                UPDATE dbo.Usuarios
+                SET ResetToken = @ResetToken, ResetTokenExpira = @ResetTokenExpira
+                WHERE Id = @Id
+                """;
+
+            await connection.ExecuteAsync(sql, new { Id = id, ResetToken = resetToken, ResetTokenExpira = resetTokenExpira });
         });
     }
 }
