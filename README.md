@@ -25,8 +25,8 @@ Lawyer/
 **Requisitos:** .NET 10 SDK, Node.js 20+, SQL Server (local o remoto).
 
 ```bash
-# 1. Base de datos
-sqlcmd -S localhost -i backend/database/schema.sql
+# 1. Base de datos (schema.sql está en UTF-8: usar -f 65001 para no corromper acentos/ñ)
+sqlcmd -S localhost -i backend/database/schema.sql -f 65001
 
 # 2. API (http://localhost:5080)
 cd backend/src/ECAbogados.Api

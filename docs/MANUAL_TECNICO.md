@@ -174,7 +174,10 @@ frontend/web/app/
 
 ```bash
 # 1. Crear la base de datos y datos semilla
-sqlcmd -S localhost -i backend/database/schema.sql
+# -f 65001 es obligatorio: schema.sql está en UTF-8 y sin ese flag sqlcmd
+# lee el archivo con el codepage por defecto y corrompe acentos/ñ al insertar
+# (visible como "MarÃ­a" en vez de "María" en los datos semilla).
+sqlcmd -S localhost -i backend/database/schema.sql -f 65001
 
 # 2. Configurar el secreto JWT (una sola vez por máquina de desarrollo)
 cd backend/src/ECAbogados.Api
