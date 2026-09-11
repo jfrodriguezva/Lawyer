@@ -10,6 +10,7 @@ import {
   crearPlazo,
   getAuditoriaPorCaso,
   getCaso,
+  getClientes,
   getDocumentosPorCaso,
   getPagosPorCaso,
   getPlazosPorCaso,
@@ -18,8 +19,10 @@ import {
   regenerarTokenCaso,
   registrarPago,
   subirDocumento,
+  vincularClienteACaso,
   type AuditoriaEntry,
   type CasoDetalle,
+  type Cliente,
   type Documento,
   type EstatusCaso,
   type Pago,
@@ -55,6 +58,9 @@ export default function CasoDetailPage() {
   const [uploading, setUploading] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const [regenerando, setRegenerando] = useState(false);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [clienteSeleccionado, setClienteSeleccionado] = useState("");
+  const [vinculando, setVinculando] = useState(false);
 
   const [plazoDescripcion, setPlazoDescripcion] = useState("");
   const [plazoFecha, setPlazoFecha] = useState("");
@@ -94,6 +100,9 @@ export default function CasoDetailPage() {
             .catch(() => undefined);
           getAuditoriaPorCaso(params.id)
             .then(setAuditoria)
+            .catch(() => undefined);
+          getClientes()
+            .then(setClientes)
             .catch(() => undefined);
         }
       } catch {
@@ -211,6 +220,26 @@ export default function CasoDetailPage() {
       setError("No se pudo regenerar el enlace.");
     } finally {
       setRegenerando(false);
+    }
+  }
+
+  async function handleVincularCliente() {
+    if (!caso || !clienteSeleccionado) return;
+    setVinculando(true);
+    try {
+      const clienteId = Number(clienteSeleccionado);
+      await vincularClienteACaso(caso.id, clienteId);
+      const cliente = clientes.find((c) => c.id === clienteId);
+      setCaso({
+        ...caso,
+        clienteVinculadoId: clienteId,
+        clienteVinculadoNombre: cliente?.nombre ?? null,
+        clienteVinculadoEmail: cliente?.email ?? null,
+      });
+    } catch {
+      setError("No se pudo vincular la cuenta de cliente.");
+    } finally {
+      setVinculando(false);
     }
   }
 
@@ -550,6 +579,54 @@ export default function CasoDetailPage() {
                 >
                   {regenerando ? "Regenerando…" : "Regenerar enlace"}
                 </button>
+              )}
+            </div>
+          )}
+
+          {isAdmin && (
+            <div className="border border-brand-line bg-brand-ink2 p-6">
+              <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+                Cuenta de cliente
+              </h2>
+              {caso.clienteVinculadoId ? (
+                <>
+                  <p className="mt-2 text-sm text-brand-cream">{caso.clienteVinculadoNombre}</p>
+                  <p className="text-xs text-brand-creamSoft">{caso.clienteVinculadoEmail}</p>
+                  <p className="mt-3 text-[11px] leading-relaxed text-brand-creamSoft">
+                    Este cliente ve el estatus de este expediente al iniciar sesión en su portal.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="mt-2 text-xs leading-relaxed text-brand-creamSoft">
+                    Vincula este expediente a una cuenta de cliente registrada para que pueda verlo en su portal (con
+                    usuario y contraseña, en <code>/cliente/login</code>).
+                  </p>
+                  <select
+                    value={clienteSeleccionado}
+                    onChange={(e) => setClienteSeleccionado(e.target.value)}
+                    className="mt-4 w-full border border-brand-line bg-brand-ink px-4 py-2.5 text-sm text-brand-cream outline-none focus:border-brand-gold"
+                  >
+                    <option value="">Selecciona un cliente…</option>
+                    {clientes.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nombre} ({c.email})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={handleVincularCliente}
+                    disabled={!clienteSeleccionado || vinculando}
+                    className="mt-2 w-full border border-brand-gold px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-brand-gold transition-colors hover:bg-brand-gold hover:text-brand-ink disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {vinculando ? "Vinculando…" : "Vincular"}
+                  </button>
+                  {clientes.length === 0 && (
+                    <p className="mt-2 text-[11px] text-brand-creamSoft">
+                      Aún no hay clientes registrados — créalos en la sección &quot;Clientes&quot;.
+                    </p>
+                  )}
+                </>
               )}
             </div>
           )}

@@ -6,7 +6,7 @@ import { createCita, enviarMensajeContacto } from "@/lib/api";
 
 type Tab = "cita" | "mensaje";
 
-export default function GuestPanel() {
+export default function GuestPanel({ servicioInteres }: { servicioInteres?: string } = {}) {
   const [tab, setTab] = useState<Tab>("cita");
 
   return (
@@ -30,7 +30,13 @@ export default function GuestPanel() {
         />
       </div>
 
-      <div className="pt-6">{tab === "cita" ? <AgendaForm /> : <ContactForm />}</div>
+      <div className="pt-6">
+        {tab === "cita" ? (
+          <AgendaForm servicioInteres={servicioInteres} />
+        ) : (
+          <ContactForm servicioInteres={servicioInteres} />
+        )}
+      </div>
     </div>
   );
 }
@@ -60,7 +66,7 @@ function TabButton({
   );
 }
 
-function AgendaForm() {
+function AgendaForm({ servicioInteres }: { servicioInteres?: string }) {
   const [nombreCliente, setNombreCliente] = useState("");
   const [telefono, setTelefono] = useState("");
   const [fechaHora, setFechaHora] = useState("");
@@ -78,6 +84,7 @@ function AgendaForm() {
         telefono,
         fechaHora: new Date(fechaHora).toISOString(),
         casoId: null,
+        servicioInteres,
       });
       setEnviado(true);
       setNombreCliente("");
@@ -129,7 +136,7 @@ function AgendaForm() {
   );
 }
 
-function ContactForm() {
+function ContactForm({ servicioInteres }: { servicioInteres?: string }) {
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [email, setEmail] = useState("");
@@ -143,7 +150,7 @@ function ContactForm() {
     setSaving(true);
     setError(null);
     try {
-      await enviarMensajeContacto({ nombre, telefono, email: email || null, mensaje });
+      await enviarMensajeContacto({ nombre, telefono, email: email || null, mensaje, servicioInteres });
       setEnviado(true);
       setNombre("");
       setTelefono("");

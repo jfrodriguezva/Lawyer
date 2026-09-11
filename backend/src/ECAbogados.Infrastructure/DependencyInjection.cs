@@ -19,6 +19,7 @@ public static class DependencyInjection
         services.AddScoped<ICitaRepository, CitaRepository>();
         services.AddScoped<IDocumentoRepository, DocumentoRepository>();
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+        services.AddScoped<IClienteRepository, ClienteRepository>();
         services.AddScoped<IMensajeContactoRepository, MensajeContactoRepository>();
         services.AddScoped<IChecklistItemRepository, ChecklistItemRepository>();
         services.AddScoped<IPlazoRepository, PlazoRepository>();

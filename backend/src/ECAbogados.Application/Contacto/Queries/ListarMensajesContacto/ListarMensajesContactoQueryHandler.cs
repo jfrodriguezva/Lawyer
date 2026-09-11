@@ -14,7 +14,7 @@ public class ListarMensajesContactoQueryHandler(IMensajeContactoRepository mensa
 
         return mensajes
             .Select(m => new MensajeContactoDto(
-                m.Id, m.Nombre, m.Telefono, m.Email, m.Mensaje, m.FechaEnvio, m.Atendido))
+                m.Id, m.Nombre, m.Telefono, m.Email, m.Mensaje, m.FechaEnvio, m.Atendido, m.ServicioInteres))
             .ToList();
     }
 }

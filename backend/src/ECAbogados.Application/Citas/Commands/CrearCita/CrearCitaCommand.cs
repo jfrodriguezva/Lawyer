@@ -6,4 +6,5 @@ public record CrearCitaCommand(
     int? CasoId,
     string NombreCliente,
     string Telefono,
-    DateTime FechaHora) : IRequest<int>;
+    DateTime FechaHora,
+    string? ServicioInteres = null) : IRequest<int>;

@@ -39,7 +39,7 @@ export default function GuestHeader() {
           <Monogram size={scrolled ? 32 : 40} />
           <div className="leading-tight">
             <p className="font-display text-sm font-bold tracking-wide text-brand-cream">
-              EC ABOGADOS
+              ECG ABOGADOS
             </p>
             {!scrolled && (
               <p className="text-[10px] uppercase tracking-[0.25em] text-brand-creamSoft">
@@ -50,6 +50,12 @@ export default function GuestHeader() {
         </div>
 
         <nav className="hidden items-center gap-8 md:flex">
+          <Link
+            href="/servicios"
+            className="text-xs uppercase tracking-[0.2em] text-brand-creamSoft transition-colors hover:text-brand-gold"
+          >
+            Servicios
+          </Link>
           {LINKS.map((link) => (
             <a
               key={link.href}

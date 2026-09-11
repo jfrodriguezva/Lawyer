@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { getMensajesContactoPaginado, marcarMensajeAtendido, type MensajeContacto } from "@/lib/api";
+import { SERVICIOS } from "@/lib/servicios";
+import { buildWhatsAppLink } from "@/lib/whatsapp";
 
 const PAGE_SIZE = 20;
 
@@ -11,6 +13,7 @@ export default function MensajesPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [servicioFiltro, setServicioFiltro] = useState("");
 
   function load() {
     setLoading(true);
@@ -34,8 +37,11 @@ export default function MensajesPage() {
     }
   }
 
-  const pendientes = mensajes.filter((m) => !m.atendido);
-  const atendidos = mensajes.filter((m) => m.atendido);
+  const mensajesFiltrados = servicioFiltro
+    ? mensajes.filter((m) => m.servicioInteres === servicioFiltro)
+    : mensajes;
+  const pendientes = mensajesFiltrados.filter((m) => !m.atendido);
+  const atendidos = mensajesFiltrados.filter((m) => m.atendido);
   const totalPaginas = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   return (
@@ -45,6 +51,25 @@ export default function MensajesPage() {
       <p className="mt-2 text-sm text-brand-creamSoft">
         Solicitudes enviadas desde el formulario de contacto público.
       </p>
+
+      <div className="mt-4">
+        <label htmlFor="filtro-servicio-mensajes" className="sr-only">
+          Filtrar por servicio de interés
+        </label>
+        <select
+          id="filtro-servicio-mensajes"
+          value={servicioFiltro}
+          onChange={(e) => setServicioFiltro(e.target.value)}
+          className="border border-brand-line bg-brand-ink px-4 py-2.5 text-sm text-brand-cream outline-none focus:border-brand-gold"
+        >
+          <option value="">Todos los servicios</option>
+          {SERVICIOS.map((s) => (
+            <option key={s.slug} value={s.tipo}>
+              {s.tipo}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {error && (
         <p className="mt-6 border border-brand-goldDeep/60 bg-brand-goldDeep/10 px-4 py-3 text-sm text-brand-gold">
@@ -146,14 +171,29 @@ function MensajeCard({
         </span>
       </div>
       <p className="mt-3 whitespace-pre-wrap text-sm text-brand-cream">{mensaje.mensaje}</p>
-      {!mensaje.atendido && (
-        <button
-          onClick={() => onAtendido(mensaje.id)}
-          className="mt-4 border border-brand-gold px-4 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-brand-gold transition-colors hover:bg-brand-gold hover:text-brand-ink"
-        >
-          Marcar como atendido
-        </button>
+      {mensaje.servicioInteres && (
+        <p className="mt-2 text-[11px] uppercase tracking-widest text-brand-creamSoft">
+          Interés: <span className="text-brand-gold">{mensaje.servicioInteres}</span>
+        </p>
       )}
+      <div className="mt-4 flex flex-wrap gap-2">
+        <a
+          href={buildWhatsAppLink(mensaje.telefono, `Hola ${mensaje.nombre}, te escribo de ECG Abogados por tu mensaje.`)}
+          target="_blank"
+          rel="noreferrer"
+          className="border border-brand-line px-4 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-brand-creamSoft transition-colors hover:border-brand-gold hover:text-brand-gold"
+        >
+          Abrir WhatsApp
+        </a>
+        {!mensaje.atendido && (
+          <button
+            onClick={() => onAtendido(mensaje.id)}
+            className="border border-brand-gold px-4 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-brand-gold transition-colors hover:bg-brand-gold hover:text-brand-ink"
+          >
+            Marcar como atendido
+          </button>
+        )}
+      </div>
     </div>
   );
 }

@@ -13,7 +13,7 @@ public class CasoRepository(SqlConnectionFactory connectionFactory) : ICasoRepos
             using var connection = await connectionFactory.CreateOpenConnectionAsync();
 
             const string sql = """
-                SELECT Id, ClienteNombre, Tipo, Estatus, FechaApertura, Notas, TokenAcceso, TokenGeneradoEn
+                SELECT Id, ClienteNombre, Tipo, Estatus, FechaApertura, Notas, TokenAcceso, TokenGeneradoEn, ClienteId
                 FROM dbo.Casos
                 ORDER BY FechaApertura DESC
                 """;
@@ -33,7 +33,7 @@ public class CasoRepository(SqlConnectionFactory connectionFactory) : ICasoRepos
             var filtro = tieneFiltro ? $"%{search}%" : null;
 
             var sql = $"""
-                SELECT Id, ClienteNombre, Tipo, Estatus, FechaApertura, Notas, TokenAcceso, TokenGeneradoEn
+                SELECT Id, ClienteNombre, Tipo, Estatus, FechaApertura, Notas, TokenAcceso, TokenGeneradoEn, ClienteId
                 FROM dbo.Casos
                 {(tieneFiltro ? "WHERE ClienteNombre LIKE @Filtro OR Tipo LIKE @Filtro" : "")}
                 ORDER BY FechaApertura DESC
@@ -61,7 +61,7 @@ public class CasoRepository(SqlConnectionFactory connectionFactory) : ICasoRepos
             using var connection = await connectionFactory.CreateOpenConnectionAsync();
 
             const string sql = """
-                SELECT Id, ClienteNombre, Tipo, Estatus, FechaApertura, Notas, TokenAcceso, TokenGeneradoEn
+                SELECT Id, ClienteNombre, Tipo, Estatus, FechaApertura, Notas, TokenAcceso, TokenGeneradoEn, ClienteId
                 FROM dbo.Casos
                 WHERE Id = @Id
                 """;
@@ -78,13 +78,31 @@ public class CasoRepository(SqlConnectionFactory connectionFactory) : ICasoRepos
             using var connection = await connectionFactory.CreateOpenConnectionAsync();
 
             const string sql = """
-                SELECT Id, ClienteNombre, Tipo, Estatus, FechaApertura, Notas, TokenAcceso, TokenGeneradoEn
+                SELECT Id, ClienteNombre, Tipo, Estatus, FechaApertura, Notas, TokenAcceso, TokenGeneradoEn, ClienteId
                 FROM dbo.Casos
                 WHERE TokenAcceso = @Token
                 """;
 
             var row = await connection.QuerySingleOrDefaultAsync<CasoRow>(sql, new { Token = token });
             return row is null ? null : MapToEntity(row);
+        });
+    }
+
+    public async Task<IReadOnlyList<Caso>> GetByClienteIdAsync(int clienteId)
+    {
+        return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            const string sql = """
+                SELECT Id, ClienteNombre, Tipo, Estatus, FechaApertura, Notas, TokenAcceso, TokenGeneradoEn, ClienteId
+                FROM dbo.Casos
+                WHERE ClienteId = @ClienteId
+                ORDER BY FechaApertura DESC
+                """;
+
+            var rows = await connection.QueryAsync<CasoRow>(sql, new { ClienteId = clienteId });
+            return rows.Select(MapToEntity).ToList();
         });
     }
 
@@ -164,6 +182,17 @@ public class CasoRepository(SqlConnectionFactory connectionFactory) : ICasoRepos
         });
     }
 
+    public async Task VincularClienteAsync(int casoId, int clienteId)
+    {
+        await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            const string sql = "UPDATE dbo.Casos SET ClienteId = @ClienteId WHERE Id = @CasoId";
+            await connection.ExecuteAsync(sql, new { CasoId = casoId, ClienteId = clienteId });
+        });
+    }
+
     private static Caso MapToEntity(CasoRow row) => new()
     {
         Id = row.Id,
@@ -173,7 +202,8 @@ public class CasoRepository(SqlConnectionFactory connectionFactory) : ICasoRepos
         FechaApertura = row.FechaApertura,
         Notas = row.Notas,
         TokenAcceso = row.TokenAcceso,
-        TokenGeneradoEn = row.TokenGeneradoEn
+        TokenGeneradoEn = row.TokenGeneradoEn,
+        ClienteId = row.ClienteId
     };
 
     private sealed class CasoRow
@@ -186,5 +216,6 @@ public class CasoRepository(SqlConnectionFactory connectionFactory) : ICasoRepos
         public string? Notas { get; init; }
         public string? TokenAcceso { get; init; }
         public DateTime? TokenGeneradoEn { get; init; }
+        public int? ClienteId { get; init; }
     }
 }

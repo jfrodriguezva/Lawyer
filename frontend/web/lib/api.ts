@@ -46,12 +46,22 @@ export interface Usuario {
   activo: boolean;
 }
 
+export interface Cliente {
+  id: number;
+  email: string;
+  nombre: string;
+  activo: boolean;
+}
+
 export interface CasoDetalle extends Caso {
   tokenAcceso: string | null;
   tokenGeneradoEn: string | null;
   citas: Cita[];
   documentos: Documento[];
   checklist: ChecklistItem[];
+  clienteVinculadoId: number | null;
+  clienteVinculadoNombre: string | null;
+  clienteVinculadoEmail: string | null;
 }
 
 export interface AuditoriaEntry {
@@ -79,6 +89,7 @@ export interface Cita {
   telefono: string;
   fechaHora: string;
   estatus: EstatusCita;
+  servicioInteres: string | null;
 }
 
 export interface Documento {
@@ -105,6 +116,7 @@ export interface MensajeContacto {
   mensaje: string;
   fechaEnvio: string;
   atendido: boolean;
+  servicioInteres: string | null;
 }
 
 export interface PagedResult<T> {
@@ -234,6 +246,13 @@ export function regenerarTokenCaso(id: number | string) {
   });
 }
 
+export function vincularClienteACaso(id: number | string, clienteId: number) {
+  return request<void>(`/api/casos/${id}/vincular-cliente`, {
+    method: "POST",
+    body: JSON.stringify({ clienteId }),
+  });
+}
+
 // ---- Citas ----
 
 export function getCitas() {
@@ -245,6 +264,7 @@ export function createCita(data: {
   nombreCliente: string;
   telefono: string;
   fechaHora: string;
+  servicioInteres?: string | null;
 }) {
   return request<{ id: number }>("/api/citas", {
     method: "POST",
@@ -282,6 +302,7 @@ export function enviarMensajeContacto(data: {
   telefono: string;
   email?: string | null;
   mensaje: string;
+  servicioInteres?: string | null;
 }) {
   return request<{ id: number }>("/api/contacto", {
     method: "POST",
@@ -375,6 +396,26 @@ export function actualizarUsuario(
   });
 }
 
+// ---- Clientes (cuentas del portal autenticado) ----
+
+export function getClientes() {
+  return request<Cliente[]>("/api/clientes");
+}
+
+export function crearCliente(data: { email: string; password: string; nombre: string }) {
+  return request<{ id: number }>("/api/clientes", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function cambiarEstatusCliente(id: number | string, activo: boolean) {
+  return request<void>(`/api/clientes/${id}/estatus`, {
+    method: "PATCH",
+    body: JSON.stringify({ activo }),
+  });
+}
+
 // ---- Auditoría (historial de cambios) ----
 
 export function getAuditoriaPorCaso(casoId: number | string) {
@@ -394,4 +435,47 @@ export function subirDocumentoPortal(token: string, file: File) {
     method: "POST",
     body: formData,
   });
+}
+
+// ---- Portal del Cliente autenticado (cuenta real, cookie propia) ----
+// Usa su propio helper de request (con la cookie ecg_cliente_token) en vez del
+// wrapper de arriba, que siempre firma con la cookie de sesión del staff (ec_token).
+
+export function loginCliente(email: string, password: string) {
+  return request<LoginResponse>("/api/cliente/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+async function requestCliente<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = getCookie("ecg_cliente_token");
+  const headers = new Headers(options.headers);
+
+  if (!(options.body instanceof FormData) && options.body) {
+    headers.set("Content-Type", "application/json");
+  }
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+
+  if (!res.ok) {
+    let message = `Error ${res.status}`;
+    try {
+      const data = await res.json();
+      message = data?.message ?? data?.title ?? message;
+    } catch {
+      // response had no JSON body
+    }
+    throw new ApiError(message, res.status);
+  }
+
+  const text = await res.text();
+  return text ? (JSON.parse(text) as T) : (undefined as T);
+}
+
+export function getMisCasos() {
+  return requestCliente<PortalCaso[]>("/api/cliente/mis-casos");
 }

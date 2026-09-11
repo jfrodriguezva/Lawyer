@@ -4,7 +4,7 @@
 
 ## ¿Qué es este proyecto?
 
-**EC Abogados**: sistema de gestión para un despacho de abogados especializado en divorcio incausado (Lic. Erika Cruz García). Landing pública de captación + panel administrativo privado (casos, citas, documentos, mensajes de contacto).
+**ECG Abogados** (renombrado desde "EC Abogados" el 2026-09-11, ver batch más reciente abajo): sistema de gestión para el despacho de la Lic. Erika Cruz García — derecho familiar, trámites fiscales ante el SAT y asesoría empresarial (11 servicios en total). Landing pública de captación + panel administrativo privado (casos, citas, documentos, mensajes de contacto) + portal de Cliente autenticado (cuenta real, además del portal anónimo por enlace mágico que ya existía).
 
 Documentación completa:
 - [`README.md`](README.md) — arranque rápido
@@ -112,12 +112,32 @@ Resumen de lo agregado:
 
 Este batch aún no se ha comiteado/pusheado — pendiente al momento de escribir esta nota (ver `git status` para confirmar el estado real antes de asumir que ya se subió).
 
+## Rebrand ECG Abogados + 3 perfiles + 11 servicios (2026-09-11, plan "prancy-inventing-pinwheel" reutilizado)
+
+El usuario pidió rebrandear "EC Abogados" → "ECG Abogados" (nuevo logo circular oro/negro con balanza de la justicia, tagline "Tu causa, nuestra prioridad") y expandir el negocio con una separación real de tres perfiles: **invitado** (marketing), **cliente** (login propio, ve su expediente) y **administrador/abogada** (gestiona leads, casos, cuentas de cliente). Al inicio dijo que ya había una carpeta nueva para esto, pero después aclaró que no existe tal carpeta y que los cambios van **en este mismo repo** — se descartó la idea de un proyecto separado.
+
+Antes de programar, se presentó una propuesta completa y se usó `AskUserQuestion` para resolver 4 decisiones de producto (todas con la opción recomendada elegida): aviso de lead nuevo por correo + botón "Abrir WhatsApp" (sin API de pago), cuentas de Cliente creadas manualmente por la abogada, SAT con mini-landing propia, y ruta exacta a usar (la actual). Se exploró el código con 3 agentes en paralelo (branding/marketing frontend, auth/leads backend, UI del panel admin) y se armó un plan de 6 fases (A–F) con un Plan agent, revisado y corregido a mano antes de aprobarlo — el hallazgo más importante que el propio agente de planeación no cubrió del todo fue que `Caso.Tipo` está acoplado en tres lugares (`lib/servicios.ts`, `casos/page.tsx` TIPOS, `RequisitosPorTipo.cs`) que había que mantener sincronizados para que los servicios nuevos generaran checklist automático real, no solo copy de marketing.
+
+Resumen de lo implementado (fases A–F completas):
+- **Rebrand** (Fase A): `Monogram.tsx` rediseñado (mismo SVG puro, gradiente dorado, ahora con balanza de la justicia + texto "ECG"), barrido completo de "EC Abogados"→"ECG Abogados" en frontend, backend (asunto de correo de reset, título de Swagger) y READMEs, tagline nueva "Tu causa, nuestra prioridad" (la vieja "Tu libertad también es un derecho" se conservó como frase específica de la página de divorcio incausado). De paso se corrigió el claim "Sin trámites complicados" del hero por pedido explícito del usuario del inicio de la sesión (un juicio sí puede complicarse) y se corrigió el copy del divorcio incausado para explicar correctamente que no se necesita el consentimiento de la otra parte.
+- **11 servicios** (Fase B): `lib/servicios.ts` creció de 4 a 11 entradas (se agregaron divorcio incausado —antes solo vivía hardcodeado en la home—, divorcio por mutuo consentimiento, sucesiones y herencias, cobranza y pagarés, contratos, trámites SAT y asesoría para empresas; se mantuvo `violencia-familiar` aunque no estaba en la lista original del usuario). Nuevo índice `/servicios` agrupado en "Derecho familiar"/"Asesoría fiscal y empresarial", franja de navegación rápida (`QuickNav.tsx`) en la home, franja "Otros servicios" al final de cada landing.
+- **Backend funcional para los nuevos trámites** (Fase C): `RequisitosPorTipo.cs` y el dropdown de `casos/page.tsx` ganaron entradas para los 7 tipos nuevos (checklist automático real, no solo cosmético) — marcado explícitamente para que la Lic. Erika revise que los documentos listados sean correctos, es contenido legal, no solo marketing.
+- **Cliente (portal autenticado)** (Fase C): tabla `Clientes` nueva (mismas columnas de seguridad que `Usuarios`, sin `Rol`), `Caso.ClienteId` (FK nullable, aditivo — el portal anónimo por token sigue intacto), login/JWT propio con rol `"Cliente"` (`LoginClienteCommandHandler`, copia del flujo de bloqueo de `LoginCommandHandler`), `GET /cliente/mis-casos`. **Endurecimiento de seguridad crítico**: `CasosController`, `CitasController`, `DocumentosController`, `PlazosController` y `ContactoController` pasaron de `[Authorize]` (sin rol) a `[Authorize(Roles = "Administrador,Asistente")]` — sin este cambio, un JWT de Cliente habría podido llamar esos endpoints de staff. Verificado en vivo con curl: un Cliente de prueba vinculado a un caso vio solo ese caso en `mis-casos` y recibió `403` en los 6 endpoints de staff probados.
+- **Panel de administrador** (Fase D): botón "Abrir WhatsApp" (enlace `wa.me`, gratis) en Agenda y Mensajes, filtro por servicio de interés en ambas, nueva sección `/clientes` (alta/activar/desactivar cuentas), tarjeta "Cuenta de cliente" en el detalle de caso para vincular.
+- **Portal de Cliente frontend** (Fase E): `/cliente/login` y `/cliente/portal` (de solo lectura, reutiliza casi el mismo layout de tarjetas que el portal anónimo), cookies propias (`ecg_cliente_token`/`ecg_cliente_user`) distintas de las del staff para que ambas sesiones convivan en el mismo navegador.
+- **Tests**: de 27 a 32 (4 de `LoginClienteCommandHandler` + 1 de `VincularClienteACasoCommandHandler`), todos en verde.
+
+**Incidente durante las pruebas en vivo (resuelto, no es un bug de código):** al probar `/servicios/tramites-sat` en el navegador, el servidor de desarrollo del frontend (corriendo desde hacía muchas horas en esta sesión) devolvió un 500 con el error interno "Jest worker encountered 2 child process exceptions, exceeding retry limit" — es el mismo problema de RAM baja de la máquina ya documentado antes en este archivo, esta vez tumbando un worker de compilación de Next.js en vez de `dotnet run`/`npm run dev` completos. Se resolvió matando ese proceso puntual (PID identificado vía `netstat`) y levantando `npm run dev` de nuevo; todas las rutas nuevas respondieron 200 después. Si esto vuelve a pasar, no asumir que el código está roto — reiniciar el servidor de desarrollo primero.
+
+Esta pasada aún **no se ha comiteado ni pusheado** — pendiente al momento de escribir esta nota.
+
 ## Próximos pasos sugeridos (pendientes, no iniciados)
 
 Ninguno de estos ha sido solicitado explícitamente todavía:
-- El propio despliegue a Azure (explícitamente pospuesto tres veces) — incluye decidir sobre Blob Storage para documentos.
+- El propio despliegue a Azure (explícitamente pospuesto varias veces) — incluye decidir sobre Blob Storage para documentos.
 - Configurar credenciales reales de SMTP/`Notificaciones:StaffEmail`/GA4/Meta Pixel (el usuario pidió dejarlas listas, no configurarlas ahora).
-- Revisión final del copy de marketing por la Lic. Erika Cruz García (hay un Artifact preparado para facilitárselo — buscar con `action: list` si no se tiene la URL a la mano).
+- Revisión final del copy de marketing por la Lic. Erika Cruz García (hay un Artifact preparado para facilitárselo de una sesión anterior — buscar con `action: list` si no se tiene la URL a la mano). Con el rebrand y los 11 servicios, esta revisión ahora es más grande: incluye también el copy nuevo de los 7 servicios agregados y, especialmente, los checklists de documentos legales de `RequisitosPorTipo.cs` (contenido legal, no solo marketing).
+- La "comercializadora" que el usuario mencionó como posible negocio futuro — explícitamente fuera de alcance esta ronda, no se construyó nada (ni siquiera un placeholder en el nav).
 
 ## Cómo retomar el trabajo en un chat nuevo
 

@@ -27,16 +27,16 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "EC Abogados | Divorcio incausado en México",
-    template: "%s | EC Abogados",
+    default: "ECG Abogados | Derecho familiar, fiscal y empresarial",
+    template: "%s | ECG Abogados",
   },
   description:
-    "Despacho jurídico de la Lic. Erika Cruz García. Divorcio incausado, pensión alimenticia, custodia y más, con acompañamiento personalizado.",
+    "Despacho jurídico de la Lic. Erika Cruz García. Divorcio incausado, pensión alimenticia, custodia, sucesiones, trámites ante el SAT y asesoría para empresas, con acompañamiento personalizado.",
   openGraph: {
-    title: "EC Abogados | Divorcio incausado en México",
+    title: "ECG Abogados | Derecho familiar, fiscal y empresarial",
     description:
-      "Acompañamiento legal personalizado en trámites familiares: divorcio incausado, pensión alimenticia, custodia y más.",
-    siteName: "EC Abogados",
+      "Acompañamiento legal personalizado en trámites familiares, fiscales y empresariales: divorcio incausado, pensión alimenticia, custodia, SAT y más.",
+    siteName: "ECG Abogados",
     locale: "es_MX",
     type: "website",
   },

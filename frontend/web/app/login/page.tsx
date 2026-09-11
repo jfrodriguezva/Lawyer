@@ -62,10 +62,10 @@ export default function LoginPage() {
         <div className="flex flex-col items-center text-center">
           <Monogram size={56} />
           <h1 className="mt-5 font-display text-2xl font-bold tracking-wide text-brand-cream">
-            EC ABOGADOS
+            ECG ABOGADOS
           </h1>
           <p className="mt-2 font-script text-base italic text-brand-gold">
-            Tu libertad también es un derecho
+            Tu causa, nuestra prioridad
           </p>
         </div>
 

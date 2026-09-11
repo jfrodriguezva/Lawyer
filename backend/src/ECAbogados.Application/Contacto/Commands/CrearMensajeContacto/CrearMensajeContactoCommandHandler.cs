@@ -18,7 +18,8 @@ public class CrearMensajeContactoCommandHandler(
             Email = request.Email,
             Mensaje = request.Mensaje,
             FechaEnvio = DateTime.UtcNow,
-            Atendido = false
+            Atendido = false,
+            ServicioInteres = request.ServicioInteres
         };
 
         var id = await mensajeContactoRepository.CreateAsync(mensaje);

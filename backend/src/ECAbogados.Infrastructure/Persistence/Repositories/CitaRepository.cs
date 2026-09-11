@@ -13,7 +13,7 @@ public class CitaRepository(SqlConnectionFactory connectionFactory) : ICitaRepos
             using var connection = await connectionFactory.CreateOpenConnectionAsync();
 
             const string sql = """
-                SELECT Id, CasoId, NombreCliente, Telefono, FechaHora, Estatus, RecordatorioEnviado
+                SELECT Id, CasoId, NombreCliente, Telefono, FechaHora, Estatus, RecordatorioEnviado, ServicioInteres
                 FROM dbo.Citas
                 ORDER BY FechaHora
                 """;
@@ -30,7 +30,7 @@ public class CitaRepository(SqlConnectionFactory connectionFactory) : ICitaRepos
             using var connection = await connectionFactory.CreateOpenConnectionAsync();
 
             const string sql = """
-                SELECT Id, CasoId, NombreCliente, Telefono, FechaHora, Estatus, RecordatorioEnviado
+                SELECT Id, CasoId, NombreCliente, Telefono, FechaHora, Estatus, RecordatorioEnviado, ServicioInteres
                 FROM dbo.Citas
                 WHERE Id = @Id
                 """;
@@ -47,9 +47,9 @@ public class CitaRepository(SqlConnectionFactory connectionFactory) : ICitaRepos
             using var connection = await connectionFactory.CreateOpenConnectionAsync();
 
             const string sql = """
-                INSERT INTO dbo.Citas (CasoId, NombreCliente, Telefono, FechaHora, Estatus)
+                INSERT INTO dbo.Citas (CasoId, NombreCliente, Telefono, FechaHora, Estatus, ServicioInteres)
                 OUTPUT INSERTED.Id
-                VALUES (@CasoId, @NombreCliente, @Telefono, @FechaHora, @Estatus)
+                VALUES (@CasoId, @NombreCliente, @Telefono, @FechaHora, @Estatus, @ServicioInteres)
                 """;
 
             return await connection.ExecuteScalarAsync<int>(sql, new
@@ -58,7 +58,8 @@ public class CitaRepository(SqlConnectionFactory connectionFactory) : ICitaRepos
                 cita.NombreCliente,
                 cita.Telefono,
                 cita.FechaHora,
-                Estatus = cita.Estatus.ToString()
+                Estatus = cita.Estatus.ToString(),
+                cita.ServicioInteres
             });
         });
     }
@@ -98,7 +99,8 @@ public class CitaRepository(SqlConnectionFactory connectionFactory) : ICitaRepos
         Telefono = row.Telefono,
         FechaHora = row.FechaHora,
         Estatus = Enum.Parse<EstatusCita>(row.Estatus),
-        RecordatorioEnviado = row.RecordatorioEnviado
+        RecordatorioEnviado = row.RecordatorioEnviado,
+        ServicioInteres = row.ServicioInteres
     };
 
     private sealed class CitaRow
@@ -110,5 +112,6 @@ public class CitaRepository(SqlConnectionFactory connectionFactory) : ICitaRepos
         public DateTime FechaHora { get; init; }
         public string Estatus { get; init; } = string.Empty;
         public bool RecordatorioEnviado { get; init; }
+        public string? ServicioInteres { get; init; }
     }
 }

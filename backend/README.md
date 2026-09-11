@@ -1,13 +1,13 @@
-# EC Abogados - Backend
+# ECG Abogados - Backend
 
-Backend del sistema de gestión de casos para el despacho EC Abogados, construido en .NET 10
+Backend del sistema de gestión de casos para el despacho ECG Abogados, construido en .NET 10
 con arquitectura por capas (Domain / Application / Infrastructure / Api) más un API Gateway
 basado en Ocelot.
 
 ## Proyectos
 
 - `src/ECAbogados.Domain` - Entidades del dominio.
-- `src/ECAbogados.Application` - Casos de uso (MediatR), DTOs, validaciones (FluentValidation) y puertos.
+- `src/ECAbogados.Application` - Casos de uso (mediador propio, ver `Application/Mediation`), DTOs, validaciones (FluentValidation) y puertos.
 - `src/ECAbogados.Infrastructure` - Implementaciones con Dapper/SQL Server, JWT y hashing de contraseñas.
 - `src/ECAbogados.Api` - API REST (ASP.NET Core Web API), puerto `5080`.
 - `src/ECAbogados.Gateway` - API Gateway (Ocelot), puerto `5000`. El frontend debe consumir este puerto.
@@ -70,6 +70,6 @@ basado en Ocelot.
 
 ## Notas
 
-- No se incluyen pruebas unitarias, Docker ni CI: el alcance de este backend es intencionalmente mínimo.
+- Pruebas unitarias en `tests/ECAbogados.Application.Tests` (`dotnet test backend/ECAbogados.sln`) y CI en `.github/workflows/ci.yml`. No se incluye Docker.
 - Los archivos subidos por `POST /api/documentos` se guardan en
   `src/ECAbogados.Api/App_Data/documentos/{casoId}/{guid}_{nombreArchivo}`.

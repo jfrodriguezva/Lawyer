@@ -16,4 +16,5 @@ public class Cita
     public DateTime FechaHora { get; set; }
     public EstatusCita Estatus { get; set; }
     public bool RecordatorioEnviado { get; set; }
+    public string? ServicioInteres { get; set; }
 }

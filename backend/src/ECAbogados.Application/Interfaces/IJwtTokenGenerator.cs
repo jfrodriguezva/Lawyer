@@ -5,4 +5,5 @@ namespace ECAbogados.Application.Interfaces;
 public interface IJwtTokenGenerator
 {
     string GenerateToken(Usuario usuario);
+    string GenerateTokenParaCliente(Cliente cliente);
 }

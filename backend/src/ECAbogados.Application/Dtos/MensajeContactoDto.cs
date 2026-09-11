@@ -7,4 +7,5 @@ public record MensajeContactoDto(
     string? Email,
     string Mensaje,
     DateTime FechaEnvio,
-    bool Atendido);
+    bool Atendido,
+    string? ServicioInteres);

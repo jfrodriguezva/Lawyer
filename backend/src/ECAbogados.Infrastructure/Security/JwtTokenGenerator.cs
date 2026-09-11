@@ -10,7 +10,13 @@ namespace ECAbogados.Infrastructure.Security;
 
 public class JwtTokenGenerator(IConfiguration configuration) : IJwtTokenGenerator
 {
-    public string GenerateToken(Usuario usuario)
+    public string GenerateToken(Usuario usuario) =>
+        GenerarToken(usuario.Id, usuario.Email, usuario.Nombre, usuario.Rol);
+
+    public string GenerateTokenParaCliente(Cliente cliente) =>
+        GenerarToken(cliente.Id, cliente.Email, cliente.Nombre, "Cliente");
+
+    private string GenerarToken(int id, string email, string nombre, string rol)
     {
         var secret = configuration["Jwt:Secret"]
             ?? throw new InvalidOperationException("No se encontró la configuración 'Jwt:Secret'.");
@@ -20,10 +26,10 @@ public class JwtTokenGenerator(IConfiguration configuration) : IJwtTokenGenerato
 
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
-            new Claim(ClaimTypes.Email, usuario.Email),
-            new Claim(ClaimTypes.Name, usuario.Nombre),
-            new Claim(ClaimTypes.Role, usuario.Rol)
+            new Claim(ClaimTypes.NameIdentifier, id.ToString()),
+            new Claim(ClaimTypes.Email, email),
+            new Claim(ClaimTypes.Name, nombre),
+            new Claim(ClaimTypes.Role, rol)
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));

@@ -8,4 +8,5 @@ public record CitaDto(
     string NombreCliente,
     string Telefono,
     DateTime FechaHora,
-    EstatusCita Estatus);
+    EstatusCita Estatus,
+    string? ServicioInteres);

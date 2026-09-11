@@ -18,7 +18,8 @@ public class CrearCitaCommandHandler(
             NombreCliente = request.NombreCliente,
             Telefono = request.Telefono,
             FechaHora = request.FechaHora,
-            Estatus = EstatusCita.Pendiente
+            Estatus = EstatusCita.Pendiente,
+            ServicioInteres = request.ServicioInteres
         };
 
         var id = await citaRepository.CreateAsync(cita);

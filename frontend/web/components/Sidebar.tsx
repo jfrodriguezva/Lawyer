@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Monogram from "./Monogram";
-import { IconPanel, IconFolder, IconCalendar, IconChat, IconLogout, IconUser } from "./icons";
+import { IconPanel, IconFolder, IconCalendar, IconChat, IconLogout, IconUser, IconShield } from "./icons";
 import { deleteCookie, getCookie } from "@/lib/cookies";
 
 const NAV = [
@@ -14,7 +14,10 @@ const NAV = [
   { href: "/mensajes", label: "Mensajes", icon: IconChat },
 ];
 
-const NAV_ADMIN = { href: "/usuarios", label: "Usuarios", icon: IconUser };
+const NAV_ADMIN = [
+  { href: "/clientes", label: "Clientes", icon: IconShield },
+  { href: "/usuarios", label: "Usuarios", icon: IconUser },
+];
 
 export default function Sidebar({
   open = false,
@@ -38,7 +41,7 @@ export default function Sidebar({
     }
   }, []);
 
-  const items = isAdmin ? [...NAV, NAV_ADMIN] : NAV;
+  const items = isAdmin ? [...NAV, ...NAV_ADMIN] : NAV;
 
   function handleLogout() {
     deleteCookie("ec_token");
@@ -66,7 +69,7 @@ export default function Sidebar({
           <Monogram size={36} />
           <div>
             <p className="font-display text-sm font-semibold tracking-wide text-brand-cream">
-              EC ABOGADOS
+              ECG ABOGADOS
             </p>
             <p className="font-script text-xs italic text-brand-creamSoft">
               Lic. Erika Cruz García

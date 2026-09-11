@@ -13,7 +13,7 @@ public class MensajeContactoRepository(SqlConnectionFactory connectionFactory) :
             using var connection = await connectionFactory.CreateOpenConnectionAsync();
 
             const string sql = """
-                SELECT Id, Nombre, Telefono, Email, Mensaje, FechaEnvio, Atendido
+                SELECT Id, Nombre, Telefono, Email, Mensaje, FechaEnvio, Atendido, ServicioInteres
                 FROM dbo.MensajesContacto
                 ORDER BY FechaEnvio DESC
                 """;
@@ -30,7 +30,7 @@ public class MensajeContactoRepository(SqlConnectionFactory connectionFactory) :
             using var connection = await connectionFactory.CreateOpenConnectionAsync();
 
             const string sql = """
-                SELECT Id, Nombre, Telefono, Email, Mensaje, FechaEnvio, Atendido
+                SELECT Id, Nombre, Telefono, Email, Mensaje, FechaEnvio, Atendido, ServicioInteres
                 FROM dbo.MensajesContacto
                 ORDER BY FechaEnvio DESC
                 OFFSET @Skip ROWS FETCH NEXT @PageSize ROWS ONLY
@@ -54,9 +54,9 @@ public class MensajeContactoRepository(SqlConnectionFactory connectionFactory) :
             using var connection = await connectionFactory.CreateOpenConnectionAsync();
 
             const string sql = """
-                INSERT INTO dbo.MensajesContacto (Nombre, Telefono, Email, Mensaje, FechaEnvio, Atendido)
+                INSERT INTO dbo.MensajesContacto (Nombre, Telefono, Email, Mensaje, FechaEnvio, Atendido, ServicioInteres)
                 OUTPUT INSERTED.Id
-                VALUES (@Nombre, @Telefono, @Email, @Mensaje, @FechaEnvio, @Atendido)
+                VALUES (@Nombre, @Telefono, @Email, @Mensaje, @FechaEnvio, @Atendido, @ServicioInteres)
                 """;
 
             return await connection.ExecuteScalarAsync<int>(sql, mensaje);

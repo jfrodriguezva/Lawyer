@@ -1,6 +1,7 @@
 import Link from "next/link";
 import GuestHeader from "@/components/GuestHeader";
 import GuestPanel from "@/components/GuestPanel";
+import QuickNav from "@/components/QuickNav";
 import Reveal from "@/components/Reveal";
 import {
   IconArrowRight,
@@ -15,6 +16,16 @@ import {
   IconWhatsapp,
 } from "@/components/icons";
 import { SERVICIOS } from "@/lib/servicios";
+
+// "divorcio-incausado" ya es el tema del hero de esta página, así que se excluye
+// de ambos grupos para no repetirlo en la cuadrícula de "otros servicios".
+const FAMILIARES = [
+  "divorcio-mutuo-consentimiento",
+  "pension-alimenticia",
+  "custodia",
+  "regimen-de-visitas",
+  "violencia-familiar",
+];
 
 const BENEFICIOS = [
   {
@@ -65,8 +76,8 @@ const PROCESO = [
 const JSON_LD = {
   "@context": "https://schema.org",
   "@type": "Attorney",
-  name: "EC Abogados - Lic. Erika Cruz García",
-  description: "Despacho jurídico especializado en divorcio incausado y derecho familiar.",
+  name: "ECG Abogados - Lic. Erika Cruz García",
+  description: "Despacho jurídico especializado en derecho familiar, trámites fiscales y asesoría empresarial.",
   telephone: "+525512592388",
   email: "erika.c.abogada@gmail.com",
   areaServed: "MX",
@@ -97,7 +108,7 @@ export default function GuestLandingPage() {
           <div>
             <Reveal>
               <p className="font-script text-xl italic text-brand-gold">
-                Tu libertad también es un derecho
+                Tu causa, nuestra prioridad
               </p>
             </Reveal>
             <Reveal delay={80}>
@@ -107,9 +118,11 @@ export default function GuestLandingPage() {
             </Reveal>
             <Reveal delay={160}>
               <p className="mt-5 max-w-lg text-lg text-brand-creamSoft">
-                ¿Quieres divorciarte aunque tu pareja no esté de acuerdo? Te
-                acompañamos en cada paso, de principio a fin, con la Lic.
-                Erika Cruz García al frente de tu caso.
+                ¿Quieres divorciarte y tu pareja no está de acuerdo? En el
+                divorcio incausado no necesitas su consentimiento, ni expresar
+                una causa para solicitarlo. Te acompañamos en cada paso, de
+                principio a fin, con la Lic. Erika Cruz García al frente de tu
+                caso.
               </p>
             </Reveal>
 
@@ -136,7 +149,7 @@ export default function GuestLandingPage() {
 
             <Reveal delay={320}>
               <ul className="mt-10 flex flex-wrap gap-x-8 gap-y-3 border-t border-brand-line pt-6">
-                {["100% confidencial", "Sin trámites complicados", "Respuesta en menos de 24 h"].map(
+                {["100% confidencial", "No necesitas el consentimiento de tu pareja", "Respuesta en menos de 24 h"].map(
                   (item) => (
                     <li
                       key={item}
@@ -155,6 +168,8 @@ export default function GuestLandingPage() {
             <JusticeMark />
           </Reveal>
         </section>
+
+        <QuickNav />
 
         {/* Proceso */}
         <section id="proceso" className="mt-28 scroll-mt-24 lg:mt-36">
@@ -189,7 +204,7 @@ export default function GuestLandingPage() {
         {/* Beneficios */}
         <section id="beneficios" className="mt-28 scroll-mt-24 lg:mt-36">
           <Reveal>
-            <p className="font-script text-lg italic text-brand-gold">¿Por qué EC Abogados?</p>
+            <p className="font-script text-lg italic text-brand-gold">¿Por qué ECG Abogados?</p>
           </Reveal>
           <Reveal delay={60}>
             <h2 className="mt-1 text-balance font-display text-3xl font-bold text-brand-cream sm:text-4xl">
@@ -216,8 +231,8 @@ export default function GuestLandingPage() {
           </div>
         </section>
 
-        {/* Otros servicios */}
-        <section className="mt-28 lg:mt-36">
+        {/* Otros servicios, agrupados por área */}
+        <section id="familiar" className="mt-28 scroll-mt-24 lg:mt-36">
           <Reveal>
             <p className="font-script text-lg italic text-brand-gold">También te acompañamos en</p>
           </Reveal>
@@ -228,7 +243,38 @@ export default function GuestLandingPage() {
           </Reveal>
 
           <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {SERVICIOS.map((s, i) => (
+            {SERVICIOS.filter((s) => FAMILIARES.includes(s.slug)).map((s, i) => (
+              <Reveal key={s.slug} delay={100 + i * 70}>
+                <Link
+                  href={`/servicios/${s.slug}`}
+                  className="group flex h-full flex-col justify-between border border-brand-line bg-brand-ink2 p-6 transition-colors duration-300 hover:border-brand-gold/50"
+                >
+                  <div>
+                    <h3 className="font-display text-base font-bold text-brand-cream">{s.titulo}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-brand-creamSoft">{s.descripcion}</p>
+                  </div>
+                  <span className="mt-4 inline-flex items-center gap-1 text-xs uppercase tracking-widest text-brand-gold">
+                    Conocer más
+                    <IconArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                  </span>
+                </Link>
+              </Reveal>
+            ))}
+          </div>
+        </section>
+
+        <section id="empresarial" className="mt-28 scroll-mt-24 lg:mt-36">
+          <Reveal>
+            <p className="font-script text-lg italic text-brand-gold">Más allá del derecho familiar</p>
+          </Reveal>
+          <Reveal delay={60}>
+            <h2 className="mt-1 text-balance font-display text-3xl font-bold text-brand-cream sm:text-4xl">
+              Asesoría fiscal y empresarial
+            </h2>
+          </Reveal>
+
+          <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {SERVICIOS.filter((s) => s.slug !== "divorcio-incausado" && !FAMILIARES.includes(s.slug)).map((s, i) => (
               <Reveal key={s.slug} delay={100 + i * 70}>
                 <Link
                   href={`/servicios/${s.slug}`}

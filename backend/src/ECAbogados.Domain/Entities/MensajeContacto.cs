@@ -9,4 +9,5 @@ public class MensajeContacto
     public string Mensaje { get; set; } = string.Empty;
     public DateTime FechaEnvio { get; set; }
     public bool Atendido { get; set; }
+    public string? ServicioInteres { get; set; }
 }

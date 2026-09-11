@@ -55,7 +55,7 @@ export default function PortalClientePage() {
         <div className="flex flex-col items-center text-center">
           <Monogram size={48} />
           <h1 className="mt-4 font-display text-2xl font-bold tracking-wide text-brand-cream">
-            EC ABOGADOS
+            ECG ABOGADOS
           </h1>
           <p className="mt-1 font-script text-sm italic text-brand-gold">
             Seguimiento de tu expediente

@@ -21,4 +21,7 @@ public record CasoDetalleDto(
     DateTime? TokenGeneradoEn,
     IReadOnlyList<CitaDto> Citas,
     IReadOnlyList<DocumentoDto> Documentos,
-    IReadOnlyList<ChecklistItemDto> Checklist);
+    IReadOnlyList<ChecklistItemDto> Checklist,
+    int? ClienteVinculadoId,
+    string? ClienteVinculadoNombre,
+    string? ClienteVinculadoEmail);

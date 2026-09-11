@@ -8,7 +8,8 @@ public class ObtenerCasoPorIdQueryHandler(
     ICasoRepository casoRepository,
     ICitaRepository citaRepository,
     IDocumentoRepository documentoRepository,
-    IChecklistItemRepository checklistItemRepository)
+    IChecklistItemRepository checklistItemRepository,
+    IClienteRepository clienteRepository)
     : IRequestHandler<ObtenerCasoPorIdQuery, CasoDetalleDto?>
 {
     public async Task<CasoDetalleDto?> Handle(ObtenerCasoPorIdQuery request, CancellationToken cancellationToken)
@@ -19,13 +20,17 @@ public class ObtenerCasoPorIdQueryHandler(
             return null;
         }
 
+        var clienteVinculado = caso.ClienteId is int clienteId
+            ? await clienteRepository.GetByIdAsync(clienteId)
+            : null;
+
         var citas = await citaRepository.GetAllAsync();
         var documentos = await documentoRepository.GetByCasoIdAsync(request.Id);
         var checklist = await checklistItemRepository.GetByCasoIdAsync(request.Id);
 
         var citasDelCaso = citas
             .Where(c => c.CasoId == request.Id)
-            .Select(c => new CitaDto(c.Id, c.CasoId, c.NombreCliente, c.Telefono, c.FechaHora, c.Estatus))
+            .Select(c => new CitaDto(c.Id, c.CasoId, c.NombreCliente, c.Telefono, c.FechaHora, c.Estatus, c.ServicioInteres))
             .ToList();
 
         var documentosDelCaso = documentos
@@ -47,6 +52,9 @@ public class ObtenerCasoPorIdQueryHandler(
             caso.TokenGeneradoEn,
             citasDelCaso,
             documentosDelCaso,
-            checklistDelCaso);
+            checklistDelCaso,
+            clienteVinculado?.Id,
+            clienteVinculado?.Nombre,
+            clienteVinculado?.Email);
     }
 }

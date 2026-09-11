@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import GuestHeader from "@/components/GuestHeader";
 import GuestPanel from "@/components/GuestPanel";
 import Reveal from "@/components/Reveal";
 import {
+  IconBriefcase,
+  IconCalculator,
   IconClock,
   IconDocumentLegal,
   IconFamily,
@@ -11,6 +14,7 @@ import {
   IconHandHeart,
   IconLock,
   IconMail,
+  IconMoney,
   IconPhone,
   IconPin,
   IconScale,
@@ -27,6 +31,9 @@ const ICONOS_BENEFICIO: Record<IconoBeneficio, typeof IconScale> = {
   lock: IconLock,
   handHeart: IconHandHeart,
   pin: IconPin,
+  money: IconMoney,
+  briefcase: IconBriefcase,
+  calculator: IconCalculator,
 };
 
 export function generateStaticParams() {
@@ -124,7 +131,7 @@ export default async function ServicioPage({
 
         <section className="mt-24 lg:mt-32">
           <Reveal>
-            <p className="font-script text-lg italic text-brand-gold">¿Por qué EC Abogados?</p>
+            <p className="font-script text-lg italic text-brand-gold">¿Por qué ECG Abogados?</p>
           </Reveal>
           <Reveal delay={60}>
             <h2 className="mt-1 text-balance font-display text-3xl font-bold text-brand-cream sm:text-4xl">
@@ -188,8 +195,31 @@ export default async function ServicioPage({
             </Reveal>
 
             <Reveal delay={150}>
-              <GuestPanel />
+              <GuestPanel servicioInteres={servicio.tipo} />
             </Reveal>
+          </div>
+        </section>
+
+        <section className="mt-24 border-t border-brand-line pt-10 lg:mt-32">
+          <p className="text-xs uppercase tracking-[0.2em] text-brand-creamSoft">Otros servicios</p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            {SERVICIOS.filter((s) => s.slug !== servicio.slug)
+              .slice(0, 6)
+              .map((s) => (
+                <Link
+                  key={s.slug}
+                  href={`/servicios/${s.slug}`}
+                  className="border border-brand-line px-4 py-2 text-xs text-brand-creamSoft transition-colors hover:border-brand-gold hover:text-brand-gold"
+                >
+                  {s.titulo}
+                </Link>
+              ))}
+            <Link
+              href="/servicios"
+              className="border border-brand-gold/60 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-brand-gold transition-colors hover:bg-brand-gold hover:text-brand-ink"
+            >
+              Ver todos
+            </Link>
           </div>
         </section>
       </main>

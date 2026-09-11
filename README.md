@@ -1,6 +1,6 @@
-# EC Abogados
+# ECG Abogados
 
-Sistema de gestión para un despacho de abogados especializado en **divorcio incausado** (Lic. Erika Cruz García). Incluye un sitio público de captación de clientes y un panel administrativo privado para gestionar casos, citas, documentos y mensajes de contacto.
+Sistema de gestión para el despacho de la Lic. Erika Cruz García: derecho familiar (divorcio incausado, pensión alimenticia, custodia, sucesiones), trámites fiscales ante el SAT y asesoría empresarial. Incluye un sitio público de captación, un portal de cliente y un panel administrativo privado para gestionar casos, citas, documentos y mensajes de contacto.
 
 ## Estructura del repositorio
 

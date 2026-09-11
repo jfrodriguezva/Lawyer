@@ -40,7 +40,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2.5">
             <Monogram size={28} />
             <p className="font-display text-sm font-semibold tracking-wide text-brand-cream">
-              EC ABOGADOS
+              ECG ABOGADOS
             </p>
           </div>
           <button

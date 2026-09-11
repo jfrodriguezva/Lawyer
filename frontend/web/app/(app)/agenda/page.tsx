@@ -12,6 +12,8 @@ import {
   getCitas,
   type Cita,
 } from "@/lib/api";
+import { SERVICIOS } from "@/lib/servicios";
+import { buildWhatsAppLink } from "@/lib/whatsapp";
 
 const locales = { es };
 const localizer = dateFnsLocalizer({
@@ -57,6 +59,7 @@ export default function AgendaPage() {
   const [seleccionada, setSeleccionada] = useState<Cita | null>(null);
   const [view, setView] = useState<View>("week");
   const [busqueda, setBusqueda] = useState("");
+  const [servicioFiltro, setServicioFiltro] = useState("");
 
   const [nombreCliente, setNombreCliente] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -75,13 +78,15 @@ export default function AgendaPage() {
 
   const citasFiltradas = useMemo(() => {
     const termino = busqueda.trim().toLowerCase();
-    if (!termino) return citas;
-    return citas.filter(
-      (c) =>
+    return citas.filter((c) => {
+      const coincideTermino =
+        !termino ||
         c.nombreCliente.toLowerCase().includes(termino) ||
-        c.telefono.toLowerCase().includes(termino)
-    );
-  }, [citas, busqueda]);
+        c.telefono.toLowerCase().includes(termino);
+      const coincideServicio = !servicioFiltro || c.servicioInteres === servicioFiltro;
+      return coincideTermino && coincideServicio;
+    });
+  }, [citas, busqueda, servicioFiltro]);
 
   const eventos: CitaEvento[] = useMemo(
     () =>
@@ -216,7 +221,23 @@ export default function AgendaPage() {
               <p className="text-xs text-brand-creamSoft">
                 {new Date(seleccionada.fechaHora).toLocaleString("es-MX")}
               </p>
-              <div className="mt-3 flex gap-2">
+              {seleccionada.servicioInteres && (
+                <p className="mt-1 text-[11px] uppercase tracking-widest text-brand-creamSoft">
+                  Interés: <span className="text-brand-gold">{seleccionada.servicioInteres}</span>
+                </p>
+              )}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <a
+                  href={buildWhatsAppLink(
+                    seleccionada.telefono,
+                    `Hola ${seleccionada.nombreCliente}, te escribo de ECG Abogados por tu cita del ${new Date(seleccionada.fechaHora).toLocaleString("es-MX")}.`
+                  )}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="border border-brand-line px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-brand-creamSoft hover:border-brand-gold hover:text-brand-gold"
+                >
+                  Abrir WhatsApp
+                </a>
                 {seleccionada.estatus !== "Confirmada" && (
                   <button
                     onClick={() => handleEstatus(seleccionada.id, "Confirmada")}
@@ -239,17 +260,39 @@ export default function AgendaPage() {
         </form>
 
         <div className="lg:col-span-2">
-          <label htmlFor="buscar-cita" className="sr-only">
-            Buscar cita por nombre o teléfono
-          </label>
-          <input
-            id="buscar-cita"
-            type="search"
-            placeholder="Buscar por nombre o teléfono…"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            className="mb-4 w-full max-w-sm border border-brand-line bg-transparent px-4 py-2.5 text-sm text-brand-cream outline-none focus:border-brand-gold"
-          />
+          <div className="mb-4 flex flex-wrap gap-3">
+            <div className="flex-1 min-w-[220px]">
+              <label htmlFor="buscar-cita" className="sr-only">
+                Buscar cita por nombre o teléfono
+              </label>
+              <input
+                id="buscar-cita"
+                type="search"
+                placeholder="Buscar por nombre o teléfono…"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                className="w-full max-w-sm border border-brand-line bg-transparent px-4 py-2.5 text-sm text-brand-cream outline-none focus:border-brand-gold"
+              />
+            </div>
+            <div>
+              <label htmlFor="filtro-servicio" className="sr-only">
+                Filtrar por servicio de interés
+              </label>
+              <select
+                id="filtro-servicio"
+                value={servicioFiltro}
+                onChange={(e) => setServicioFiltro(e.target.value)}
+                className="border border-brand-line bg-brand-ink px-4 py-2.5 text-sm text-brand-cream outline-none focus:border-brand-gold"
+              >
+                <option value="">Todos los servicios</option>
+                {SERVICIOS.map((s) => (
+                  <option key={s.slug} value={s.tipo}>
+                    {s.tipo}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
           {loading ? (
             <p className="text-sm text-brand-creamSoft">Cargando citas…</p>
           ) : (

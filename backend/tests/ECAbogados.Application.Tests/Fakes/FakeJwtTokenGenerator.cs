@@ -6,4 +6,6 @@ namespace ECAbogados.Application.Tests.Fakes;
 public class FakeJwtTokenGenerator : IJwtTokenGenerator
 {
     public string GenerateToken(Usuario usuario) => $"token-for-{usuario.Email}";
+
+    public string GenerateTokenParaCliente(Cliente cliente) => $"token-for-{cliente.Email}";
 }

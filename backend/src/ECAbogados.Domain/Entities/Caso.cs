@@ -17,4 +17,5 @@ public class Caso
     public string? Notas { get; set; }
     public string? TokenAcceso { get; set; }
     public DateTime? TokenGeneradoEn { get; set; }
+    public int? ClienteId { get; set; }
 }

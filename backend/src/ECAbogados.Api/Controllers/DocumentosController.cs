@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ECAbogados.Api.Controllers;
 
-[Authorize]
+[Authorize(Roles = "Administrador,Asistente")]
 [ApiController]
 [Route("api/[controller]")]
 public class DocumentosController(ISender sender, IWebHostEnvironment environment) : ControllerBase

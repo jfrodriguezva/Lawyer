@@ -261,6 +261,38 @@ export function IconLock({ className }: IconProps) {
   );
 }
 
+export function IconMoney({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+      <rect x="2.5" y="5.5" width="15" height="9.5" rx="1" stroke="currentColor" strokeWidth="1.3" />
+      <circle cx="10" cy="10.2" r="2.4" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M4.7 7.3v0M15.3 13.1v0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconBriefcase({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+      <rect x="2.5" y="6.5" width="15" height="10" rx="1" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M7 6.5V5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 13 5v1.5" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M2.5 11h15" stroke="currentColor" strokeWidth="1.1" />
+      <path d="M8.7 11v-.4a1.3 1.3 0 0 1 2.6 0v.4" stroke="currentColor" strokeWidth="1.1" />
+    </svg>
+  );
+}
+
+export function IconCalculator({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+      <rect x="4" y="2.5" width="12" height="15" rx="1" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M6 5.5h8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M6.3 9.3h1.4M9.3 9.3h1.4M12.3 9.3h1.4M6.3 12.3h1.4M9.3 12.3h1.4M12.3 12.3h1.4M6.3 15.2h1.4M9.3 15.2h1.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M12.3 12.3v2.9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function IconHandHeart({ className }: IconProps) {
   return (
     <svg viewBox="0 0 20 20" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">

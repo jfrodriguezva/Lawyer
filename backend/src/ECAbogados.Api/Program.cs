@@ -98,7 +98,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo { Title = "EC Abogados API", Version = "v1" });
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "ECG Abogados API", Version = "v1" });
 
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -128,7 +128,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "EC Abogados API v1");
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "ECG Abogados API v1");
 });
 
 app.UseCors("Frontend");

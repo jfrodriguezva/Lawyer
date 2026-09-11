@@ -6,4 +6,5 @@ public record CrearMensajeContactoCommand(
     string Nombre,
     string Telefono,
     string? Email,
-    string Mensaje) : IRequest<int>;
+    string Mensaje,
+    string? ServicioInteres = null) : IRequest<int>;

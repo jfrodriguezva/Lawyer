@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace ECAbogados.Api.Controllers;
 
-[Authorize]
+[Authorize(Roles = "Administrador,Asistente")]
 [ApiController]
 [Route("api/[controller]")]
 public class CitasController(ISender sender) : ControllerBase

@@ -6,11 +6,18 @@ import StatusPill from "@/components/StatusPill";
 import { createCaso, getCasosPaginado, type Caso } from "@/lib/api";
 
 const TIPOS = [
+  "Divorcio incausado",
+  "Divorcio por mutuo consentimiento",
   "Divorcio",
   "Pensión alimenticia",
   "Custodia",
   "Régimen de visitas",
   "Violencia familiar",
+  "Sucesiones y herencias",
+  "Cobranza y pagarés",
+  "Contratos",
+  "Trámites SAT",
+  "Asesoría legal para empresas",
   "Otro",
 ];
 

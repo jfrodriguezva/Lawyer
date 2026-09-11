@@ -1,4 +1,4 @@
--- EC Abogados - esquema de base de datos SQL Server
+-- ECG Abogados - esquema de base de datos SQL Server
 -- Ejecutar contra una base de datos vacía llamada ECAbogados (o la que se configure
 -- en ConnectionStrings:Default de backend/src/ECAbogados.Api/appsettings.json).
 
@@ -269,5 +269,54 @@ BEGIN
     );
 
     CREATE INDEX IX_Pagos_CasoId ON dbo.Pagos(CasoId);
+END
+GO
+
+-- =========================================================
+-- Portal de Cliente autenticado (cuentas reales, además del
+-- enlace mágico anónimo por token que ya existe en Casos).
+-- =========================================================
+
+-- Tabla: Clientes (mismo patrón de seguridad de login que Usuarios, sin Rol)
+IF OBJECT_ID(N'dbo.Clientes', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Clientes (
+        Id INT IDENTITY PRIMARY KEY,
+        Email NVARCHAR(256) NOT NULL UNIQUE,
+        PasswordHash NVARCHAR(256) NOT NULL,
+        Nombre NVARCHAR(200) NOT NULL,
+        Activo BIT NOT NULL DEFAULT 1,
+        IntentosFallidos INT NOT NULL DEFAULT 0,
+        BloqueadoHasta DATETIME2 NULL,
+        ResetToken NVARCHAR(64) NULL,
+        ResetTokenExpira DATETIME2 NULL,
+        FechaCreacion DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+    );
+END
+GO
+
+-- Vínculo opcional de un Caso a una cuenta de Cliente
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Casos') AND name = 'ClienteId')
+BEGIN
+    ALTER TABLE dbo.Casos ADD ClienteId INT NULL REFERENCES dbo.Clientes(Id);
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Casos_ClienteId' AND object_id = OBJECT_ID('dbo.Casos'))
+BEGIN
+    CREATE INDEX IX_Casos_ClienteId ON dbo.Casos(ClienteId);
+END
+GO
+
+-- Servicio de interés del lead (para filtrar citas/mensajes por área en el panel)
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Citas') AND name = 'ServicioInteres')
+BEGIN
+    ALTER TABLE dbo.Citas ADD ServicioInteres NVARCHAR(100) NULL;
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.MensajesContacto') AND name = 'ServicioInteres')
+BEGIN
+    ALTER TABLE dbo.MensajesContacto ADD ServicioInteres NVARCHAR(100) NULL;
 END
 GO

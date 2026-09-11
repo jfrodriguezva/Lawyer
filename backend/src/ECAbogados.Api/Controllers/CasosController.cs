@@ -5,6 +5,7 @@ using ECAbogados.Application.Casos.Commands.MarcarChecklistItem;
 using ECAbogados.Application.Casos.Commands.RegenerarTokenCaso;
 using ECAbogados.Application.Casos.Queries.ListarCasos;
 using ECAbogados.Application.Casos.Queries.ListarCasosPaginado;
+using ECAbogados.Application.Casos.Commands.VincularClienteACaso;
 using ECAbogados.Application.Casos.Queries.ObtenerCasoPorId;
 using ECAbogados.Domain.Entities;
 using ECAbogados.Application.Mediation;
@@ -13,7 +14,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ECAbogados.Api.Controllers;
 
-[Authorize]
+[Authorize(Roles = "Administrador,Asistente")]
 [ApiController]
 [Route("api/[controller]")]
 public class CasosController(ISender sender) : ControllerBase
@@ -97,6 +98,15 @@ public class CasosController(ISender sender) : ControllerBase
         var token = await sender.Send(new RegenerarTokenCasoCommand(id));
         return Ok(new { token });
     }
+
+    // Vincula el expediente a una cuenta de Cliente registrada (portal autenticado).
+    [Authorize(Roles = "Administrador")]
+    [HttpPost("{id:int}/vincular-cliente")]
+    public async Task<IActionResult> VincularCliente(int id, [FromBody] VincularClienteRequest request)
+    {
+        await sender.Send(new VincularClienteACasoCommand(id, request.ClienteId));
+        return NoContent();
+    }
 }
 
 public record ActualizarCasoRequest(string ClienteNombre, string Tipo, string? Notas);
@@ -104,3 +114,5 @@ public record ActualizarCasoRequest(string ClienteNombre, string Tipo, string? N
 public record CambiarEstatusCasoRequest(EstatusCaso Estatus);
 
 public record MarcarChecklistItemRequest(bool Completado);
+
+public record VincularClienteRequest(int ClienteId);

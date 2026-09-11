@@ -12,7 +12,7 @@ public class ListarMensajesContactoPaginadoQueryHandler(IMensajeContactoReposito
         var (items, total) = await mensajeContactoRepository.GetPagedAsync(request.Page, request.PageSize);
 
         var dtos = items
-            .Select(m => new MensajeContactoDto(m.Id, m.Nombre, m.Telefono, m.Email, m.Mensaje, m.FechaEnvio, m.Atendido))
+            .Select(m => new MensajeContactoDto(m.Id, m.Nombre, m.Telefono, m.Email, m.Mensaje, m.FechaEnvio, m.Atendido, m.ServicioInteres))
             .ToList();
 
         return new PagedResultDto<MensajeContactoDto>(dtos, total, request.Page, request.PageSize);

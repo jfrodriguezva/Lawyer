@@ -1,4 +1,4 @@
-# Manual técnico — EC Abogados
+# Manual técnico — ECG Abogados
 
 ## 1. Arquitectura general
 
@@ -14,8 +14,8 @@ El frontend (`lib/api.ts`) apunta por defecto a `http://localhost:5000` (o a `NE
 
 | Proyecto | Responsabilidad |
 |---|---|
-| `ECAbogados.Domain` | Entidades puras: `Caso`, `Cita`, `Documento`, `Usuario`, `MensajeContacto` + enums `EstatusCaso`, `EstatusCita`. Sin dependencias externas. |
-| `ECAbogados.Application` | Lógica de negocio con CQRS vía **MediatR**: Commands/Queries/Handlers/Validators organizados por feature (`Casos`, `Citas`, `Documentos`, `Auth`, `Contacto`), DTOs e interfaces de repositorio. |
+| `ECAbogados.Domain` | Entidades puras: `Caso`, `Cita`, `Documento`, `Usuario`, `Cliente`, `MensajeContacto` + enums `EstatusCaso`, `EstatusCita`. Sin dependencias externas. |
+| `ECAbogados.Application` | Lógica de negocio con CQRS vía un **mediador propio** (ver 4.5): Commands/Queries/Handlers/Validators organizados por feature (`Casos`, `Citas`, `Documentos`, `Auth`, `Contacto`, `Clientes`), DTOs e interfaces de repositorio. |
 | `ECAbogados.Infrastructure` | Implementación de repositorios sobre SQL Server (`SqlConnectionFactory`, políticas de resiliencia con Polly), `BcryptPasswordHasher`, `JwtTokenGenerator`. |
 | `ECAbogados.Api` | API REST (ASP.NET Core Web API): Controllers, JWT Bearer auth, Swagger, CORS. Escucha en `http://localhost:5080`. |
 | `ECAbogados.Gateway` | API Gateway con **Ocelot**, enruta `/api/*` hacia la API. Escucha en `http://localhost:5000`. |
@@ -61,14 +61,22 @@ Base: `/api`
 | Usuarios | `PATCH /usuarios/{id}/estatus` | JWT (**Administrador**) | Activar/desactivar una cuenta de personal |
 | | `PUT /usuarios/{id}` | JWT (**Administrador**) | Editar nombre/rol/contraseña (no puede cambiar su propio rol) |
 | Auditoría | `GET /auditoria/caso/{casoId}` | JWT (**Administrador**) | Historial de cambios sobre el caso |
+| Cliente (portal autenticado) | `POST /cliente/login` | Anónimo | Login del Cliente, devuelve JWT con rol `Cliente` (ver 4.16) |
+| | `GET /cliente/mis-casos` | JWT (**Cliente**) | Lista los casos vinculados a la cuenta que inició sesión |
+| Clientes (admin) | `GET /clientes` | JWT (**Administrador**) | Listar cuentas de cliente |
+| | `POST /clientes` | JWT (**Administrador**) | Crear cuenta de cliente (nombre/correo/contraseña) |
+| | `PATCH /clientes/{id}/estatus` | JWT (**Administrador**) | Activar/desactivar una cuenta de cliente |
+| Casos | `POST /casos/{id}/vincular-cliente` | JWT (**Administrador**) | Vincula el expediente a una cuenta de Cliente existente |
 
 Swagger UI disponible en `http://localhost:5080/swagger`.
 
 ## 4.1 Roles y autorización
 
-El JWT incluye el claim de rol (`Administrador` o `Asistente`). Restricciones aplicadas a nivel de controller:
-- Cerrar un expediente (`PATCH /casos/{id}/estatus` con `Cerrado`) requiere rol `Administrador` (verificación inline en `CasosController`).
-- Todo el controller de `Pagos` y `Usuarios` requiere `[Authorize(Roles = "Administrador")]`.
+Tres roles posibles en el claim de rol del JWT: `Administrador`, `Asistente` (staff, emitidos por `/auth/login`) y `Cliente` (portal autenticado, emitido por `/cliente/login` — ver 4.16). Restricciones aplicadas a nivel de controller:
+- `CasosController`, `CitasController`, `DocumentosController`, `PlazosController` y las acciones autenticadas de `ContactoController` requieren `[Authorize(Roles = "Administrador,Asistente")]` — **antes** de agregar el rol `Cliente` bastaba con `[Authorize]` sin restricción de rol, pero eso habría dejado pasar un JWT de Cliente a endpoints de staff (la validación de JWT por sí sola no filtra por rol). Este endurecimiento se hizo específicamente al introducir el portal de Cliente.
+- Cerrar un expediente (`PATCH /casos/{id}/estatus` con `Cerrado`) requiere además rol `Administrador` (verificación inline en `CasosController`).
+- Todo el controller de `Pagos`, `Usuarios`, `Clientes` y `Auditoria` requiere `[Authorize(Roles = "Administrador")]`.
+- `GET /cliente/mis-casos` requiere `[Authorize(Roles = "Cliente")]` — un JWT de staff no puede llamarlo (le falta el rol) y viceversa.
 
 ## 4.2 Notificaciones por correo (gratis)
 
@@ -150,6 +158,30 @@ Flujo:
 
 `Application/Documentos/TiposPermitidos.cs`: whitelist de extensiones (`.pdf .doc .docx .xls .xlsx .jpg .jpeg .png`) y tamaño máximo de 50 MB, usada tanto en `SubirDocumentoCommandValidator` (defensa a nivel de dominio, corre automáticamente vía el `Sender` — ver 4.5) como directamente en `DocumentosController`/`PortalController` **antes** de escribir el archivo a disco: si solo se validara en el comando, un archivo inválido ya habría quedado guardado en `App_Data/documentos` para cuando el `Sender` lo rechazara. Verificado en vivo: subir un `.exe` responde `400` sin crear el archivo.
 
+## 4.16 Portal de Cliente autenticado (cuentas reales)
+
+Distinto del portal anónimo por enlace mágico (4.4), que **sigue existiendo sin cambios**. Un `Cliente` es una cuenta real (correo/contraseña) que la abogada crea manualmente desde `/clientes` (solo Administrador) y vincula a uno o más `Caso` mediante `Caso.ClienteId` (columna nullable, aditiva — un caso sin cliente vinculado sigue funcionando exactamente igual que antes).
+
+- Tabla `Clientes`: mismas columnas de seguridad que `Usuarios` (`IntentosFallidos`, `BloqueadoHasta`, `ResetToken`/`Expira`) pero sin `Rol` — el rol `"Cliente"` se fija al emitir el JWT, no se guarda por fila.
+- `LoginClienteCommandHandler` es una copia casi textual de `LoginCommandHandler` (mismo bloqueo a 5 intentos/15 min) contra `IClienteRepository` en vez de `IUsuarioRepository`.
+- `IJwtTokenGenerator.GenerateTokenParaCliente(Cliente)` reusa el mismo método privado de construcción de claims que `GenerateToken(Usuario)` (mismo secreto/issuer/audience), solo cambia el claim de rol a `"Cliente"`.
+- `GET /cliente/mis-casos` reutiliza el mismo DTO (`PortalCasoDto`) que ya usaba el portal anónimo — la única diferencia es que junta **todos** los casos de `Caso.ClienteId = <id del JWT>` en vez de resolver uno solo por token.
+- El portal autenticado (`frontend/web/app/cliente/portal/page.tsx`) es de **solo lectura** (ve estatus, checklist y documentos que la abogada carga) — a diferencia del portal anónimo, no permite subir documentos; así se acotó el alcance a lo pedido ("el cliente visualiza, el abogado carga la información").
+- Cookies del portal de Cliente (`ecg_cliente_token`/`ecg_cliente_user`) son **distintas** de las del staff (`ec_token`/`ec_user`) para que ambas sesiones puedan coexistir sin pisarse en el mismo navegador; `lib/api.ts` tiene un wrapper de request independiente (`requestCliente`) para no mezclar la lógica.
+- Verificado en vivo: se creó un cliente, se vinculó a un caso, se inició sesión como ese cliente, `mis-casos` devolvió solo ese caso, y el mismo JWT recibió `403` en `/api/casos`, `/api/citas`, `/api/documentos/...`, `/api/plazos/...`, `/api/contacto` y `/api/usuarios`. El portal anónimo por token se probó sin cambios de comportamiento.
+
+## 4.17 Servicio de interés en leads + botón de WhatsApp
+
+`Cita.ServicioInteres`/`MensajeContacto.ServicioInteres` (columnas nullables) etiquetan un lead con el servicio del que vino (ej. "Trámites SAT"), enviado por el frontend cuando el formulario se llena desde una página de servicio específica (`GuestPanel` recibe un prop opcional `servicioInteres`, pasado por `app/servicios/[slug]/page.tsx` con `servicio.tipo`; el formulario genérico de la home no lo manda). El panel de administrador (`agenda/page.tsx`, `mensajes/page.tsx`) permite filtrar por este campo (client-side sobre la página ya cargada, sin endpoint nuevo).
+
+El aviso de un lead nuevo sigue siendo 100% gratuito: el correo inmediato a `IStaffNotifier` ya existía (ver 4.2), y se sumó un botón "Abrir WhatsApp" en cada cita/mensaje del panel que arma un enlace `wa.me` (`lib/whatsapp.ts`, código de país `52` + 10 dígitos) con texto prellenado — abre una conversación de WhatsApp normal que la abogada contesta desde su propio teléfono, sin ninguna API de pago de WhatsApp Business.
+
+## 4.18 Rebrand y expansión de servicios (ECG Abogados)
+
+El despacho pasó de "EC Abogados" a **ECG Abogados** (rebrand de texto/marca visible únicamente — namespaces `.NET`, nombre de la base de datos, `Jwt:Issuer`/`Audience` y el repo se mantuvieron igual a propósito, es un cambio cosmético/de marketing, no técnico). El logo es un SVG dibujado a mano en `components/Monogram.tsx` (igual que antes, sin assets rasterizados) con un motivo de balanza de la justicia agregado.
+
+`frontend/web/lib/servicios.ts` creció de 4 a 11 entradas (`ServicioContenido[]`), cada una generando su propia página estática en `/servicios/{slug}` vía `generateStaticParams`. El campo `tipo` de cada entrada debe coincidir exactamente con: (a) el arreglo `TIPOS` en `app/(app)/casos/page.tsx` (dropdown al crear un expediente) y (b) las llaves del catálogo `RequisitosPorTipo.cs` (checklist automático) — los tres se mantienen sincronizados a mano; agregar un servicio nuevo requiere tocar los tres lugares para que genere un checklist real al crear un caso de ese tipo. `/servicios` es un índice nuevo que agrupa los 11 en "Derecho familiar" y "Asesoría fiscal y empresarial". La página de inicio agrega una franja de navegación rápida (`components/QuickNav.tsx`) para saltar entre secciones sin depender solo de scroll.
+
 ## 4.8 Historial de cambios (auditoría)
 
 Tabla `Auditoria` (Entidad, EntidadId, Accion, Detalle, UsuarioId, UsuarioNombre, Fecha) — insert-only. `ICurrentUserAccessor` (Application) / `CurrentUserAccessor` (Infrastructure, vía `IHttpContextAccessor` — se agregó `FrameworkReference` a `Microsoft.AspNetCore.App` en `ECAbogados.Infrastructure.csproj`, sin costo, es parte del runtime) expone quién hace la solicitud actual leyendo los mismos claims del JWT; si no hay sesión (rutas anónimas: cita pública, subida vía portal), se registra como `"Público (sin sesión)"`.
@@ -158,7 +190,7 @@ Handlers que registran auditoría sobre el caso: crear/actualizar caso, cambiar 
 
 ## 4.7 Pruebas automatizadas y CI
 
-- `backend/tests/ECAbogados.Application.Tests`: proyecto xUnit con **fakes escritos a mano** (sin Moq/NSubstitute) para los repositorios — mismo espíritu "manual" que el mediador propio. Cubre `LoginCommandHandler` (éxito, password incorrecto, usuario inactivo, bloqueo al 5º intento fallido, reseteo del contador en login exitoso), `CrearCasoCommandHandler` (checklist auto-generado), `CambiarEstatusCasoCommandHandler`, `CrearUsuarioCommandHandler` (email duplicado), `SubirDocumentoCommandValidator` (extensión no permitida, tamaño máximo), `ObtenerCasoPorTokenQueryHandler` (token expirado/inexistente/vigente), `SolicitarResetPasswordCommandHandler`/`RestablecerPasswordCommandHandler` (no revela si el correo existe, token expirado/inválido) y el propio `Sender`/registro de `AddApplication()`. 27 pruebas en total. Correr con `dotnet test backend/ECAbogados.sln`.
+- `backend/tests/ECAbogados.Application.Tests`: proyecto xUnit con **fakes escritos a mano** (sin Moq/NSubstitute) para los repositorios — mismo espíritu "manual" que el mediador propio. Cubre `LoginCommandHandler`/`LoginClienteCommandHandler` (éxito, password incorrecto, cuenta inactiva, bloqueo al 5º intento fallido, reseteo del contador en login exitoso), `CrearCasoCommandHandler` (checklist auto-generado), `CambiarEstatusCasoCommandHandler`, `CrearUsuarioCommandHandler` (email duplicado), `VincularClienteACasoCommandHandler` (vincula y registra auditoría), `SubirDocumentoCommandValidator` (extensión no permitida, tamaño máximo), `ObtenerCasoPorTokenQueryHandler` (token expirado/inexistente/vigente), `SolicitarResetPasswordCommandHandler`/`RestablecerPasswordCommandHandler` (no revela si el correo existe, token expirado/inválido) y el propio `Sender`/registro de `AddApplication()`. 32 pruebas en total. Correr con `dotnet test backend/ECAbogados.sln`.
 - `.github/workflows/ci.yml`: GitHub Actions (gratis en repos públicos) — build + test del backend y lint + build del frontend en cada push/PR a `main`. No requiere SQL Server real (tests unitarios contra fakes en memoria).
 
 ## 4. Autenticación
@@ -174,7 +206,7 @@ Handlers que registran auditoría sobre el caso: crear/actualizar caso, cambiar 
 
 SQL Server. Esquema completo en `backend/database/schema.sql`.
 
-**Tablas:** `Usuarios`, `Casos`, `Citas`, `Documentos`, `MensajesContacto`, `ChecklistItems`, `Plazos`, `Pagos`.
+**Tablas:** `Usuarios`, `Clientes`, `Casos`, `Citas`, `Documentos`, `MensajesContacto`, `ChecklistItems`, `Plazos`, `Pagos`.
 
 El script es idempotente (usa `IF NOT EXISTS`) e incluye datos semilla:
 - Usuario administrador: `erika@ecabogados.mx` / contraseña `Cambiar123!` (hash bcrypt ya incluido).
@@ -195,23 +227,28 @@ La tabla `Documentos` solo referencia `RutaAlmacenamiento`.
 
 ```
 frontend/web/app/
-├── page.tsx                → landing pública
-├── login/page.tsx          → login
-├── portal/[token]/page.tsx → portal del cliente (enlace mágico, sin login)
-├── servicios/[slug]/page.tsx → landings de servicio (pensión, custodia, etc.)
+├── page.tsx                → landing pública (home)
+├── login/page.tsx          → login del staff
+├── portal/[token]/page.tsx → portal del cliente por enlace mágico (sin login)
+├── cliente/login/page.tsx  → login del Cliente (cuenta real, portal autenticado)
+├── cliente/portal/         → layout.tsx (guard) + page.tsx (solo lectura de "mis casos")
+├── servicios/page.tsx      → índice de los 11 servicios, agrupados
+├── servicios/[slug]/page.tsx → landing de cada servicio (divorcio, pensión, SAT, etc.)
 ├── sitemap.ts / robots.ts  → SEO nativo de Next.js
-└── (app)/                  → grupo de rutas protegidas
+└── (app)/                  → grupo de rutas protegidas (staff)
     ├── layout.tsx           → guard: redirige a /login si no hay cookie ec_token
     ├── dashboard/page.tsx
     ├── casos/page.tsx
     ├── casos/[id]/page.tsx
     ├── agenda/page.tsx
     ├── mensajes/page.tsx
+    ├── clientes/page.tsx    → solo Administrador (alta de cuentas de Cliente)
     └── usuarios/page.tsx    → solo Administrador
 ```
 
-- `lib/api.ts`: cliente HTTP centralizado (fetch wrapper), define los tipos TS (`Caso`, `Cita`, `Documento`, `MensajeContacto`), inyecta el JWT y maneja errores (`ApiError`).
-- `lib/cookies.ts`: helpers `getCookie`/`setCookie` para persistir `ec_token` y `ec_user`.
+- `lib/api.ts`: cliente HTTP centralizado (fetch wrapper), define los tipos TS (`Caso`, `Cita`, `Documento`, `MensajeContacto`, `Cliente`), inyecta el JWT y maneja errores (`ApiError`); incluye un segundo wrapper (`requestCliente`) para las llamadas del portal de Cliente, que firma con una cookie distinta (ver 4.16).
+- `lib/cookies.ts`: helpers `getCookie`/`setCookie` para persistir `ec_token`/`ec_user` (staff) y `ecg_cliente_token`/`ecg_cliente_user` (Cliente).
+- `lib/whatsapp.ts`: helper `buildWhatsAppLink` para los botones "Abrir WhatsApp" del panel (ver 4.17).
 - Sin gestor de estado global ni librería de fetching (no Redux/React Query): cada página usa `useState`/`useEffect` + llamadas directas a `lib/api.ts`.
 - Estilo: Tailwind CSS 4 con paleta de marca personalizada (`brand-ink`, `brand-gold`, etc.).
 
