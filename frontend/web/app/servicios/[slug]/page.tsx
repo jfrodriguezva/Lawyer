@@ -185,10 +185,10 @@ export default async function ServicioPage({
                     <IconPhone className="h-4 w-4 text-brand-gold" /> Tel · 55 12 59 23 88
                   </a>
                   <a
-                    href="mailto:erika.c.abogada@gmail.com"
+                    href="mailto:contacto@ecgabogados.com"
                     className="flex items-center gap-3 text-sm text-brand-cream transition-all duration-200 hover:translate-x-1 hover:text-brand-gold"
                   >
-                    <IconMail className="h-4 w-4 text-brand-gold" /> erika.c.abogada@gmail.com
+                    <IconMail className="h-4 w-4 text-brand-gold" /> contacto@ecgabogados.com
                   </a>
                 </div>
               </div>

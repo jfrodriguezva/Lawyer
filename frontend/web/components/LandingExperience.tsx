@@ -103,6 +103,15 @@ function LandingExperienceInner() {
     }
   }, [tabParam, servicioParam]);
 
+  // Al entrar a Procesos/Quiénes somos/Misión desde el encabezado, la sección se
+  // agrega debajo del servicio destacado; sin este scroll el clic parecía no hacer
+  // nada porque la parte visible de la pantalla no cambiaba.
+  useEffect(() => {
+    if (!seccion) return;
+    const el = document.getElementById("explorar");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [seccion]);
+
   const servicio = getServicioPorSlug(servicioSlug) ?? getServicioPorSlug("divorcio-incausado")!;
 
   return (
@@ -474,10 +483,10 @@ function SeccionAgenda({ servicio }: { servicio: ReturnType<typeof getServicioPo
                 <IconPhone className="h-4 w-4 text-brand-gold" /> Tel · 55 12 59 23 88
               </a>
               <a
-                href="mailto:erika.c.abogada@gmail.com"
+                href="mailto:contacto@ecgabogados.com"
                 className="flex items-center gap-3 text-sm text-brand-cream transition-all duration-200 hover:translate-x-1 hover:text-brand-gold"
               >
-                <IconMail className="h-4 w-4 text-brand-gold" /> erika.c.abogada@gmail.com
+                <IconMail className="h-4 w-4 text-brand-gold" /> contacto@ecgabogados.com
               </a>
               <p className="pt-1 text-xs text-brand-creamSoft">Lic. Erika Cruz García</p>
             </div>

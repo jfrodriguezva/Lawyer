@@ -52,13 +52,16 @@ function GuestHeaderInner() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Cierra todo al cambiar de página, para que un menú no quede abierto sobre la nueva pantalla.
+  // Cierra todo al navegar, para que un menú no quede abierto sobre la nueva pantalla.
+  // Depende también de los query params: un clic en Procesos/Quiénes somos/un
+  // servicio no cambia el pathname (sigue en "/"), solo el query string, así que
+  // solo mirar el pathname dejaba el menú móvil abierto y tapando el contenido.
   useEffect(() => {
     setServiciosOpen(false);
     setAccesoOpen(false);
     setMobileOpen(false);
     setMobileServiciosOpen(false);
-  }, [pathname]);
+  }, [pathname, searchParams]);
 
   const enHome = pathname === "/";
   const tabActual = enHome ? searchParams.get("tab") : null;
@@ -93,8 +96,10 @@ function GuestHeaderInner() {
           </div>
         </Link>
 
-        {/* Navegación de escritorio, en forma de pestañas con indicador de sección activa */}
-        <nav className="hidden items-center gap-1 md:flex">
+        {/* Navegación de escritorio, en forma de pestañas con indicador de sección activa.
+            Empieza en lg (1024px): con 6 enlaces + el menú de Servicios, md (768px,
+            tablets) no tiene espacio suficiente y los elementos se encimaban. */}
+        <nav className="hidden items-center gap-1 lg:flex">
           <NavTab href="/" label="Inicio" active={enInicio} />
 
           <div className="relative">
@@ -136,7 +141,7 @@ function GuestHeaderInner() {
 
         <div className="flex items-center gap-4">
           {/* Acceso: un solo control que distingue personal vs. clientes */}
-          <div className="relative hidden md:block">
+          <div className="relative hidden lg:block">
             <button
               type="button"
               onClick={() => {
@@ -178,7 +183,7 @@ function GuestHeaderInner() {
             type="button"
             onClick={() => setMobileOpen((v) => !v)}
             aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
-            className="flex h-9 w-9 items-center justify-center border border-brand-line text-brand-cream transition-colors hover:border-brand-gold hover:text-brand-gold md:hidden"
+            className="flex h-9 w-9 items-center justify-center border border-brand-line text-brand-cream transition-colors hover:border-brand-gold hover:text-brand-gold lg:hidden"
           >
             {mobileOpen ? <IconClose className="h-4 w-4" /> : <IconMenu className="h-4 w-4" />}
           </button>
@@ -187,7 +192,7 @@ function GuestHeaderInner() {
 
       {/* Navegación móvil */}
       {mobileOpen && (
-        <div className="border-t border-brand-line bg-brand-ink px-6 py-4 md:hidden">
+        <div className="border-t border-brand-line bg-brand-ink px-6 py-4 lg:hidden">
           <nav className="flex flex-col">
             <Link
               href="/"
