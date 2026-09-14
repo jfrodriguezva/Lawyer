@@ -5,11 +5,11 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import Monogram from "@/components/Monogram";
 import { IconChevronDown, IconClose, IconMenu } from "@/components/icons";
-import { AREA_FAMILIAR, AREA_FISCAL_EMPRESARIAL, serviciosPorArea } from "@/lib/servicios";
+import { getFlags } from "@/lib/api";
+import { AREA_EMPRESARIAL, AREA_FAMILIAR, AREA_SAT, serviciosPorArea } from "@/lib/servicios";
 
 const TABS = [
   { href: "/?tab=procesos", label: "Procesos", tab: "procesos" },
-  { href: "/?tab=agendar", label: "Agendar", tab: "agendar" },
   { href: "/?tab=quienes-somos", label: "Quiénes somos", tab: "quienes-somos" },
   { href: "/?tab=mision", label: "Misión y valores", tab: "mision" },
 ];
@@ -35,6 +35,13 @@ function GuestHeaderInner() {
   const [accesoOpen, setAccesoOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileServiciosOpen, setMobileServiciosOpen] = useState(false);
+  const [satHabilitado, setSatHabilitado] = useState(false);
+
+  useEffect(() => {
+    getFlags()
+      .then((flags) => setSatHabilitado(flags.satHabilitado))
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     function onScroll() {
@@ -56,7 +63,7 @@ function GuestHeaderInner() {
   const enHome = pathname === "/";
   const tabActual = enHome ? searchParams.get("tab") : null;
   const servicioActual = enHome ? searchParams.get("servicio") : null;
-  const enServicios = pathname?.startsWith("/servicios") || (enHome && !!servicioActual);
+  const enServicios = pathname?.startsWith("/servicios") || (enHome && (!!servicioActual || tabActual === "servicios"));
   const enInicio = enHome && !tabActual && !servicioActual;
 
   return (
@@ -115,14 +122,16 @@ function GuestHeaderInner() {
                   className="fixed inset-0 z-40 cursor-default"
                   onClick={() => setServiciosOpen(false)}
                 />
-                <ServiciosMenu onNavigate={() => setServiciosOpen(false)} />
+                <ServiciosMenu satHabilitado={satHabilitado} onNavigate={() => setServiciosOpen(false)} />
               </>
             )}
           </div>
 
           {TABS.map((tab) => (
-            <NavTab key={tab.href} href={tab.href} label={tab.label} active={tab.tab !== null && tabActual === tab.tab} />
+            <NavTab key={tab.href} href={tab.href} label={tab.label} active={tabActual === tab.tab} />
           ))}
+
+          <NavTab href="/#agenda" label="Agendar" />
         </nav>
 
         <div className="flex items-center gap-4">
@@ -197,24 +206,16 @@ function GuestHeaderInner() {
               Servicios
               <IconChevronDown className={`h-3.5 w-3.5 transition-transform ${mobileServiciosOpen ? "rotate-180" : ""}`} />
             </button>
-            {mobileServiciosOpen && (
-              <div className="mb-2 flex flex-col gap-1 border-l border-brand-line pl-4">
-                {[...serviciosPorArea(AREA_FAMILIAR), ...serviciosPorArea(AREA_FISCAL_EMPRESARIAL)].map((s) => (
-                  <Link key={s.slug} href={`/?servicio=${s.slug}`} className="py-1.5 text-sm text-brand-creamSoft">
-                    {s.titulo}
-                  </Link>
-                ))}
-                <Link href="/?tab=servicios" className="py-1.5 text-sm font-semibold text-brand-gold">
-                  Ver todos →
-                </Link>
-              </div>
-            )}
+            {mobileServiciosOpen && <ServiciosMenuMovil satHabilitado={satHabilitado} />}
 
             {TABS.map((tab) => (
               <Link key={tab.href} href={tab.href} className="py-3 text-sm uppercase tracking-widest text-brand-cream">
                 {tab.label}
               </Link>
             ))}
+            <Link href="/#agenda" className="py-3 text-sm uppercase tracking-widest text-brand-cream">
+              Agendar
+            </Link>
 
             <div className="mt-3 flex flex-col gap-2 border-t border-brand-line pt-4">
               {ACCESOS.map((a) => (
@@ -248,47 +249,26 @@ function NavTab({ href, label, active }: { href: string; label: string; active?:
   );
 }
 
-function ServiciosMenu({ onNavigate }: { onNavigate: () => void }) {
+// Grupos del menú de Servicios: separados por módulo del sistema (Abogado / SAT /
+// Comercializadora), nunca mezclados, porque cada uno corresponde a un rol y a un
+// flujo de agenda distinto. SAT y Comercializadora se muestran atenuados como
+// "Próximamente" cuando el módulo respectivo aún no está habilitado.
+function ServiciosMenu({ satHabilitado, onNavigate }: { satHabilitado: boolean; onNavigate: () => void }) {
   const familiares = serviciosPorArea(AREA_FAMILIAR);
-  const fiscalEmpresarial = serviciosPorArea(AREA_FISCAL_EMPRESARIAL);
+  const empresarial = serviciosPorArea(AREA_EMPRESARIAL);
+  const sat = serviciosPorArea(AREA_SAT);
 
   return (
-    <div className="absolute left-1/2 z-50 mt-2 w-[560px] -translate-x-1/2 border border-brand-line bg-brand-ink2 p-6 shadow-[0_30px_70px_-25px_rgba(0,0,0,0.65)]">
-      <div className="grid grid-cols-2 gap-8">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-gold">Derecho familiar</p>
-          <ul className="mt-3 space-y-2">
-            {familiares.map((s) => (
-              <li key={s.slug}>
-                <Link
-                  href={`/?servicio=${s.slug}`}
-                  onClick={onNavigate}
-                  className="text-sm text-brand-creamSoft transition-colors hover:text-brand-cream"
-                >
-                  {s.titulo}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-gold">
-            Asesoría fiscal y empresarial
-          </p>
-          <ul className="mt-3 space-y-2">
-            {fiscalEmpresarial.map((s) => (
-              <li key={s.slug}>
-                <Link
-                  href={`/?servicio=${s.slug}`}
-                  onClick={onNavigate}
-                  className="text-sm text-brand-creamSoft transition-colors hover:text-brand-cream"
-                >
-                  {s.titulo}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+    <div className="absolute left-1/2 z-50 mt-2 w-[620px] -translate-x-1/2 border border-brand-line bg-brand-ink2 p-6 shadow-[0_30px_70px_-25px_rgba(0,0,0,0.65)]">
+      <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+        <GrupoServicios titulo="Derecho familiar" servicios={familiares} onNavigate={onNavigate} />
+        <GrupoServicios titulo="Fiscal y empresarial" servicios={empresarial} onNavigate={onNavigate} />
+        {satHabilitado ? (
+          <GrupoServicios titulo="Trámites SAT" servicios={sat} onNavigate={onNavigate} />
+        ) : (
+          <GrupoProximamente titulo="Trámites SAT" />
+        )}
+        <GrupoProximamente titulo="Comercializadora" />
       </div>
       <Link
         href="/?tab=servicios"
@@ -296,6 +276,90 @@ function ServiciosMenu({ onNavigate }: { onNavigate: () => void }) {
         className="mt-6 block border-t border-brand-line pt-4 text-center text-xs font-semibold uppercase tracking-widest text-brand-gold hover:underline"
       >
         Ver todos los servicios →
+      </Link>
+    </div>
+  );
+}
+
+function GrupoServicios({
+  titulo,
+  servicios,
+  onNavigate,
+}: {
+  titulo: string;
+  servicios: ReturnType<typeof serviciosPorArea>;
+  onNavigate: () => void;
+}) {
+  return (
+    <div>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-gold">{titulo}</p>
+      <ul className="mt-3 space-y-2">
+        {servicios.map((s) => (
+          <li key={s.slug}>
+            <Link
+              href={`/?servicio=${s.slug}`}
+              onClick={onNavigate}
+              className="text-sm text-brand-creamSoft transition-colors hover:text-brand-cream"
+            >
+              {s.titulo}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function GrupoProximamente({ titulo }: { titulo: string }) {
+  return (
+    <div className="opacity-50">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-creamSoft">{titulo}</p>
+      <p className="mt-3 text-sm italic text-brand-creamSoft">Próximamente</p>
+    </div>
+  );
+}
+
+function ServiciosMenuMovil({ satHabilitado }: { satHabilitado: boolean }) {
+  const familiares = serviciosPorArea(AREA_FAMILIAR);
+  const empresarial = serviciosPorArea(AREA_EMPRESARIAL);
+  const sat = serviciosPorArea(AREA_SAT);
+
+  return (
+    <div className="mb-2 flex flex-col gap-4 border-l border-brand-line pl-4">
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gold">Derecho familiar</p>
+        {familiares.map((s) => (
+          <Link key={s.slug} href={`/?servicio=${s.slug}`} className="block py-1.5 text-sm text-brand-creamSoft">
+            {s.titulo}
+          </Link>
+        ))}
+      </div>
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gold">Fiscal y empresarial</p>
+        {empresarial.map((s) => (
+          <Link key={s.slug} href={`/?servicio=${s.slug}`} className="block py-1.5 text-sm text-brand-creamSoft">
+            {s.titulo}
+          </Link>
+        ))}
+      </div>
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gold">Trámites SAT</p>
+        {satHabilitado ? (
+          sat.map((s) => (
+            <Link key={s.slug} href={`/?servicio=${s.slug}`} className="block py-1.5 text-sm text-brand-creamSoft">
+              {s.titulo}
+            </Link>
+          ))
+        ) : (
+          <p className="py-1.5 text-sm italic text-brand-creamSoft/70">Próximamente</p>
+        )}
+      </div>
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gold">Comercializadora</p>
+        <p className="py-1.5 text-sm italic text-brand-creamSoft/70">Próximamente</p>
+      </div>
+      <Link href="/?tab=servicios" className="py-1.5 text-sm font-semibold text-brand-gold">
+        Ver todos →
       </Link>
     </div>
   );

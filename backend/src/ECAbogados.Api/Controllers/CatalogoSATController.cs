@@ -9,13 +9,15 @@ using Microsoft.AspNetCore.Mvc;
 namespace ECAbogados.Api.Controllers;
 
 // Catálogo de trámites SAT: es configuración del despacho (qué trámites existen,
-// qué requisitos piden), por lo que solo Administrador lo edita. Consultor lo
-// consume desde TramitesSATController al dar seguimiento a un trámite concreto.
-[Authorize(Roles = "Administrador")]
+// qué requisitos piden), por lo que solo Administrador lo edita. Consultor solo
+// puede leerlo, para elegir un trámite del catálogo al dar de alta uno nuevo.
+// Sin [Authorize] a nivel de clase: varios [Authorize] combinados exigirían TODOS
+// los roles a la vez (AND, no OR), así que cada acción declara su propio rol.
 [ApiController]
 [Route("api/catalogo-sat")]
 public class CatalogoSATController(ISender sender) : ControllerBase
 {
+    [Authorize(Roles = "Consultor,Administrador")]
     [HttpGet]
     public async Task<IActionResult> Listar()
     {
@@ -23,6 +25,7 @@ public class CatalogoSATController(ISender sender) : ControllerBase
         return Ok(catalogo);
     }
 
+    [Authorize(Roles = "Administrador")]
     [HttpPost]
     public async Task<IActionResult> Crear([FromBody] CrearTramiteCatalogoCommand command)
     {
@@ -30,6 +33,7 @@ public class CatalogoSATController(ISender sender) : ControllerBase
         return Created(string.Empty, new { id });
     }
 
+    [Authorize(Roles = "Administrador")]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Actualizar(int id, [FromBody] ActualizarTramiteCatalogoRequest request)
     {
@@ -37,6 +41,7 @@ public class CatalogoSATController(ISender sender) : ControllerBase
         return NoContent();
     }
 
+    [Authorize(Roles = "Administrador")]
     [HttpPatch("{id:int}/estatus")]
     public async Task<IActionResult> CambiarEstatus(int id, [FromBody] CambiarEstatusTramiteCatalogoRequest request)
     {

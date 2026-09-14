@@ -248,8 +248,10 @@ export function getServicioPorSlug(slug: string): ServicioContenido | undefined 
   return SERVICIOS.find((s) => s.slug === slug);
 }
 
-// Agrupación de los 11 servicios en las dos áreas del despacho — fuente única
-// de verdad para el menú de navegación, la home y el índice /servicios.
+// Agrupación de los servicios por módulo — fuente única de verdad para el menú
+// de navegación, la home y el índice /servicios. Separada por módulo (no solo por
+// área temática) para no mezclar en un mismo grupo servicios que en el sistema
+// pertenecen a roles/flujos distintos: Abogado (jurídico) vs. Consultor (SAT).
 export const AREA_FAMILIAR = [
   "divorcio-incausado",
   "divorcio-mutuo-consentimiento",
@@ -259,13 +261,12 @@ export const AREA_FAMILIAR = [
   "violencia-familiar",
 ];
 
-export const AREA_FISCAL_EMPRESARIAL = [
-  "tramites-sat",
-  "contratos",
-  "cobranza-pagares",
-  "sucesiones-herencias",
-  "asesoria-empresas",
-];
+// Servicios jurídicos de índole fiscal/empresarial que SÍ atiende el Abogado
+// (contratos, cobranza, sucesiones, asesoría a empresas) — no son el módulo SAT.
+export const AREA_EMPRESARIAL = ["contratos", "cobranza-pagares", "sucesiones-herencias", "asesoria-empresas"];
+
+// Único servicio del módulo SAT, atendido por el rol Consultor.
+export const AREA_SAT = ["tramites-sat"];
 
 export function serviciosPorArea(slugs: string[]): ServicioContenido[] {
   return slugs

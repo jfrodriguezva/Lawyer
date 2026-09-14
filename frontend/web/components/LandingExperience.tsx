@@ -5,11 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import GuestPanel from "@/components/GuestPanel";
 import Reveal from "@/components/Reveal";
+import { getFlags } from "@/lib/api";
 import {
   IconArrowRight,
   IconBriefcase,
   IconCalculator,
-  IconCalendar,
+  IconCheck,
   IconChevronDown,
   IconClock,
   IconDocumentLegal,
@@ -27,8 +28,9 @@ import {
   IconWhatsapp,
 } from "@/components/icons";
 import {
+  AREA_EMPRESARIAL,
   AREA_FAMILIAR,
-  AREA_FISCAL_EMPRESARIAL,
+  AREA_SAT,
   getServicioPorSlug,
   SERVICIOS,
   serviciosPorArea,
@@ -49,14 +51,14 @@ const ICONOS_BENEFICIO: Record<IconoBeneficio, typeof IconScale> = {
   calculator: IconCalculator,
 };
 
-type TabKey = "servicios" | "procesos" | "agendar" | "quienes-somos" | "mision";
+type TabKey = "inicio" | "servicios" | "procesos" | "quienes-somos" | "mision";
 
-const TAB_KEYS: TabKey[] = ["servicios", "procesos", "agendar", "quienes-somos", "mision"];
+const TAB_KEYS: TabKey[] = ["inicio", "servicios", "procesos", "quienes-somos", "mision"];
 
 const TABS: { key: TabKey; label: string }[] = [
+  { key: "inicio", label: "Inicio" },
   { key: "servicios", label: "Servicios" },
   { key: "procesos", label: "Procesos" },
-  { key: "agendar", label: "Agendar" },
   { key: "quienes-somos", label: "Quiénes somos" },
   { key: "mision", label: "Misión y valores" },
 ];
@@ -85,11 +87,18 @@ function LandingExperienceInner() {
   const servicioParam = searchParams.get("servicio");
 
   const [activeTab, setActiveTab] = useState<TabKey>(
-    TAB_KEYS.includes(tabParam as TabKey) ? (tabParam as TabKey) : "servicios"
+    TAB_KEYS.includes(tabParam as TabKey) ? (tabParam as TabKey) : "inicio"
   );
   const [servicioSlug, setServicioSlug] = useState(
     servicioParam && getServicioPorSlug(servicioParam) ? servicioParam : "divorcio-incausado"
   );
+  const [satHabilitado, setSatHabilitado] = useState(false);
+
+  useEffect(() => {
+    getFlags()
+      .then((flags) => setSatHabilitado(flags.satHabilitado))
+      .catch(() => undefined);
+  }, []);
 
   // Un enlace externo (menú de Servicios, tarjeta de otra página) puede llegar con
   // ?servicio= o ?tab= en la URL; sincronizamos el estado interno cuando cambian.
@@ -99,12 +108,14 @@ function LandingExperienceInner() {
       setActiveTab("servicios");
     } else if (TAB_KEYS.includes(tabParam as TabKey)) {
       setActiveTab(tabParam as TabKey);
+    } else if (!tabParam && !servicioParam) {
+      setActiveTab("inicio");
     }
   }, [tabParam, servicioParam]);
 
   function irATab(tab: TabKey) {
     setActiveTab(tab);
-    router.replace(tab === "servicios" ? "/" : `/?tab=${tab}`, { scroll: false });
+    router.replace(tab === "inicio" ? "/" : `/?tab=${tab}`, { scroll: false });
   }
 
   function irAServicio(slug: string) {
@@ -116,9 +127,9 @@ function LandingExperienceInner() {
   const servicio = getServicioPorSlug(servicioSlug) ?? getServicioPorSlug("divorcio-incausado")!;
 
   return (
-    <section id="explorar" className="mt-16 scroll-mt-24 lg:mt-24">
+    <section id="explorar" className="mt-10 scroll-mt-24">
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.5fr_1fr] lg:items-start">
-        {/* Columna izquierda: presentación por pestañas, sin scroll largo */}
+        {/* Columna izquierda: única fuente de contenido navegable, por pestañas y sin scroll largo */}
         <div>
           <div className="flex flex-wrap gap-1 border-b border-brand-line">
             {TABS.map((t) => (
@@ -139,17 +150,22 @@ function LandingExperienceInner() {
           </div>
 
           <div className="mt-10">
+            {activeTab === "inicio" && <TabInicio onIrAServicios={() => irATab("servicios")} />}
             {activeTab === "servicios" && (
-              <TabServicios servicio={servicio} servicioSlug={servicioSlug} onSelect={irAServicio} />
+              <TabServicios
+                servicio={servicio}
+                servicioSlug={servicioSlug}
+                satHabilitado={satHabilitado}
+                onSelect={irAServicio}
+              />
             )}
-            {activeTab === "procesos" && <TabProcesos />}
-            {activeTab === "agendar" && <TabAgendar />}
+            {activeTab === "procesos" && <TabProcesos satHabilitado={satHabilitado} />}
             {activeTab === "quienes-somos" && <TabQuienesSomos />}
             {activeTab === "mision" && <TabMision />}
           </div>
         </div>
 
-        {/* Columna derecha: agenda, siempre visible sin importar la pestaña activa */}
+        {/* Columna derecha: agenda, fija y siempre visible sin importar la pestaña activa */}
         <div id="agenda" className="scroll-mt-24 lg:sticky lg:top-24">
           <Reveal>
             <div className="border border-brand-line bg-brand-ink2 p-6">
@@ -193,92 +209,207 @@ function LandingExperienceInner() {
   );
 }
 
+function TabInicio({ onIrAServicios }: { onIrAServicios: () => void }) {
+  return (
+    <Reveal>
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+        <div>
+          <p className="font-script text-xl italic text-brand-gold">Tu causa, nuestra prioridad</p>
+          <h1 className="mt-3 text-balance font-display text-4xl font-extrabold leading-[1.05] text-brand-cream sm:text-5xl">
+            Asesoría legal cercana, clara y con resultados
+          </h1>
+          <p className="mt-5 max-w-lg text-lg text-brand-creamSoft">
+            Acompañamos a personas, familias y negocios en derecho familiar, trámites fiscales y asesoría
+            empresarial, con la Lic. Erika Cruz García al frente de cada caso, de principio a fin.
+          </p>
+
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={onIrAServicios}
+              className="group inline-flex items-center justify-center gap-2 bg-gradient-to-r from-brand-gold to-brand-goldDeep px-6 py-3.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-ink transition-transform hover:-translate-y-0.5"
+            >
+              Ver nuestros servicios
+              <IconArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </button>
+            <a
+              href="https://wa.me/522205801140"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2 border border-brand-line px-6 py-3.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-cream transition-colors hover:border-brand-gold hover:text-brand-gold"
+            >
+              <IconWhatsapp className="h-4 w-4" />
+              Escríbenos por WhatsApp
+            </a>
+          </div>
+
+          <ul className="mt-10 flex flex-wrap gap-x-8 gap-y-3 border-t border-brand-line pt-6">
+            {["100% confidencial", "Trato directo con tu abogada", "Respuesta en menos de 24 h"].map((item) => (
+              <li key={item} className="flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-brand-creamSoft">
+                <IconCheck className="h-3.5 w-3.5 text-brand-gold" />
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <JusticeMark />
+      </div>
+    </Reveal>
+  );
+}
+
+function JusticeMark() {
+  return (
+    <div className="relative mx-auto hidden aspect-square w-full max-w-[220px] items-center justify-center sm:max-w-[260px] lg:flex">
+      <svg
+        viewBox="0 0 240 240"
+        className="h-full w-full max-w-[22rem] text-brand-gold/70"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle cx="120" cy="120" r="115" stroke="currentColor" strokeOpacity="0.25" strokeWidth="1" />
+        <circle cx="120" cy="120" r="90" stroke="currentColor" strokeOpacity="0.35" strokeWidth="1" />
+        <line x1="120" y1="45" x2="120" y2="150" stroke="currentColor" strokeWidth="1.5" />
+        <line x1="60" y1="70" x2="180" y2="70" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M60 70 40 110a20 20 0 0 0 40 0z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+        <path d="M180 70 160 110a20 20 0 0 0 40 0z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+        <line x1="95" y1="185" x2="145" y2="185" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="120" y1="150" x2="120" y2="185" stroke="currentColor" strokeWidth="1.5" />
+        <circle cx="120" cy="70" r="6" fill="currentColor" fillOpacity="0.6" />
+      </svg>
+    </div>
+  );
+}
+
 function TabServicios({
   servicio,
   servicioSlug,
+  satHabilitado,
   onSelect,
 }: {
   servicio: ReturnType<typeof getServicioPorSlug>;
   servicioSlug: string;
+  satHabilitado: boolean;
   onSelect: (slug: string) => void;
 }) {
   if (!servicio) return null;
-  const familiares = serviciosPorArea(AREA_FAMILIAR);
-  const fiscalEmpresarial = serviciosPorArea(AREA_FISCAL_EMPRESARIAL);
 
   return (
     <div>
-      <Reveal key={servicio.slug}>
-        <p className="font-script text-lg italic text-brand-gold">{servicio.frase}</p>
-        <h2 className="mt-1 text-balance font-display text-3xl font-bold text-brand-cream sm:text-4xl">
-          {servicio.titulo}
-        </h2>
-        <p className="mt-4 max-w-2xl text-brand-creamSoft">{servicio.descripcion}</p>
-        <a
-          href="https://wa.me/522205801140"
-          target="_blank"
-          rel="noreferrer"
-          className="mt-6 inline-flex items-center justify-center gap-2 border border-brand-line px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-cream transition-colors hover:border-brand-gold hover:text-brand-gold"
-        >
-          <IconWhatsapp className="h-4 w-4" />
-          Escríbenos por WhatsApp
-        </a>
-      </Reveal>
+      {/* Submenú de servicios, agrupado por módulo — igual que el menú del encabezado, para
+          que al entrar a esta pestaña se vea de inmediato sin tener que bajar a buscarlo. */}
+      <SubmenuServicios servicioSlug={servicioSlug} satHabilitado={satHabilitado} onSelect={onSelect} />
 
-      <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {servicio.proceso.map((paso) => (
-          <div key={paso.numero} className="border border-brand-line bg-brand-ink2 p-5">
-            <span className="font-display text-2xl font-extrabold text-brand-gold/25">{paso.numero}</span>
-            <h3 className="mt-2 font-display text-sm font-bold text-brand-cream">{paso.titulo}</h3>
-            <p className="mt-1.5 text-xs leading-relaxed text-brand-creamSoft">{paso.texto}</p>
-          </div>
-        ))}
-      </div>
+      <div className="mt-10 border-t border-brand-line pt-8">
+        <Reveal key={servicio.slug}>
+          <p className="font-script text-lg italic text-brand-gold">{servicio.frase}</p>
+          <h2 className="mt-1 text-balance font-display text-3xl font-bold text-brand-cream sm:text-4xl">
+            {servicio.titulo}
+          </h2>
+          <p className="mt-4 max-w-2xl text-brand-creamSoft">{servicio.descripcion}</p>
+          <a
+            href="https://wa.me/522205801140"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-6 inline-flex items-center justify-center gap-2 border border-brand-line px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-cream transition-colors hover:border-brand-gold hover:text-brand-gold"
+          >
+            <IconWhatsapp className="h-4 w-4" />
+            Escríbenos por WhatsApp
+          </a>
+        </Reveal>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {servicio.beneficios.map((b) => {
-          const Icono = ICONOS_BENEFICIO[b.icono];
-          return (
-            <div key={b.titulo} className="flex gap-3 border border-brand-line bg-brand-ink2 p-4">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-gold/60 text-brand-gold">
-                <Icono className="h-3.5 w-3.5" />
-              </span>
-              <div>
-                <h3 className="font-display text-sm font-bold text-brand-cream">{b.titulo}</h3>
-                <p className="mt-1 text-xs leading-relaxed text-brand-creamSoft">{b.texto}</p>
-              </div>
+        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {servicio.proceso.map((paso) => (
+            <div key={paso.numero} className="border border-brand-line bg-brand-ink2 p-5">
+              <span className="font-display text-2xl font-extrabold text-brand-gold/25">{paso.numero}</span>
+              <h3 className="mt-2 font-display text-sm font-bold text-brand-cream">{paso.titulo}</h3>
+              <p className="mt-1.5 text-xs leading-relaxed text-brand-creamSoft">{paso.texto}</p>
             </div>
-          );
-        })}
-      </div>
-
-      <div className="mt-10 border-t border-brand-line pt-6">
-        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
-          Otros servicios · Derecho familiar
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {familiares.map((s) => (
-            <ServicioChip key={s.slug} servicio={s} activo={s.slug === servicioSlug} onSelect={onSelect} />
           ))}
         </div>
 
-        <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
-          Otros servicios · Fiscal y empresarial
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {fiscalEmpresarial.map((s) => (
-            <ServicioChip key={s.slug} servicio={s} activo={s.slug === servicioSlug} onSelect={onSelect} />
-          ))}
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {servicio.beneficios.map((b) => {
+            const Icono = ICONOS_BENEFICIO[b.icono];
+            return (
+              <div key={b.titulo} className="flex gap-3 border border-brand-line bg-brand-ink2 p-4">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-gold/60 text-brand-gold">
+                  <Icono className="h-3.5 w-3.5" />
+                </span>
+                <div>
+                  <h3 className="font-display text-sm font-bold text-brand-cream">{b.titulo}</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-brand-creamSoft">{b.texto}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         <Link
           href="/servicios"
-          className="mt-6 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-widest text-brand-gold hover:underline"
+          className="mt-8 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-widest text-brand-gold hover:underline"
         >
           Ver la ficha completa de cada servicio
           <IconArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
+    </div>
+  );
+}
+
+// Mismos grupos que el menú "Servicios" del encabezado, en el mismo orden: Derecho
+// familiar y Fiscal y empresarial (ambos módulo Abogado), Trámites SAT (módulo SAT,
+// rol Consultor) y Comercializadora (módulo futuro). Nunca mezclados entre sí.
+function SubmenuServicios({
+  servicioSlug,
+  satHabilitado,
+  onSelect,
+}: {
+  servicioSlug: string;
+  satHabilitado: boolean;
+  onSelect: (slug: string) => void;
+}) {
+  const familiares = serviciosPorArea(AREA_FAMILIAR);
+  const empresarial = serviciosPorArea(AREA_EMPRESARIAL);
+  const sat = serviciosPorArea(AREA_SAT);
+
+  return (
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+      <GrupoSubmenu titulo="Derecho familiar">
+        {familiares.map((s) => (
+          <ServicioChip key={s.slug} servicio={s} activo={s.slug === servicioSlug} onSelect={onSelect} />
+        ))}
+      </GrupoSubmenu>
+
+      <GrupoSubmenu titulo="Fiscal y empresarial">
+        {empresarial.map((s) => (
+          <ServicioChip key={s.slug} servicio={s} activo={s.slug === servicioSlug} onSelect={onSelect} />
+        ))}
+      </GrupoSubmenu>
+
+      <GrupoSubmenu titulo="Trámites SAT">
+        {satHabilitado ? (
+          sat.map((s) => (
+            <ServicioChip key={s.slug} servicio={s} activo={s.slug === servicioSlug} onSelect={onSelect} />
+          ))
+        ) : (
+          <span className="text-xs italic text-brand-creamSoft/70">Próximamente</span>
+        )}
+      </GrupoSubmenu>
+
+      <GrupoSubmenu titulo="Comercializadora">
+        <span className="text-xs italic text-brand-creamSoft/70">Próximamente</span>
+      </GrupoSubmenu>
+    </div>
+  );
+}
+
+function GrupoSubmenu({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-gold">{titulo}</p>
+      <div className="mt-3 flex flex-wrap gap-2">{children}</div>
     </div>
   );
 }
@@ -307,10 +438,11 @@ function ServicioChip({
   );
 }
 
-function TabProcesos() {
+function TabProcesos({ satHabilitado }: { satHabilitado: boolean }) {
   const [abierto, setAbierto] = useState<string>(SERVICIOS[0].slug);
   const familiares = serviciosPorArea(AREA_FAMILIAR);
-  const fiscalEmpresarial = serviciosPorArea(AREA_FISCAL_EMPRESARIAL);
+  const empresarial = serviciosPorArea(AREA_EMPRESARIAL);
+  const sat = serviciosPorArea(AREA_SAT);
 
   return (
     <Reveal>
@@ -330,7 +462,16 @@ function TabProcesos() {
         <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
           Fiscal y empresarial
         </p>
-        <ProcesoAcordeon servicios={fiscalEmpresarial} abierto={abierto} onToggle={setAbierto} />
+        <ProcesoAcordeon servicios={empresarial} abierto={abierto} onToggle={setAbierto} />
+
+        {satHabilitado && (
+          <>
+            <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+              Trámites SAT
+            </p>
+            <ProcesoAcordeon servicios={sat} abierto={abierto} onToggle={setAbierto} />
+          </>
+        )}
       </div>
     </Reveal>
   );
@@ -377,55 +518,6 @@ function ProcesoAcordeon({
         );
       })}
     </div>
-  );
-}
-
-function TabAgendar() {
-  const PASOS = [
-    { titulo: "Cuéntanos tu caso", texto: "Comparte tus datos de contacto y una breve descripción de tu situación." },
-    { titulo: "Elige fecha y modalidad", texto: "Propón el horario que te acomode: presencial, videollamada o llamada." },
-    { titulo: "Confirmamos contigo", texto: "El despacho revisa tu solicitud y te confirma por correo o WhatsApp." },
-  ];
-
-  return (
-    <Reveal>
-      <p className="font-script text-lg italic text-brand-gold">Sin filas, sin esperas</p>
-      <h2 className="mt-1 text-balance font-display text-3xl font-bold text-brand-cream sm:text-4xl">
-        Agenda tu asesoría en tres pasos
-      </h2>
-      <p className="mt-4 max-w-2xl text-brand-creamSoft">
-        Llena el formulario a la derecha (o abajo, en móvil) y el despacho confirmará tu cita. No necesitas
-        llamar ni esperar en línea.
-      </p>
-
-      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {PASOS.map((paso, i) => (
-          <div key={paso.titulo} className="border border-brand-line bg-brand-ink2 p-5">
-            <span className="font-display text-2xl font-extrabold text-brand-gold/25">{`0${i + 1}`}</span>
-            <h3 className="mt-2 font-display text-sm font-bold text-brand-cream">{paso.titulo}</h3>
-            <p className="mt-1.5 text-xs leading-relaxed text-brand-creamSoft">{paso.texto}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-8 flex flex-col gap-4 border border-brand-gold/40 bg-brand-gold/5 p-6 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-gold/60 text-brand-gold">
-            <IconCalendar className="h-4 w-4" />
-          </span>
-          <p className="text-sm text-brand-creamSoft">
-            Tu primera asesoría se agenda directamente con la Lic. Erika Cruz García.
-          </p>
-        </div>
-        <a
-          href="#agenda"
-          className="inline-flex shrink-0 items-center justify-center gap-2 bg-gradient-to-r from-brand-gold to-brand-goldDeep px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-ink transition-transform hover:-translate-y-0.5"
-        >
-          Ir al formulario
-          <IconArrowRight className="h-3.5 w-3.5" />
-        </a>
-      </div>
-    </Reveal>
   );
 }
 

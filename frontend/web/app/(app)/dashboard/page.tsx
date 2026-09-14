@@ -10,11 +10,13 @@ import {
   getMensajesContacto,
   getSolicitudesCita,
   getTareasPendientes,
+  getTramitesSAT,
   type Caso,
   type Cita,
   type MensajeContacto,
   type SolicitudCita,
   type TareaCaso,
+  type TramiteSAT,
 } from "@/lib/api";
 import { getCookie } from "@/lib/cookies";
 
@@ -25,6 +27,8 @@ const SOLICITUDES_PENDIENTES = [
   "HorarioAlternativoPropuesto",
   "PendienteConfirmacionSolicitante",
 ];
+
+const TRAMITES_SAT_ABIERTOS = ["Pendiente", "EnProceso", "EsperandoCliente"];
 
 function saludo(): string {
   const h = new Date().getHours();
@@ -48,6 +52,29 @@ function formatFecha(iso: string): string {
 
 export default function DashboardPage() {
   const [nombre, setNombre] = useState("");
+  const [rol, setRol] = useState<string | null>(null);
+
+  useEffect(() => {
+    const raw = getCookie("ec_user");
+    if (raw) {
+      try {
+        const user = JSON.parse(raw);
+        setNombre(user.nombre ?? "");
+        setRol(user.rol ?? null);
+      } catch {
+        // ignore malformed cookie
+      }
+    }
+  }, []);
+
+  if (rol === "Consultor") return <PanelConsultor nombre={nombre} />;
+  if (rol === "Agente") return <PanelAgente nombre={nombre} />;
+  return <PanelJuridico nombre={nombre} />;
+}
+
+// Panel del equipo jurídico: Abogado y Administrador ven el mismo tablero de casos,
+// citas, solicitudes y tareas. El rol Administrador es superusuario, no un panel distinto.
+function PanelJuridico({ nombre }: { nombre: string }) {
   const [casos, setCasos] = useState<Caso[]>([]);
   const [citas, setCitas] = useState<Cita[]>([]);
   const [mensajes, setMensajes] = useState<MensajeContacto[]>([]);
@@ -57,15 +84,6 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const raw = getCookie("ec_user");
-    if (raw) {
-      try {
-        setNombre(JSON.parse(raw).nombre ?? "");
-      } catch {
-        // ignore malformed cookie
-      }
-    }
-
     Promise.all([getCasos(), getCitas(), getMensajesContacto(), getSolicitudesCita(), getTareasPendientes()])
       .then(([casosData, citasData, mensajesData, solicitudesData, tareasData]) => {
         setCasos(casosData);
@@ -105,12 +123,7 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <p className="font-script text-lg italic text-brand-gold">
-        {saludo()}{nombre ? `, ${nombre}` : ""}
-      </p>
-      <h1 className="mt-1 font-display text-3xl font-bold text-brand-cream">
-        Panel de Casos
-      </h1>
+      <PanelHeader nombre={nombre} titulo="Panel de Casos" />
 
       {error && (
         <p className="mt-6 border border-brand-goldDeep/60 bg-brand-goldDeep/10 px-4 py-3 text-sm text-brand-gold">
@@ -244,5 +257,123 @@ export default function DashboardPage() {
         </section>
       </div>
     </div>
+  );
+}
+
+// Panel del rol Consultor: solo ve el módulo SAT, así que su tablero muestra
+// solicitudes de cita del módulo SAT y trámites SAT, sin tocar endpoints de Casos
+// (Consultor no tiene permiso sobre ellos y antes esto disparaba un error genérico).
+function PanelConsultor({ nombre }: { nombre: string }) {
+  const [solicitudes, setSolicitudes] = useState<SolicitudCita[]>([]);
+  const [tramites, setTramites] = useState<TramiteSAT[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    Promise.all([getSolicitudesCita(), getTramitesSAT()])
+      .then(([solicitudesData, tramitesData]) => {
+        setSolicitudes(solicitudesData);
+        setTramites(tramitesData);
+      })
+      .catch(() => setError("No se pudieron cargar los datos del panel."))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const solicitudesPendientes = solicitudes.filter((s) => SOLICITUDES_PENDIENTES.includes(s.estatus));
+  const tramitesAbiertos = tramites.filter((t) => TRAMITES_SAT_ABIERTOS.includes(t.estatus));
+  const tramitesVencidos = tramitesAbiertos.filter(
+    (t) => t.fechaLimite && new Date(t.fechaLimite) < new Date()
+  );
+
+  return (
+    <div>
+      <PanelHeader nombre={nombre} titulo="Panel SAT" />
+
+      {error && (
+        <p className="mt-6 border border-brand-goldDeep/60 bg-brand-goldDeep/10 px-4 py-3 text-sm text-brand-gold">
+          {error}
+        </p>
+      )}
+
+      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <StatTile label="Solicitudes SAT pendientes" value={loading ? "—" : solicitudesPendientes.length} />
+        <StatTile label="Trámites SAT abiertos" value={loading ? "—" : tramitesAbiertos.length} />
+        <StatTile label="Trámites con fecha vencida" value={loading ? "—" : tramitesVencidos.length} />
+      </div>
+
+      <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <section>
+          <div className="flex items-center justify-between border-b border-brand-line pb-3">
+            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+              Solicitudes SAT pendientes
+            </h2>
+            <Link href="/solicitudes" className="text-xs uppercase tracking-widest text-brand-gold hover:underline">
+              Ver todas
+            </Link>
+          </div>
+          <ul className="mt-4 space-y-3">
+            {!loading && solicitudesPendientes.length === 0 && (
+              <li className="text-sm text-brand-creamSoft">Sin solicitudes pendientes.</li>
+            )}
+            {solicitudesPendientes.slice(0, 5).map((s) => (
+              <li key={s.id} className="border border-brand-line px-4 py-3">
+                <p className="text-sm font-medium text-brand-cream">{s.nombreSolicitante}</p>
+                <p className="text-xs text-brand-creamSoft">{formatFecha(s.fechaHoraPropuesta)} · {s.estatus}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section>
+          <div className="flex items-center justify-between border-b border-brand-line pb-3">
+            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+              Trámites SAT abiertos
+            </h2>
+            <Link href="/tramites-sat" className="text-xs uppercase tracking-widest text-brand-gold hover:underline">
+              Ver todos
+            </Link>
+          </div>
+          <ul className="mt-4 space-y-3">
+            {!loading && tramitesAbiertos.length === 0 && (
+              <li className="text-sm text-brand-creamSoft">Sin trámites abiertos.</li>
+            )}
+            {tramitesAbiertos.slice(0, 5).map((t) => (
+              <li key={t.id} className="border border-brand-line px-4 py-3">
+                <p className="text-sm font-medium text-brand-cream">{t.clienteNombre ?? "—"}</p>
+                <p className="text-xs text-brand-creamSoft">{t.catalogoTramiteNombre ?? "Trámite"} · {t.estatus}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+// Panel del rol Agente: el módulo de Comercializadora todavía no se implementa
+// (solo el flag reservado), así que no hay datos que consultar todavía.
+function PanelAgente({ nombre }: { nombre: string }) {
+  return (
+    <div>
+      <PanelHeader nombre={nombre} titulo="Panel de Comercializadora" />
+      <div className="mt-8 border border-brand-line bg-brand-ink2 p-8 text-center">
+        <p className="font-script text-lg italic text-brand-gold">Próximamente</p>
+        <p className="mt-2 text-sm text-brand-creamSoft">
+          El módulo de Comercializadora está en construcción. Cuando esté listo, aquí verás tus prospectos y
+          seguimiento comercial.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function PanelHeader({ nombre, titulo }: { nombre: string; titulo: string }) {
+  return (
+    <>
+      <p className="font-script text-lg italic text-brand-gold">
+        {saludo()}{nombre ? `, ${nombre}` : ""}
+      </p>
+      <h1 className="mt-1 font-display text-3xl font-bold text-brand-cream">{titulo}</h1>
+    </>
   );
 }

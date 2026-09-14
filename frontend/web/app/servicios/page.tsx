@@ -3,7 +3,7 @@ import Link from "next/link";
 import GuestHeader from "@/components/GuestHeader";
 import Reveal from "@/components/Reveal";
 import { IconArrowRight } from "@/components/icons";
-import { AREA_FAMILIAR, AREA_FISCAL_EMPRESARIAL, serviciosPorArea } from "@/lib/servicios";
+import { AREA_EMPRESARIAL, AREA_FAMILIAR, AREA_SAT, serviciosPorArea } from "@/lib/servicios";
 
 export const metadata: Metadata = {
   title: "Servicios",
@@ -61,7 +61,8 @@ export default function ServiciosIndexPage() {
         </Reveal>
 
         <Grupo titulo="Derecho familiar" slugs={AREA_FAMILIAR} />
-        <Grupo titulo="Asesoría fiscal y empresarial" slugs={AREA_FISCAL_EMPRESARIAL} />
+        <Grupo titulo="Asesoría fiscal y empresarial" slugs={AREA_EMPRESARIAL} />
+        <Grupo titulo="Trámites SAT" slugs={AREA_SAT} />
       </main>
     </div>
   );

@@ -157,7 +157,7 @@ function AgendaForm({ servicioInteres }: { servicioInteres?: string }) {
             </Field>
           </div>
           <Field label="Medio de contacto preferido">
-            <select value={medioContacto} onChange={(e) => setMedioContacto(e.target.value)} className={inputClass}>
+            <select value={medioContacto} onChange={(e) => setMedioContacto(e.target.value)} className={selectClass}>
               <option value="WhatsApp">WhatsApp</option>
               <option value="Llamada">Llamada telefónica</option>
               <option value="Correo">Correo electrónico</option>
@@ -171,7 +171,7 @@ function AgendaForm({ servicioInteres }: { servicioInteres?: string }) {
         <div className="space-y-4">
           {satHabilitado && (
             <Field label="¿Qué tipo de asesoría necesitas?">
-              <select value={modulo} onChange={(e) => setModulo(e.target.value as ModuloSolicitud)} className={inputClass}>
+              <select value={modulo} onChange={(e) => setModulo(e.target.value as ModuloSolicitud)} className={selectClass}>
                 <option value="Abogado">Asesoría jurídica</option>
                 <option value="SAT">Trámite SAT</option>
               </select>
@@ -202,7 +202,7 @@ function AgendaForm({ servicioInteres }: { servicioInteres?: string }) {
             />
           </Field>
           <Field label="Modalidad">
-            <select value={modalidad} onChange={(e) => setModalidad(e.target.value as ModalidadCita)} className={inputClass}>
+            <select value={modalidad} onChange={(e) => setModalidad(e.target.value as ModalidadCita)} className={selectClass}>
               <option value="Presencial">Presencial</option>
               <option value="Videollamada">Videollamada</option>
               <option value="Llamada">Llamada telefónica</option>
@@ -362,6 +362,14 @@ function ContactForm({ servicioInteres }: { servicioInteres?: string }) {
 
 const inputClass =
   "mt-2 w-full border border-brand-line bg-transparent px-4 py-2.5 text-brand-cream outline-none transition-colors focus:border-brand-gold";
+
+// Un <select> con fondo transparente hereda el blanco del navegador en su lista
+// desplegable nativa; le damos fondo sólido y color-scheme:dark para que las
+// opciones también se vean con los colores de la marca, no en blanco. No reutiliza
+// inputClass porque su bg-transparent tendría la misma especificidad que bg-brand-ink
+// y el orden de generación de Tailwind podría dejar ganando al transparente.
+const selectClass =
+  "mt-2 w-full border border-brand-line bg-brand-ink px-4 py-2.5 text-brand-cream outline-none transition-colors focus:border-brand-gold [color-scheme:dark]";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
