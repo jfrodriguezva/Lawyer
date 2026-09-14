@@ -14,7 +14,7 @@ const JSON_LD = {
 
 export default function GuestLandingPage() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-brand-ink">
+    <div className="relative min-h-screen overflow-x-clip bg-brand-ink">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}

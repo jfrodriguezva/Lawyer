@@ -69,7 +69,7 @@ export default async function ServicioPage({
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-brand-ink">
+    <div className="relative min-h-screen overflow-x-clip bg-brand-ink">
       <GuestHeader />
 
       <main className="relative mx-auto max-w-6xl px-6 pb-28">
