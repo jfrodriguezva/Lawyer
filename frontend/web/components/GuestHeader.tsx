@@ -1,16 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import Monogram from "@/components/Monogram";
 import { IconChevronDown, IconClose, IconMenu } from "@/components/icons";
 import { AREA_FAMILIAR, AREA_FISCAL_EMPRESARIAL, serviciosPorArea } from "@/lib/servicios";
 
 const TABS = [
-  { href: "/#proceso", label: "El proceso" },
-  { href: "/#beneficios", label: "Beneficios" },
-  { href: "/#contacto", label: "Contacto" },
+  { href: "/?tab=quienes-somos", label: "Quiénes somos", tab: "quienes-somos" },
+  { href: "/?tab=mision", label: "Misión y valores", tab: "mision" },
+  { href: "/#agenda", label: "Agendar", tab: null },
 ];
 
 const ACCESOS = [
@@ -19,7 +19,16 @@ const ACCESOS = [
 ];
 
 export default function GuestHeader() {
+  return (
+    <Suspense fallback={null}>
+      <GuestHeaderInner />
+    </Suspense>
+  );
+}
+
+function GuestHeaderInner() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [scrolled, setScrolled] = useState(false);
   const [serviciosOpen, setServiciosOpen] = useState(false);
   const [accesoOpen, setAccesoOpen] = useState(false);
@@ -43,8 +52,11 @@ export default function GuestHeader() {
     setMobileServiciosOpen(false);
   }, [pathname]);
 
-  const enServicios = pathname?.startsWith("/servicios");
-  const enInicio = pathname === "/";
+  const enHome = pathname === "/";
+  const tabActual = enHome ? searchParams.get("tab") : null;
+  const servicioActual = enHome ? searchParams.get("servicio") : null;
+  const enServicios = pathname?.startsWith("/servicios") || (enHome && !!servicioActual);
+  const enInicio = enHome && !tabActual && !servicioActual;
 
   return (
     <header
@@ -108,7 +120,7 @@ export default function GuestHeader() {
           </div>
 
           {TABS.map((tab) => (
-            <NavTab key={tab.href} href={tab.href} label={tab.label} />
+            <NavTab key={tab.href} href={tab.href} label={tab.label} active={tab.tab !== null && tabActual === tab.tab} />
           ))}
         </nav>
 
@@ -187,11 +199,11 @@ export default function GuestHeader() {
             {mobileServiciosOpen && (
               <div className="mb-2 flex flex-col gap-1 border-l border-brand-line pl-4">
                 {[...serviciosPorArea(AREA_FAMILIAR), ...serviciosPorArea(AREA_FISCAL_EMPRESARIAL)].map((s) => (
-                  <Link key={s.slug} href={`/servicios/${s.slug}`} className="py-1.5 text-sm text-brand-creamSoft">
+                  <Link key={s.slug} href={`/?servicio=${s.slug}`} className="py-1.5 text-sm text-brand-creamSoft">
                     {s.titulo}
                   </Link>
                 ))}
-                <Link href="/servicios" className="py-1.5 text-sm font-semibold text-brand-gold">
+                <Link href="/?tab=servicios" className="py-1.5 text-sm font-semibold text-brand-gold">
                   Ver todos →
                 </Link>
               </div>
@@ -248,7 +260,7 @@ function ServiciosMenu({ onNavigate }: { onNavigate: () => void }) {
             {familiares.map((s) => (
               <li key={s.slug}>
                 <Link
-                  href={`/servicios/${s.slug}`}
+                  href={`/?servicio=${s.slug}`}
                   onClick={onNavigate}
                   className="text-sm text-brand-creamSoft transition-colors hover:text-brand-cream"
                 >
@@ -266,7 +278,7 @@ function ServiciosMenu({ onNavigate }: { onNavigate: () => void }) {
             {fiscalEmpresarial.map((s) => (
               <li key={s.slug}>
                 <Link
-                  href={`/servicios/${s.slug}`}
+                  href={`/?servicio=${s.slug}`}
                   onClick={onNavigate}
                   className="text-sm text-brand-creamSoft transition-colors hover:text-brand-cream"
                 >
@@ -278,7 +290,7 @@ function ServiciosMenu({ onNavigate }: { onNavigate: () => void }) {
         </div>
       </div>
       <Link
-        href="/servicios"
+        href="/?tab=servicios"
         onClick={onNavigate}
         className="mt-6 block border-t border-brand-line pt-4 text-center text-xs font-semibold uppercase tracking-widest text-brand-gold hover:underline"
       >
