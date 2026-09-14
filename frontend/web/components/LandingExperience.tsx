@@ -108,7 +108,7 @@ function LandingExperienceInner() {
 
   return (
     <div>
-      <div id="panel">
+      <div id="panel" className="scroll-mt-24">
         {panel === "servicios" && <PanelServicios servicio={servicio} />}
         {panel === "quienes-somos" && <PanelQuienesSomos />}
         {panel === "mision" && <PanelMision />}
@@ -219,55 +219,56 @@ function PanelServicios({ servicio }: { servicio: ReturnType<typeof getServicioP
   );
 }
 
-// Silueta de la justicia (venda en los ojos, balanza en alto, espada al costado),
-// en línea delgada dorada para que combine con el resto de los íconos de la marca.
+// Silueta de la justicia en dorado sólido: cabello recogido, venda en los ojos,
+// brazo en alto con la balanza (cadenas y platillos) y toga con caída de tela,
+// a juego con los tonos de la marca en vez del icono abstracto que había antes.
 function JusticeMark() {
   return (
-    <div className="relative mx-auto flex w-full max-w-[160px] items-center justify-center sm:max-w-[190px] lg:max-w-[230px]">
-      <svg
-        viewBox="0 0 200 320"
-        className="h-auto w-full text-brand-gold/80"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {/* Cabeza y venda */}
-        <circle cx="100" cy="34" r="16" stroke="currentColor" strokeWidth="2" />
-        <rect x="83" y="29" width="34" height="7" rx="2" stroke="currentColor" strokeWidth="2" />
+    <div className="relative mx-auto flex w-full max-w-[170px] items-center justify-center sm:max-w-[200px] lg:max-w-[240px]">
+      <svg viewBox="0 0 220 280" className="h-auto w-full" xmlns="http://www.w3.org/2000/svg">
+        {/* Anillos decorativos, a juego con el resto de los emblemas de la marca */}
+        <circle cx="112" cy="140" r="125" className="text-brand-gold" stroke="currentColor" strokeOpacity="0.16" strokeWidth="1" fill="none" />
+        <circle cx="112" cy="140" r="104" className="text-brand-gold" stroke="currentColor" strokeOpacity="0.24" strokeWidth="1" fill="none" />
 
-        {/* Brazo izquierdo en alto, con la balanza */}
-        <path d="M72 68 L36 44" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="10" y1="44" x2="60" y2="44" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        <line x1="35" y1="44" x2="35" y2="32" stroke="currentColor" strokeWidth="1.5" />
-        <line x1="14" y1="44" x2="14" y2="64" stroke="currentColor" strokeWidth="1.5" />
-        <line x1="56" y1="44" x2="56" y2="64" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M3 64a11 11 0 0 0 22 0z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-        <path d="M45 64a11 11 0 0 0 22 0z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+        <g className="text-brand-gold" fill="currentColor">
+          {/* Cabeza y cabello recogido */}
+          <circle cx="152" cy="30" r="14" />
+          <circle cx="163" cy="16" r="8" />
+          <path d="M166 12c3 1 4 5 2 8-1-3-2-5-5-6z" opacity="0.9" />
 
-        {/* Brazo derecho, con la espada apuntando hacia abajo */}
-        <path d="M128 68 L152 100" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="137" y1="93" x2="167" y2="109" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        <line x1="152" y1="100" x2="152" y2="248" stroke="currentColor" strokeWidth="2" />
-        <line x1="152" y1="248" x2="152" y2="260" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" />
+          {/* Venda sobre los ojos */}
+          <rect x="138" y="27" width="29" height="6" rx="2" fill="#15130f" />
 
-        {/* Túnica */}
-        <path
-          d="M72 68 L128 68 L158 256 L42 256 Z"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M42 256 L52 270 L66 256 L80 270 L94 256 L106 256 L120 270 L134 256 L148 270 L158 256"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinejoin="round"
-        />
-        <line x1="90" y1="90" x2="84" y2="254" stroke="currentColor" strokeOpacity="0.45" strokeWidth="1.5" />
-        <line x1="110" y1="90" x2="116" y2="254" stroke="currentColor" strokeOpacity="0.45" strokeWidth="1.5" />
+          {/* Brazo en alto */}
+          <path d="M142 54 C 118 48 86 36 56 24 C 51 22 46 26 49 32 C 74 43 106 54 131 63 Z" />
 
-        {/* Base */}
-        <rect x="64" y="272" width="72" height="12" rx="1.5" stroke="currentColor" strokeWidth="2" />
-        <rect x="52" y="284" width="96" height="10" rx="1.5" stroke="currentColor" strokeWidth="2" />
+          {/* Fiel: un poste corto entre la mano y la barra de la balanza */}
+          <rect x="46" y="10" width="4" height="19" rx="1" />
+          <circle cx="48" cy="10" r="3.2" />
+
+          {/* Barra y cadenas de la balanza */}
+          <rect x="6" y="12" width="86" height="3" rx="1.5" />
+          <rect x="10" y="15" width="2" height="19" />
+          <rect x="86" y="15" width="2" height="19" />
+
+          {/* Platillos */}
+          <path d="M2 34a12 6 0 0 0 24 0z" />
+          <path d="M78 34a12 6 0 0 0 24 0z" />
+
+          {/* Toga con caída de tela */}
+          <path d="M140 49 C 121 58 110 82 115 109 C 118 130 109 152 105 178 C 102 197 106 219 120 235 L 178 235 C 184 213 176 191 179 168 C 182 140 175 108 161 76 C 156 65 149 55 140 49 Z" />
+          <path
+            d="M132 95c-3 40-10 82-16 132M148 95c3 40 10 82 16 132"
+            stroke="#15130f"
+            strokeOpacity="0.25"
+            strokeWidth="2"
+            fill="none"
+          />
+
+          {/* Base */}
+          <rect x="96" y="235" width="90" height="10" rx="1.5" />
+          <rect x="86" y="245" width="110" height="8" rx="1.5" />
+        </g>
       </svg>
     </div>
   );

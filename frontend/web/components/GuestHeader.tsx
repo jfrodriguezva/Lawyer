@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, type ComponentType } from "react";
 import Monogram from "@/components/Monogram";
-import { IconChevronDown, IconClose, IconMenu } from "@/components/icons";
+import { IconCaduceus, IconChevronDown, IconClose, IconMegaphone, IconMenu } from "@/components/icons";
 import { getFlags } from "@/lib/api";
 import { AREA_EMPRESARIAL, AREA_FAMILIAR, AREA_SAT, serviciosPorArea } from "@/lib/servicios";
 
@@ -286,11 +286,11 @@ function ServiciosMenu({ satHabilitado, onNavigate }: { satHabilitado: boolean; 
         <GrupoServicios titulo="Derecho familiar" servicios={familiares} onNavigate={onNavigate} />
         <GrupoServicios titulo="Fiscal y empresarial" servicios={empresarial} onNavigate={onNavigate} />
         {satHabilitado ? (
-          <GrupoServicios titulo="Trámites SAT" servicios={sat} onNavigate={onNavigate} />
+          <GrupoServicios titulo="Trámites SAT" icono={IconCaduceus} servicios={sat} onNavigate={onNavigate} />
         ) : (
-          <GrupoProximamente titulo="Trámites SAT" />
+          <GrupoProximamente titulo="Trámites SAT" icono={IconCaduceus} />
         )}
-        <GrupoProximamente titulo="Comercializadora" />
+        <GrupoProximamente titulo="Comercializadora" icono={IconMegaphone} />
       </div>
       <Link
         href="/servicios"
@@ -305,16 +305,21 @@ function ServiciosMenu({ satHabilitado, onNavigate }: { satHabilitado: boolean; 
 
 function GrupoServicios({
   titulo,
+  icono: Icono,
   servicios,
   onNavigate,
 }: {
   titulo: string;
+  icono?: ComponentType<{ className?: string }>;
   servicios: ReturnType<typeof serviciosPorArea>;
   onNavigate: () => void;
 }) {
   return (
     <div>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-gold">{titulo}</p>
+      <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-gold">
+        {Icono && <Icono className="h-3.5 w-3.5" />}
+        {titulo}
+      </p>
       <ul className="mt-3 space-y-2">
         {servicios.map((s) => (
           <li key={s.slug}>
@@ -332,10 +337,19 @@ function GrupoServicios({
   );
 }
 
-function GrupoProximamente({ titulo }: { titulo: string }) {
+function GrupoProximamente({
+  titulo,
+  icono: Icono,
+}: {
+  titulo: string;
+  icono?: ComponentType<{ className?: string }>;
+}) {
   return (
     <div className="opacity-50">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-creamSoft">{titulo}</p>
+      <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-creamSoft">
+        {Icono && <Icono className="h-3.5 w-3.5" />}
+        {titulo}
+      </p>
       <p className="mt-3 text-sm italic text-brand-creamSoft">Próximamente</p>
     </div>
   );
@@ -365,7 +379,10 @@ function ServiciosMenuMovil({ satHabilitado }: { satHabilitado: boolean }) {
         ))}
       </div>
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gold">Trámites SAT</p>
+        <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gold">
+          <IconCaduceus className="h-3.5 w-3.5" />
+          Trámites SAT
+        </p>
         {satHabilitado ? (
           sat.map((s) => (
             <Link key={s.slug} href={`/?servicio=${s.slug}`} className="block py-1.5 text-sm text-brand-creamSoft">
@@ -377,7 +394,10 @@ function ServiciosMenuMovil({ satHabilitado }: { satHabilitado: boolean }) {
         )}
       </div>
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gold">Comercializadora</p>
+        <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gold">
+          <IconMegaphone className="h-3.5 w-3.5" />
+          Comercializadora
+        </p>
         <p className="py-1.5 text-sm italic text-brand-creamSoft/70">Próximamente</p>
       </div>
       <Link href="/servicios" className="py-1.5 text-sm font-semibold text-brand-gold">
