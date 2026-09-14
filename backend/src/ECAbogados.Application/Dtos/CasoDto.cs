@@ -8,7 +8,12 @@ public record CasoDto(
     string Tipo,
     EstatusCaso Estatus,
     DateTime FechaApertura,
-    string? Notas);
+    string? Notas,
+    int? AbogadoResponsableId,
+    string? AbogadoResponsableNombre,
+    string? Prioridad,
+    string? FolioInterno,
+    bool Archivado);
 
 public record CasoDetalleDto(
     int Id,
@@ -24,4 +29,17 @@ public record CasoDetalleDto(
     IReadOnlyList<ChecklistItemDto> Checklist,
     int? ClienteVinculadoId,
     string? ClienteVinculadoNombre,
-    string? ClienteVinculadoEmail);
+    string? ClienteVinculadoEmail,
+    int? AbogadoResponsableId,
+    string? AbogadoResponsableNombre,
+    string? Prioridad,
+    string? FolioInterno,
+    string? ContraparteNombre,
+    string? AutoridadOrganismo,
+    string? NumeroExpedienteExterno,
+    DateTime? FechaCierre,
+    string? MotivoCierre,
+    bool Archivado,
+    decimal? MontoAcordado,
+    IReadOnlyList<ActualizacionCasoDto> Actualizaciones,
+    IReadOnlyList<TareaCasoDto> Tareas);

@@ -12,7 +12,7 @@ public class PasswordResetNotifier(IEmailSender emailSender, IConfiguration conf
 
         await emailSender.SendAsync(
             email,
-            "Restablece tu contraseña - ECG Abogados",
+            "Restablece tu contraseña - ECGAbogados",
             $"Recibimos una solicitud para restablecer tu contraseña. Da clic en el siguiente enlace " +
             $"(válido por 1 hora):\n\n{link}\n\nSi tú no solicitaste esto, puedes ignorar este correo.",
             cancellationToken);

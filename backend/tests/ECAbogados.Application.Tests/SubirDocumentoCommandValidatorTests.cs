@@ -1,5 +1,6 @@
 using ECAbogados.Application.Documentos;
 using ECAbogados.Application.Documentos.Commands.SubirDocumento;
+using ECAbogados.Domain.Entities;
 
 namespace ECAbogados.Application.Tests;
 
@@ -10,7 +11,7 @@ public class SubirDocumentoCommandValidatorTests
     [Fact]
     public void Rechaza_extension_no_permitida()
     {
-        var comando = new SubirDocumentoCommand(1, "virus.exe", "application/octet-stream", 1024, "App_Data/documentos/1/virus.exe");
+        var comando = new SubirDocumentoCommand(1, "virus.exe", "application/octet-stream", 1024, "App_Data/documentos/1/virus.exe", OrigenDocumento.Staff, null, null);
 
         var resultado = Validator.Validate(comando);
 
@@ -21,7 +22,7 @@ public class SubirDocumentoCommandValidatorTests
     [Fact]
     public void Rechaza_archivo_mayor_al_tamano_maximo()
     {
-        var comando = new SubirDocumentoCommand(1, "contrato.pdf", "application/pdf", TiposPermitidos.TamanoMaximoBytes + 1, "App_Data/documentos/1/contrato.pdf");
+        var comando = new SubirDocumentoCommand(1, "contrato.pdf", "application/pdf", TiposPermitidos.TamanoMaximoBytes + 1, "App_Data/documentos/1/contrato.pdf", OrigenDocumento.Staff, null, null);
 
         var resultado = Validator.Validate(comando);
 
@@ -32,7 +33,7 @@ public class SubirDocumentoCommandValidatorTests
     [Fact]
     public void Acepta_archivo_con_extension_permitida_y_tamano_valido()
     {
-        var comando = new SubirDocumentoCommand(1, "contrato.pdf", "application/pdf", 1024, "App_Data/documentos/1/contrato.pdf");
+        var comando = new SubirDocumentoCommand(1, "contrato.pdf", "application/pdf", 1024, "App_Data/documentos/1/contrato.pdf", OrigenDocumento.Staff, null, null);
 
         var resultado = Validator.Validate(comando);
 

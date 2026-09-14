@@ -1,3 +1,4 @@
+using ECAbogados.Application.Common.Exceptions;
 using ECAbogados.Application.Interfaces;
 using ECAbogados.Domain.Entities;
 using ECAbogados.Application.Mediation;
@@ -13,7 +14,7 @@ public class CrearUsuarioCommandHandler(
         var existente = await usuarioRepository.GetByEmailAsync(request.Email);
         if (existente is not null)
         {
-            throw new InvalidOperationException("Ya existe un usuario con ese correo.");
+            throw new ConflictException("Ya existe un usuario con ese correo.");
         }
 
         var usuario = new Usuario

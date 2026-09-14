@@ -1,16 +1,19 @@
 using ECAbogados.Application.Documentos;
+using ECAbogados.Application.Documentos.Commands.CambiarEstatusDocumento;
 using ECAbogados.Application.Documentos.Commands.SubirDocumento;
 using ECAbogados.Application.Documentos.Queries.ListarDocumentosPorCaso;
+using ECAbogados.Application.Interfaces;
 using ECAbogados.Application.Mediation;
+using ECAbogados.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ECAbogados.Api.Controllers;
 
-[Authorize(Roles = "Administrador,Asistente")]
+[Authorize(Roles = "Abogado,Administrador")]
 [ApiController]
 [Route("api/[controller]")]
-public class DocumentosController(ISender sender, IWebHostEnvironment environment) : ControllerBase
+public class DocumentosController(ISender sender, IWebHostEnvironment environment, ICurrentUserAccessor currentUser, IDocumentoRepository documentoRepository) : ControllerBase
 {
     [HttpGet("caso/{casoId:int}")]
     public async Task<IActionResult> ListarPorCaso(int casoId)
@@ -60,11 +63,44 @@ public class DocumentosController(ISender sender, IWebHostEnvironment environmen
             file.FileName,
             file.ContentType,
             file.Length,
-            rutaRelativa);
+            rutaRelativa,
+            OrigenDocumento.Staff,
+            currentUser.UsuarioId,
+            currentUser.Nombre,
+            request.Descripcion,
+            request.Visibilidad);
 
         var id = await sender.Send(command);
 
         return CreatedAtAction(nameof(ListarPorCaso), new { casoId }, new { id });
+    }
+
+    [HttpPatch("{id:int}/estatus")]
+    public async Task<IActionResult> CambiarEstatus(int id, [FromBody] CambiarEstatusDocumentoRequest request)
+    {
+        await sender.Send(new CambiarEstatusDocumentoCommand(id, request.Estatus, request.ComentarioRevision));
+        return NoContent();
+    }
+
+    // Descarga controlada: nunca se sirve App_Data como archivos estáticos, todo
+    // pasa por este endpoint autenticado para que el rol/caso se validen siempre.
+    [HttpGet("{id:int}/descargar")]
+    public async Task<IActionResult> Descargar(int id)
+    {
+        var documento = await documentoRepository.GetByIdAsync(id);
+        if (documento is null || documento.SoloRegistro || string.IsNullOrEmpty(documento.RutaAlmacenamiento))
+        {
+            return NotFound();
+        }
+
+        var rutaCompleta = Path.Combine(environment.ContentRootPath, documento.RutaAlmacenamiento);
+        if (!System.IO.File.Exists(rutaCompleta))
+        {
+            return NotFound();
+        }
+
+        var stream = new FileStream(rutaCompleta, FileMode.Open, FileAccess.Read);
+        return File(stream, documento.TipoContenido, documento.NombreArchivo);
     }
 }
 
@@ -72,4 +108,8 @@ public class SubirDocumentoRequest
 {
     public int CasoId { get; set; }
     public IFormFile File { get; set; } = null!;
+    public string? Descripcion { get; set; }
+    public VisibilidadDocumento? Visibilidad { get; set; }
 }
+
+public record CambiarEstatusDocumentoRequest(EstatusDocumento Estatus, string? ComentarioRevision);

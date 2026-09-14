@@ -3,29 +3,16 @@ import Link from "next/link";
 import GuestHeader from "@/components/GuestHeader";
 import Reveal from "@/components/Reveal";
 import { IconArrowRight } from "@/components/icons";
-import { SERVICIOS } from "@/lib/servicios";
+import { AREA_FAMILIAR, AREA_FISCAL_EMPRESARIAL, serviciosPorArea } from "@/lib/servicios";
 
 export const metadata: Metadata = {
   title: "Servicios",
   description:
-    "Derecho familiar, trámites fiscales ante el SAT y asesoría legal para empresas — conoce todos los servicios de ECG Abogados.",
+    "Derecho familiar, trámites fiscales ante el SAT y asesoría legal para empresas — conoce todos los servicios de ECGAbogados.",
 };
 
-const FAMILIARES = [
-  "divorcio-incausado",
-  "divorcio-mutuo-consentimiento",
-  "pension-alimenticia",
-  "custodia",
-  "regimen-de-visitas",
-  "violencia-familiar",
-];
-
-const FISCAL_EMPRESARIAL = ["tramites-sat", "contratos", "cobranza-pagares", "sucesiones-herencias", "asesoria-empresas"];
-
 function Grupo({ titulo, slugs }: { titulo: string; slugs: string[] }) {
-  const servicios = slugs
-    .map((slug) => SERVICIOS.find((s) => s.slug === slug))
-    .filter((s): s is NonNullable<typeof s> => Boolean(s));
+  const servicios = serviciosPorArea(slugs);
 
   return (
     <section className="mt-16 first:mt-0">
@@ -73,8 +60,8 @@ export default function ServiciosIndexPage() {
           </p>
         </Reveal>
 
-        <Grupo titulo="Derecho familiar" slugs={FAMILIARES} />
-        <Grupo titulo="Asesoría fiscal y empresarial" slugs={FISCAL_EMPRESARIAL} />
+        <Grupo titulo="Derecho familiar" slugs={AREA_FAMILIAR} />
+        <Grupo titulo="Asesoría fiscal y empresarial" slugs={AREA_FISCAL_EMPRESARIAL} />
       </main>
     </div>
   );

@@ -1,3 +1,4 @@
+using ECAbogados.Application.Casos.Queries.ObtenerCasoPorToken;
 using ECAbogados.Application.Dtos;
 using ECAbogados.Application.Interfaces;
 using ECAbogados.Application.Mediation;
@@ -7,27 +8,22 @@ namespace ECAbogados.Application.Casos.Queries.ListarCasosPorCliente;
 public class ListarCasosPorClienteQueryHandler(
     ICasoRepository casoRepository,
     IDocumentoRepository documentoRepository,
-    IChecklistItemRepository checklistItemRepository)
+    IChecklistItemRepository checklistItemRepository,
+    IActualizacionCasoRepository actualizacionCasoRepository,
+    ICitaRepository citaRepository)
     : IRequestHandler<ListarCasosPorClienteQuery, IReadOnlyList<PortalCasoDto>>
 {
     public async Task<IReadOnlyList<PortalCasoDto>> Handle(ListarCasosPorClienteQuery request, CancellationToken cancellationToken)
     {
+        // Un Cliente puede tener varios Casos (multi-caso): cada uno se arma por
+        // separado con su propia documentación, sin cruzar información entre ellos.
         var casos = await casoRepository.GetByClienteIdAsync(request.ClienteId);
 
         var resultado = new List<PortalCasoDto>();
         foreach (var caso in casos)
         {
-            var documentos = await documentoRepository.GetByCasoIdAsync(caso.Id);
-            var checklist = await checklistItemRepository.GetByCasoIdAsync(caso.Id);
-
-            resultado.Add(new PortalCasoDto(
-                caso.Id,
-                caso.ClienteNombre,
-                caso.Tipo,
-                caso.Estatus,
-                caso.FechaApertura,
-                checklist.Select(c => new ChecklistItemDto(c.Id, c.CasoId, c.Descripcion, c.Completado)).ToList(),
-                documentos.Select(d => new DocumentoDto(d.Id, d.CasoId, d.NombreArchivo, d.TipoContenido, d.TamanoBytes, d.FechaCarga, d.RutaAlmacenamiento)).ToList()));
+            resultado.Add(await PortalCasoMapper.BuildAsync(
+                caso, documentoRepository, checklistItemRepository, actualizacionCasoRepository, citaRepository));
         }
 
         return resultado;

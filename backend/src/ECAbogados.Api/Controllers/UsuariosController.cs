@@ -2,6 +2,7 @@ using System.Security.Claims;
 using ECAbogados.Application.Usuarios.Commands.ActualizarUsuario;
 using ECAbogados.Application.Usuarios.Commands.CambiarEstatusUsuario;
 using ECAbogados.Application.Usuarios.Commands.CrearUsuario;
+using ECAbogados.Application.Usuarios.Queries.ListarDirectorio;
 using ECAbogados.Application.Usuarios.Queries.ListarUsuarios;
 using ECAbogados.Application.Mediation;
 using Microsoft.AspNetCore.Authorization;
@@ -22,18 +23,21 @@ public class UsuariosController(ISender sender) : ControllerBase
         return Ok(usuarios);
     }
 
+    // Solo Id + Nombre: usable por Abogado/Consultor para elegir un
+    // responsable, sin exponer el directorio administrativo completo.
+    [Authorize(Roles = "Abogado,Consultor,Administrador")]
+    [HttpGet("directorio")]
+    public async Task<IActionResult> ListarDirectorio()
+    {
+        var directorio = await sender.Send(new ListarDirectorioQuery());
+        return Ok(directorio);
+    }
+
     [HttpPost]
     public async Task<IActionResult> Crear([FromBody] CrearUsuarioCommand command)
     {
-        try
-        {
-            var id = await sender.Send(command);
-            return Created(string.Empty, new { id });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
+        var id = await sender.Send(command);
+        return Created(string.Empty, new { id });
     }
 
     [HttpPatch("{id:int}/estatus")]

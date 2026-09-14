@@ -9,7 +9,10 @@ public class ObtenerCasoPorIdQueryHandler(
     ICitaRepository citaRepository,
     IDocumentoRepository documentoRepository,
     IChecklistItemRepository checklistItemRepository,
-    IClienteRepository clienteRepository)
+    IClienteRepository clienteRepository,
+    IUsuarioRepository usuarioRepository,
+    IActualizacionCasoRepository actualizacionCasoRepository,
+    ITareaCasoRepository tareaCasoRepository)
     : IRequestHandler<ObtenerCasoPorIdQuery, CasoDetalleDto?>
 {
     public async Task<CasoDetalleDto?> Handle(ObtenerCasoPorIdQuery request, CancellationToken cancellationToken)
@@ -24,21 +27,27 @@ public class ObtenerCasoPorIdQueryHandler(
             ? await clienteRepository.GetByIdAsync(clienteId)
             : null;
 
+        var usuarios = await usuarioRepository.GetAllAsync();
+        var nombresPorId = usuarios.ToDictionary(u => u.Id, u => u.Nombre);
+        var abogadoResponsableNombre = caso.AbogadoResponsableId is int abogadoId && nombresPorId.TryGetValue(abogadoId, out var nombreAbogado)
+            ? nombreAbogado
+            : null;
+
         var citas = await citaRepository.GetAllAsync();
         var documentos = await documentoRepository.GetByCasoIdAsync(request.Id);
         var checklist = await checklistItemRepository.GetByCasoIdAsync(request.Id);
+        var actualizaciones = await actualizacionCasoRepository.GetByCasoIdAsync(request.Id);
+        var tareas = await tareaCasoRepository.GetByCasoIdAsync(request.Id);
 
-        var citasDelCaso = citas
-            .Where(c => c.CasoId == request.Id)
-            .Select(c => new CitaDto(c.Id, c.CasoId, c.NombreCliente, c.Telefono, c.FechaHora, c.Estatus, c.ServicioInteres))
-            .ToList();
-
-        var documentosDelCaso = documentos
-            .Select(d => new DocumentoDto(d.Id, d.CasoId, d.NombreArchivo, d.TipoContenido, d.TamanoBytes, d.FechaCarga, d.RutaAlmacenamiento))
-            .ToList();
-
-        var checklistDelCaso = checklist
-            .Select(c => new ChecklistItemDto(c.Id, c.CasoId, c.Descripcion, c.Completado))
+        var citasDelCaso = citas.Where(c => c.CasoId == request.Id).Select(c => c.ToDto()).ToList();
+        var documentosDelCaso = documentos.Select(d => d.ToDto()).ToList();
+        var checklistDelCaso = checklist.Select(c => c.ToDto()).ToList();
+        var actualizacionesDelCaso = actualizaciones.Select(a => a.ToDto()).ToList();
+        var tareasDelCaso = tareas
+            .Select(t => new TareaCasoDto(
+                t.Id, t.CasoId, t.Descripcion, t.ResponsableUsuarioId,
+                t.ResponsableUsuarioId is int rid && nombresPorId.TryGetValue(rid, out var nombreResp) ? nombreResp : null,
+                t.FechaVencimiento, t.Completada, t.FechaCreacion))
             .ToList();
 
         return new CasoDetalleDto(
@@ -55,6 +64,19 @@ public class ObtenerCasoPorIdQueryHandler(
             checklistDelCaso,
             clienteVinculado?.Id,
             clienteVinculado?.Nombre,
-            clienteVinculado?.Email);
+            clienteVinculado?.Email,
+            caso.AbogadoResponsableId,
+            abogadoResponsableNombre,
+            caso.Prioridad,
+            caso.FolioInterno,
+            caso.ContraparteNombre,
+            caso.AutoridadOrganismo,
+            caso.NumeroExpedienteExterno,
+            caso.FechaCierre,
+            caso.MotivoCierre,
+            caso.Archivado,
+            caso.MontoAcordado,
+            actualizacionesDelCaso,
+            tareasDelCaso);
     }
 }

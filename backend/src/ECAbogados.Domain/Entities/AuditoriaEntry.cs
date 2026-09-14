@@ -10,4 +10,6 @@ public class AuditoriaEntry
     public int? UsuarioId { get; set; }
     public string? UsuarioNombre { get; set; }
     public DateTime Fecha { get; set; }
+    public string? Ip { get; set; }
+    public string? UserAgent { get; set; }
 }

@@ -9,5 +9,8 @@ public static class AuditoriaRepositoryExtensions
         int entidadId,
         string accion,
         string? detalle = null) =>
-        auditoriaRepository.RegistrarAsync(entidad, entidadId, accion, detalle, currentUser.UsuarioId, currentUser.Nombre ?? "Público (sin sesión)");
+        auditoriaRepository.RegistrarAsync(
+            entidad, entidadId, accion, detalle,
+            currentUser.UsuarioId, currentUser.Nombre ?? "Público (sin sesión)",
+            currentUser.Ip, currentUser.UserAgent);
 }

@@ -1,6 +1,6 @@
-# ECG Abogados — Frontend Web
+# ECGAbogados — Frontend Web
 
-Portal de gestión de casos para la Lic. Erika Cruz García (ECG Abogados),
+Portal de gestión de casos para la Lic. Erika Cruz García (ECGAbogados),
 construido con Next.js (App Router) + TypeScript + Tailwind CSS.
 
 ## Requisitos

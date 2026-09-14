@@ -1,8 +1,10 @@
 using ECAbogados.Application.Casos.Commands.ActualizarCaso;
 using ECAbogados.Application.Casos.Commands.CambiarEstatusCaso;
+using ECAbogados.Application.Casos.Commands.CrearActualizacionCaso;
 using ECAbogados.Application.Casos.Commands.CrearCaso;
 using ECAbogados.Application.Casos.Commands.MarcarChecklistItem;
 using ECAbogados.Application.Casos.Commands.RegenerarTokenCaso;
+using ECAbogados.Application.Casos.Queries.ListarActualizacionesPorCaso;
 using ECAbogados.Application.Casos.Queries.ListarCasos;
 using ECAbogados.Application.Casos.Queries.ListarCasosPaginado;
 using ECAbogados.Application.Casos.Commands.VincularClienteACaso;
@@ -14,7 +16,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ECAbogados.Api.Controllers;
 
-[Authorize(Roles = "Administrador,Asistente")]
+[Authorize(Roles = "Abogado,Administrador")]
 [ApiController]
 [Route("api/[controller]")]
 public class CasosController(ISender sender) : ControllerBase
@@ -52,35 +54,18 @@ public class CasosController(ISender sender) : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Actualizar(int id, [FromBody] ActualizarCasoRequest request)
     {
-        try
-        {
-            await sender.Send(new ActualizarCasoCommand(id, request.ClienteNombre, request.Tipo, request.Notas));
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
+        await sender.Send(new ActualizarCasoCommand(
+            id, request.ClienteNombre, request.Tipo, request.Notas, request.AbogadoResponsableId,
+            request.Prioridad, request.FolioInterno, request.ContraparteNombre, request.AutoridadOrganismo,
+            request.NumeroExpedienteExterno, request.MontoAcordado));
+        return NoContent();
     }
 
     [HttpPatch("{id:int}/estatus")]
     public async Task<IActionResult> CambiarEstatus(int id, [FromBody] CambiarEstatusCasoRequest request)
     {
-        // Cerrar un expediente es una decisión que solo el rol Administrador puede tomar.
-        if (request.Estatus == EstatusCaso.Cerrado && !User.IsInRole("Administrador"))
-        {
-            return Forbid();
-        }
-
-        try
-        {
-            await sender.Send(new CambiarEstatusCasoCommand(id, request.Estatus));
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
+        await sender.Send(new CambiarEstatusCasoCommand(id, request.Estatus, request.Motivo));
+        return NoContent();
     }
 
     [HttpPatch("checklist/{itemId:int}")]
@@ -91,7 +76,6 @@ public class CasosController(ISender sender) : ControllerBase
     }
 
     // Invalida el enlace anterior del portal del cliente y genera uno nuevo.
-    [Authorize(Roles = "Administrador")]
     [HttpPost("{id:int}/regenerar-token")]
     public async Task<IActionResult> RegenerarToken(int id)
     {
@@ -100,19 +84,44 @@ public class CasosController(ISender sender) : ControllerBase
     }
 
     // Vincula el expediente a una cuenta de Cliente registrada (portal autenticado).
-    [Authorize(Roles = "Administrador")]
     [HttpPost("{id:int}/vincular-cliente")]
     public async Task<IActionResult> VincularCliente(int id, [FromBody] VincularClienteRequest request)
     {
         await sender.Send(new VincularClienteACasoCommand(id, request.ClienteId));
         return NoContent();
     }
+
+    [HttpGet("{id:int}/actualizaciones")]
+    public async Task<IActionResult> ListarActualizaciones(int id)
+    {
+        var actualizaciones = await sender.Send(new ListarActualizacionesPorCasoQuery(id));
+        return Ok(actualizaciones);
+    }
+
+    [HttpPost("{id:int}/actualizaciones")]
+    public async Task<IActionResult> CrearActualizacion(int id, [FromBody] CrearActualizacionRequest request)
+    {
+        var actualizacionId = await sender.Send(new CrearActualizacionCasoCommand(id, request.Texto, request.Visibilidad));
+        return CreatedAtAction(nameof(ListarActualizaciones), new { id }, new { id = actualizacionId });
+    }
 }
 
-public record ActualizarCasoRequest(string ClienteNombre, string Tipo, string? Notas);
+public record ActualizarCasoRequest(
+    string ClienteNombre,
+    string Tipo,
+    string? Notas,
+    int? AbogadoResponsableId = null,
+    string? Prioridad = null,
+    string? FolioInterno = null,
+    string? ContraparteNombre = null,
+    string? AutoridadOrganismo = null,
+    string? NumeroExpedienteExterno = null,
+    decimal? MontoAcordado = null);
 
-public record CambiarEstatusCasoRequest(EstatusCaso Estatus);
+public record CambiarEstatusCasoRequest(EstatusCaso Estatus, string? Motivo = null);
 
 public record MarcarChecklistItemRequest(bool Completado);
 
 public record VincularClienteRequest(int ClienteId);
+
+public record CrearActualizacionRequest(string Texto, VisibilidadActualizacion Visibilidad);

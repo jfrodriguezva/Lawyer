@@ -2,13 +2,12 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Monogram from "@/components/Monogram";
 import { restablecerPassword, ApiError } from "@/lib/api";
 
 export default function RestablecerPasswordPage() {
   const params = useParams<{ token: string }>();
-  const router = useRouter();
 
   const [nuevaPassword, setNuevaPassword] = useState("");
   const [confirmar, setConfirmar] = useState("");

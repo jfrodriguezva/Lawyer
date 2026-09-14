@@ -178,7 +178,7 @@ function MensajeCard({
       )}
       <div className="mt-4 flex flex-wrap gap-2">
         <a
-          href={buildWhatsAppLink(mensaje.telefono, `Hola ${mensaje.nombre}, te escribo de ECG Abogados por tu mensaje.`)}
+          href={buildWhatsAppLink(mensaje.telefono, `Hola ${mensaje.nombre}, te escribo de ECGAbogados por tu mensaje.`)}
           target="_blank"
           rel="noreferrer"
           className="border border-brand-line px-4 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-brand-creamSoft transition-colors hover:border-brand-gold hover:text-brand-gold"

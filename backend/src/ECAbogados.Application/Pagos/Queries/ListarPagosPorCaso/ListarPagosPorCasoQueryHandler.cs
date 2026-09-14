@@ -12,7 +12,7 @@ public class ListarPagosPorCasoQueryHandler(IPagoRepository pagoRepository)
         var pagos = await pagoRepository.GetByCasoIdAsync(request.CasoId);
 
         return pagos
-            .Select(p => new PagoDto(p.Id, p.CasoId, p.Concepto, p.Monto, p.Fecha))
+            .Select(p => new PagoDto(p.Id, p.CasoId, p.Concepto, p.Monto, p.Fecha, p.Tipo))
             .ToList();
     }
 }

@@ -20,7 +20,13 @@ public class CrearCasoCommandHandler(
             FechaApertura = DateTime.UtcNow,
             Notas = request.Notas,
             TokenAcceso = Guid.NewGuid().ToString("N"),
-            TokenGeneradoEn = DateTime.UtcNow
+            TokenGeneradoEn = DateTime.UtcNow,
+            AbogadoResponsableId = request.AbogadoResponsableId,
+            Prioridad = request.Prioridad,
+            FolioInterno = request.FolioInterno,
+            ContraparteNombre = request.ContraparteNombre,
+            AutoridadOrganismo = request.AutoridadOrganismo,
+            NumeroExpedienteExterno = request.NumeroExpedienteExterno
         };
 
         var id = await casoRepository.CreateAsync(caso);

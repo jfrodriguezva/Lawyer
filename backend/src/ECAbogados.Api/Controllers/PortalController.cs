@@ -71,7 +71,10 @@ public class PortalController(ISender sender, IWebHostEnvironment environment) :
             file.FileName,
             file.ContentType,
             file.Length,
-            rutaRelativa));
+            rutaRelativa,
+            ECAbogados.Domain.Entities.OrigenDocumento.Cliente,
+            null,
+            caso.ClienteNombre));
 
         return Created(string.Empty, new { id });
     }

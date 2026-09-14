@@ -16,12 +16,13 @@ public class RegistrarPagoCommandHandler(
             CasoId = request.CasoId,
             Concepto = request.Concepto,
             Monto = request.Monto,
-            Fecha = DateTime.UtcNow
+            Fecha = DateTime.UtcNow,
+            Tipo = request.Tipo
         };
 
         var id = await pagoRepository.CreateAsync(pago);
 
-        await auditoriaRepository.RegistrarAsync(currentUser, "Caso", request.CasoId, $"Registró un pago: {request.Concepto} ({request.Monto:C})");
+        await auditoriaRepository.RegistrarAsync(currentUser, "Caso", request.CasoId, $"Registró un {request.Tipo}: {request.Concepto} ({request.Monto:C})");
 
         return id;
     }

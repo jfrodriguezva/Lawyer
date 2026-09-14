@@ -10,9 +10,6 @@ public class ListarClientesQueryHandler(IClienteRepository clienteRepository)
     public async Task<IReadOnlyList<ClienteDto>> Handle(ListarClientesQuery request, CancellationToken cancellationToken)
     {
         var clientes = await clienteRepository.GetAllAsync();
-
-        return clientes
-            .Select(c => new ClienteDto(c.Id, c.Email, c.Nombre, c.Activo))
-            .ToList();
+        return clientes.Select(c => c.ToDto()).ToList();
     }
 }

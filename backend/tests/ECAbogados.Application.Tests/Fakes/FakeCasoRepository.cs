@@ -52,6 +52,15 @@ public class FakeCasoRepository : ICasoRepository
         existente.Tipo = caso.Tipo;
         existente.Estatus = caso.Estatus;
         existente.Notas = caso.Notas;
+        existente.AbogadoResponsableId = caso.AbogadoResponsableId;
+        existente.Prioridad = caso.Prioridad;
+        existente.FolioInterno = caso.FolioInterno;
+        existente.ContraparteNombre = caso.ContraparteNombre;
+        existente.AutoridadOrganismo = caso.AutoridadOrganismo;
+        existente.NumeroExpedienteExterno = caso.NumeroExpedienteExterno;
+        existente.FechaCierre = caso.FechaCierre;
+        existente.MotivoCierre = caso.MotivoCierre;
+        existente.Archivado = caso.Archivado;
         return Task.CompletedTask;
     }
 

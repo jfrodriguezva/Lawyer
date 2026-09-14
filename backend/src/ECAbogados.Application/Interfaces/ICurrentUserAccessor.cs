@@ -8,4 +8,6 @@ public interface ICurrentUserAccessor
 {
     int? UsuarioId { get; }
     string? Nombre { get; }
+    string? Ip { get; }
+    string? UserAgent { get; }
 }

@@ -131,7 +131,7 @@ export default async function ServicioPage({
 
         <section className="mt-24 lg:mt-32">
           <Reveal>
-            <p className="font-script text-lg italic text-brand-gold">¿Por qué ECG Abogados?</p>
+            <p className="font-script text-lg italic text-brand-gold">¿Por qué ECGAbogados?</p>
           </Reveal>
           <Reveal delay={60}>
             <h2 className="mt-1 text-balance font-display text-3xl font-bold text-brand-cream sm:text-4xl">

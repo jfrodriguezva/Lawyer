@@ -16,4 +16,8 @@ public class CurrentUserAccessor(IHttpContextAccessor httpContextAccessor) : ICu
     }
 
     public string? Nombre => httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.Name);
+
+    public string? Ip => httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
+
+    public string? UserAgent => httpContextAccessor.HttpContext?.Request.Headers.UserAgent.ToString();
 }

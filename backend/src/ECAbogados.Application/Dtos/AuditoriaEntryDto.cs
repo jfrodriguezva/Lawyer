@@ -6,3 +6,13 @@ public record AuditoriaEntryDto(
     string? Detalle,
     string? UsuarioNombre,
     DateTime Fecha);
+
+public record AuditoriaGlobalEntryDto(
+    int Id,
+    string Entidad,
+    int EntidadId,
+    string Accion,
+    string? Detalle,
+    string? UsuarioNombre,
+    DateTime Fecha,
+    string? Ip);

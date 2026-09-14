@@ -1,4 +1,4 @@
-# Manual de usuario — ECG Abogados
+# Manual de usuario — ECGAbogados
 
 ## 0. Los tres perfiles del sistema
 

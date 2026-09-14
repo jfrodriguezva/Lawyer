@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { cambiarEstatusCliente, crearCliente, getClientes, type Cliente } from "@/lib/api";
+import { cambiarEstatusCliente, crearCliente, getClientes, invitarCliente, type Cliente } from "@/lib/api";
 
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [modo, setModo] = useState<"invitar" | "directo">("invitar");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,13 +40,17 @@ export default function ClientesPage() {
     setSaving(true);
     setError(null);
     try {
-      await crearCliente({ email, password, nombre });
+      if (modo === "invitar") {
+        await invitarCliente({ email, nombre });
+      } else {
+        await crearCliente({ email, password, nombre });
+      }
       setEmail("");
       setPassword("");
       setNombre("");
       load();
     } catch {
-      setError("No se pudo crear el cliente (puede que el correo ya exista).");
+      setError("No se pudo dar de alta al cliente (puede que el correo ya exista).");
     } finally {
       setSaving(false);
     }
@@ -66,56 +71,83 @@ export default function ClientesPage() {
         </p>
       )}
 
-      <form
-        onSubmit={handleCreate}
-        className="mt-8 grid grid-cols-1 gap-4 border border-brand-line bg-brand-ink2 p-6 sm:grid-cols-3"
-      >
-        <div>
-          <label className="block text-[11px] font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
-            Nombre
-          </label>
-          <input
-            required
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            className="mt-2 w-full border border-brand-line bg-transparent px-4 py-2.5 text-brand-cream outline-none focus:border-brand-gold"
-          />
-        </div>
-        <div>
-          <label className="block text-[11px] font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
-            Correo
-          </label>
-          <input
-            required
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mt-2 w-full border border-brand-line bg-transparent px-4 py-2.5 text-brand-cream outline-none focus:border-brand-gold"
-          />
-        </div>
-        <div>
-          <label className="block text-[11px] font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
-            Contraseña temporal
-          </label>
-          <input
-            required
-            minLength={8}
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-2 w-full border border-brand-line bg-transparent px-4 py-2.5 text-brand-cream outline-none focus:border-brand-gold"
-          />
-        </div>
-        <div className="sm:col-span-3">
+      <div className="mt-8 border border-brand-line bg-brand-ink2 p-6">
+        <div className="mb-5 flex gap-2">
           <button
-            type="submit"
-            disabled={saving}
-            className="bg-gradient-to-r from-brand-gold to-brand-goldDeep px-6 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-ink transition-opacity hover:opacity-90 disabled:opacity-60"
+            type="button"
+            onClick={() => setModo("invitar")}
+            className={`border px-4 py-1.5 text-[11px] font-semibold uppercase tracking-widest transition-colors ${
+              modo === "invitar" ? "border-brand-gold text-brand-gold" : "border-brand-line text-brand-creamSoft hover:border-brand-gold"
+            }`}
           >
-            {saving ? "Creando…" : "Crear cliente"}
+            Enviar invitación segura
+          </button>
+          <button
+            type="button"
+            onClick={() => setModo("directo")}
+            className={`border px-4 py-1.5 text-[11px] font-semibold uppercase tracking-widest transition-colors ${
+              modo === "directo" ? "border-brand-gold text-brand-gold" : "border-brand-line text-brand-creamSoft hover:border-brand-gold"
+            }`}
+          >
+            Crear con contraseña
           </button>
         </div>
-      </form>
+        <p className="mb-4 text-xs text-brand-creamSoft">
+          {modo === "invitar"
+            ? "El cliente recibirá un correo con un enlace de un solo uso para establecer su propia contraseña."
+            : "Tú defines la contraseña temporal; compártela con el cliente por un medio seguro."}
+        </p>
+
+        <form onSubmit={handleCreate} className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <label className="block text-[11px] font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+              Nombre
+            </label>
+            <input
+              required
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              className="mt-2 w-full border border-brand-line bg-transparent px-4 py-2.5 text-brand-cream outline-none focus:border-brand-gold"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+              Correo
+            </label>
+            <input
+              required
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-2 w-full border border-brand-line bg-transparent px-4 py-2.5 text-brand-cream outline-none focus:border-brand-gold"
+            />
+          </div>
+          {modo === "directo" && (
+            <div>
+              <label className="block text-[11px] font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+                Contraseña temporal
+              </label>
+              <input
+                required
+                minLength={8}
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-2 w-full border border-brand-line bg-transparent px-4 py-2.5 text-brand-cream outline-none focus:border-brand-gold"
+              />
+            </div>
+          )}
+          <div className="sm:col-span-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="bg-gradient-to-r from-brand-gold to-brand-goldDeep px-6 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-ink transition-opacity hover:opacity-90 disabled:opacity-60"
+            >
+              {saving ? "Guardando…" : modo === "invitar" ? "Enviar invitación" : "Crear cliente"}
+            </button>
+          </div>
+        </form>
+      </div>
 
       <div className="mt-8 overflow-x-auto border border-brand-line">
         <div className="min-w-[560px]">
@@ -138,7 +170,7 @@ export default function ClientesPage() {
                 <span className="font-medium">{c.nombre}</span>
                 <span className="text-brand-creamSoft">{c.email}</span>
                 <span className={c.activo ? "text-brand-gold" : "text-brand-creamSoft/60"}>
-                  {c.activo ? "Activo" : "Desactivado"}
+                  {c.invitacionPendiente ? "Invitación enviada" : c.activo ? "Activo" : "Desactivado"}
                 </span>
                 <button
                   onClick={() => handleToggleActivo(c)}

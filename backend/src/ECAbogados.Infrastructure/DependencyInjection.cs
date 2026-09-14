@@ -25,6 +25,16 @@ public static class DependencyInjection
         services.AddScoped<IPlazoRepository, PlazoRepository>();
         services.AddScoped<IPagoRepository, PagoRepository>();
         services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
+        services.AddScoped<IProspectoRepository, ProspectoRepository>();
+        services.AddScoped<ISolicitudCitaRepository, SolicitudCitaRepository>();
+        services.AddScoped<IActualizacionCasoRepository, ActualizacionCasoRepository>();
+        services.AddScoped<ITareaCasoRepository, TareaCasoRepository>();
+        services.AddScoped<INotificacionRepository, NotificacionRepository>();
+        services.AddScoped<IPlantillaMensajeRepository, PlantillaMensajeRepository>();
+        services.AddScoped<IRegistroTiempoRepository, RegistroTiempoRepository>();
+        services.AddScoped<IConfiguracionRepository, ConfiguracionRepository>();
+        services.AddScoped<ICatalogoTramiteSATRepository, CatalogoTramiteSATRepository>();
+        services.AddScoped<ITramiteSATRepository, TramiteSATRepository>();
 
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
@@ -35,6 +45,8 @@ public static class DependencyInjection
         services.AddSingleton<IEmailSender, SmtpEmailSender>();
         services.AddScoped<IStaffNotifier, StaffNotifier>();
         services.AddScoped<IPasswordResetNotifier, PasswordResetNotifier>();
+        services.AddScoped<IInvitacionClienteNotifier, InvitacionClienteNotifier>();
+        services.AddScoped<ISolicitudCitaNotifier, SolicitudCitaNotifier>();
         services.AddHostedService<RecordatorioBackgroundService>();
 
         return services;

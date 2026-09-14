@@ -1,5 +1,6 @@
 using ECAbogados.Application.Clientes.Commands.CambiarEstatusCliente;
 using ECAbogados.Application.Clientes.Commands.CrearCliente;
+using ECAbogados.Application.Clientes.Commands.InvitarCliente;
 using ECAbogados.Application.Clientes.Queries.ListarClientes;
 using ECAbogados.Application.Mediation;
 using Microsoft.AspNetCore.Authorization;
@@ -7,9 +8,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ECAbogados.Api.Controllers;
 
-// Gestión de cuentas de Cliente (portal autenticado): solo el rol Administrador
-// da de alta cuentas nuevas, igual que con el personal en UsuariosController.
-[Authorize(Roles = "Administrador")]
+// Gestión de cuentas de Cliente (portal autenticado). Dar de alta/editar cuentas
+// es exclusivo de Abogado/Administrador; listar clientes también lo puede hacer
+// Consultor (necesita elegir un cliente al dar de alta un trámite SAT).
+[Authorize(Roles = "Abogado,Consultor,Administrador")]
 [ApiController]
 [Route("api/[controller]")]
 public class ClientesController(ISender sender) : ControllerBase
@@ -21,20 +23,23 @@ public class ClientesController(ISender sender) : ControllerBase
         return Ok(clientes);
     }
 
+    [Authorize(Roles = "Abogado,Administrador")]
     [HttpPost]
     public async Task<IActionResult> Crear([FromBody] CrearClienteCommand command)
     {
-        try
-        {
-            var id = await sender.Send(command);
-            return Created(string.Empty, new { id });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
+        var id = await sender.Send(command);
+        return Created(string.Empty, new { id });
     }
 
+    [Authorize(Roles = "Abogado,Administrador")]
+    [HttpPost("invitar")]
+    public async Task<IActionResult> Invitar([FromBody] InvitarClienteCommand command)
+    {
+        var id = await sender.Send(command);
+        return Created(string.Empty, new { id });
+    }
+
+    [Authorize(Roles = "Abogado,Administrador")]
     [HttpPatch("{id:int}/estatus")]
     public async Task<IActionResult> CambiarEstatus(int id, [FromBody] CambiarEstatusClienteRequest request)
     {

@@ -22,6 +22,22 @@ public class UsuarioRepository(SqlConnectionFactory connectionFactory) : IUsuari
         });
     }
 
+    public async Task<Usuario?> GetByIdAsync(int id)
+    {
+        return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            const string sql = """
+                SELECT Id, Email, PasswordHash, Nombre, Rol, Activo, IntentosFallidos, BloqueadoHasta, ResetToken, ResetTokenExpira
+                FROM dbo.Usuarios
+                WHERE Id = @Id
+                """;
+
+            return await connection.QuerySingleOrDefaultAsync<Usuario>(sql, new { Id = id });
+        });
+    }
+
     public async Task<Usuario?> GetByResetTokenAsync(string resetToken)
     {
         return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>

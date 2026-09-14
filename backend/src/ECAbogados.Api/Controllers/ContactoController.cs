@@ -22,7 +22,7 @@ public class ContactoController(ISender sender) : ControllerBase
         return Created(string.Empty, new { id });
     }
 
-    [Authorize(Roles = "Administrador,Asistente")]
+    [Authorize(Roles = "Abogado,Administrador")]
     [HttpGet]
     public async Task<IActionResult> Listar()
     {
@@ -31,7 +31,7 @@ public class ContactoController(ISender sender) : ControllerBase
     }
 
     // El `Listar()` de arriba sigue sin paginar: lo usa el dashboard para su KPI.
-    [Authorize(Roles = "Administrador,Asistente")]
+    [Authorize(Roles = "Abogado,Administrador")]
     [HttpGet("pagina")]
     public async Task<IActionResult> ListarPaginado([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
@@ -39,7 +39,7 @@ public class ContactoController(ISender sender) : ControllerBase
         return Ok(resultado);
     }
 
-    [Authorize(Roles = "Administrador,Asistente")]
+    [Authorize(Roles = "Abogado,Administrador")]
     [HttpPatch("{id:int}/atendido")]
     public async Task<IActionResult> MarcarAtendido(int id)
     {

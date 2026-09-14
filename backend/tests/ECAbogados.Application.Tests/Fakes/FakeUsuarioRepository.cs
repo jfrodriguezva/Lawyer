@@ -18,6 +18,9 @@ public class FakeUsuarioRepository : IUsuarioRepository
     public Task<Usuario?> GetByEmailAsync(string email) =>
         Task.FromResult(_usuarios.FirstOrDefault(u => u.Email == email));
 
+    public Task<Usuario?> GetByIdAsync(int id) =>
+        Task.FromResult(_usuarios.FirstOrDefault(u => u.Id == id));
+
     public Task<IReadOnlyList<Usuario>> GetAllAsync() =>
         Task.FromResult<IReadOnlyList<Usuario>>(_usuarios.ToList());
 

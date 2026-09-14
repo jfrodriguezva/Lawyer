@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { IconCalendar, IconCheck, IconChat } from "@/components/icons";
-import { createCita, enviarMensajeContacto } from "@/lib/api";
+import { crearSolicitudCita, enviarMensajeContacto, getFlags, type ModalidadCita, type ModuloSolicitud } from "@/lib/api";
+import Stepper from "@/components/Stepper";
 
 type Tab = "cita" | "mensaje";
 
@@ -66,30 +67,52 @@ function TabButton({
   );
 }
 
+const PASOS_AGENDA = ["Contacto", "Motivo", "Fecha y modalidad", "Confirmar"];
+
 function AgendaForm({ servicioInteres }: { servicioInteres?: string }) {
+  const [paso, setPaso] = useState(1);
   const [nombreCliente, setNombreCliente] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [email, setEmail] = useState("");
+  const [medioContacto, setMedioContacto] = useState("WhatsApp");
+  const [modulo, setModulo] = useState<ModuloSolicitud>("Abogado");
+  const [satHabilitado, setSatHabilitado] = useState(false);
+  const [descripcion, setDescripcion] = useState("");
   const [fechaHora, setFechaHora] = useState("");
+  const [modalidad, setModalidad] = useState<ModalidadCita>("Presencial");
+  const [aceptaAviso, setAceptaAviso] = useState(false);
   const [saving, setSaving] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const puedeAvanzarPaso1 = nombreCliente.trim() !== "" && telefono.trim() !== "" && email.trim() !== "";
+  const puedeAvanzarPaso3 = fechaHora !== "";
+
+  useEffect(() => {
+    getFlags()
+      .then((flags) => setSatHabilitado(flags.satHabilitado))
+      .catch(() => undefined);
+  }, []);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!aceptaAviso) return;
     setSaving(true);
     setError(null);
     try {
-      await createCita({
-        nombreCliente,
-        telefono,
-        fechaHora: new Date(fechaHora).toISOString(),
-        casoId: null,
+      await crearSolicitudCita({
+        nombreSolicitante: nombreCliente,
+        emailSolicitante: email,
+        telefonoSolicitante: telefono,
+        medioContactoPreferido: medioContacto,
+        modulo,
         servicioInteres,
+        descripcion: descripcion || null,
+        fechaHoraPropuesta: new Date(fechaHora).toISOString(),
+        modalidad,
+        aceptoAvisoPrivacidad: aceptaAviso,
       });
       setEnviado(true);
-      setNombreCliente("");
-      setTelefono("");
-      setFechaHora("");
     } catch {
       setError("No se pudo enviar tu solicitud. Intenta de nuevo o contáctanos por WhatsApp.");
     } finally {
@@ -98,41 +121,165 @@ function AgendaForm({ servicioInteres }: { servicioInteres?: string }) {
   }
 
   if (enviado) {
-    return <SuccessNote text="Hemos recibido tu solicitud. Nos pondremos en contacto contigo para confirmar tu asesoría." onReset={() => setEnviado(false)} />;
+    return (
+      <SuccessNote
+        text="Hemos recibido tu solicitud. El despacho revisará tu fecha propuesta y te avisaremos por correo si queda confirmada o si se propone otro horario."
+        onReset={() => {
+          setEnviado(false);
+          setPaso(1);
+          setNombreCliente("");
+          setTelefono("");
+          setEmail("");
+          setModulo("Abogado");
+          setDescripcion("");
+          setFechaHora("");
+          setAceptaAviso(false);
+        }}
+      />
+    );
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Field label="Nombre completo">
-        <input
-          required
-          value={nombreCliente}
-          onChange={(e) => setNombreCliente(e.target.value)}
-          className={inputClass}
-        />
-      </Field>
-      <Field label="Teléfono">
-        <input
-          required
-          value={telefono}
-          onChange={(e) => setTelefono(e.target.value)}
-          className={inputClass}
-        />
-      </Field>
-      <Field label="Fecha y hora preferida">
-        <input
-          required
-          type="datetime-local"
-          value={fechaHora}
-          onChange={(e) => setFechaHora(e.target.value)}
-          className={inputClass}
-        />
-      </Field>
+      <Stepper pasos={PASOS_AGENDA} actual={paso} />
 
-      {error && <ErrorNote text={error} />}
+      {paso === 1 && (
+        <div className="space-y-4">
+          <Field label="Nombre completo">
+            <input required value={nombreCliente} onChange={(e) => setNombreCliente(e.target.value)} className={inputClass} />
+          </Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Teléfono">
+              <input required value={telefono} onChange={(e) => setTelefono(e.target.value)} className={inputClass} />
+            </Field>
+            <Field label="Correo">
+              <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
+            </Field>
+          </div>
+          <Field label="Medio de contacto preferido">
+            <select value={medioContacto} onChange={(e) => setMedioContacto(e.target.value)} className={inputClass}>
+              <option value="WhatsApp">WhatsApp</option>
+              <option value="Llamada">Llamada telefónica</option>
+              <option value="Correo">Correo electrónico</option>
+            </select>
+          </Field>
+          <NavegacionPasos onSiguiente={() => setPaso(2)} puedeAvanzar={puedeAvanzarPaso1} />
+        </div>
+      )}
 
-      <SubmitButton saving={saving} label="Agenda tu asesoría hoy" savingLabel="Enviando…" />
+      {paso === 2 && (
+        <div className="space-y-4">
+          {satHabilitado && (
+            <Field label="¿Qué tipo de asesoría necesitas?">
+              <select value={modulo} onChange={(e) => setModulo(e.target.value as ModuloSolicitud)} className={inputClass}>
+                <option value="Abogado">Asesoría jurídica</option>
+                <option value="SAT">Trámite SAT</option>
+              </select>
+            </Field>
+          )}
+          <Field label="¿En qué podemos ayudarte? (opcional)">
+            <textarea
+              rows={4}
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              placeholder="Cuéntanos brevemente tu situación…"
+              className={`${inputClass} resize-none`}
+            />
+          </Field>
+          <NavegacionPasos onAnterior={() => setPaso(1)} onSiguiente={() => setPaso(3)} puedeAvanzar />
+        </div>
+      )}
+
+      {paso === 3 && (
+        <div className="space-y-4">
+          <Field label="Fecha y hora propuestas">
+            <input
+              required
+              type="datetime-local"
+              value={fechaHora}
+              onChange={(e) => setFechaHora(e.target.value)}
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Modalidad">
+            <select value={modalidad} onChange={(e) => setModalidad(e.target.value as ModalidadCita)} className={inputClass}>
+              <option value="Presencial">Presencial</option>
+              <option value="Videollamada">Videollamada</option>
+              <option value="Llamada">Llamada telefónica</option>
+            </select>
+          </Field>
+          <p className="text-xs text-brand-creamSoft">
+            Esta es tu fecha propuesta: el despacho la confirmará o te propondrá otro horario si no está disponible.
+          </p>
+          <NavegacionPasos onAnterior={() => setPaso(2)} onSiguiente={() => setPaso(4)} puedeAvanzar={puedeAvanzarPaso3} />
+        </div>
+      )}
+
+      {paso === 4 && (
+        <div className="space-y-4">
+          <div className="space-y-1 border border-brand-line bg-brand-ink px-4 py-3 text-sm text-brand-creamSoft">
+            <p><span className="text-brand-cream">{nombreCliente}</span> · {telefono} · {email}</p>
+            <p>{new Date(fechaHora).toLocaleString("es-MX")} · {modalidad}</p>
+          </div>
+          <label className="flex items-start gap-2 text-xs text-brand-creamSoft">
+            <input
+              type="checkbox"
+              checked={aceptaAviso}
+              onChange={(e) => setAceptaAviso(e.target.checked)}
+              className="mt-0.5"
+            />
+            He leído y acepto el aviso de privacidad del despacho para el tratamiento de mis datos de contacto.
+          </label>
+
+          {error && <ErrorNote text={error} />}
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setPaso(3)}
+              className="flex-1 border border-brand-line px-4 py-2.5 text-xs font-semibold uppercase tracking-widest text-brand-creamSoft hover:border-brand-gold hover:text-brand-gold"
+            >
+              Atrás
+            </button>
+            <div className="flex-[2]">
+              <SubmitButton saving={saving} disabled={!aceptaAviso} label="Enviar solicitud" savingLabel="Enviando…" />
+            </div>
+          </div>
+        </div>
+      )}
     </form>
+  );
+}
+
+function NavegacionPasos({
+  onAnterior,
+  onSiguiente,
+  puedeAvanzar,
+}: {
+  onAnterior?: () => void;
+  onSiguiente: () => void;
+  puedeAvanzar: boolean;
+}) {
+  return (
+    <div className="flex gap-3">
+      {onAnterior && (
+        <button
+          type="button"
+          onClick={onAnterior}
+          className="flex-1 border border-brand-line px-4 py-2.5 text-xs font-semibold uppercase tracking-widest text-brand-creamSoft hover:border-brand-gold hover:text-brand-gold"
+        >
+          Atrás
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={onSiguiente}
+        disabled={!puedeAvanzar}
+        className={`${onAnterior ? "flex-[2]" : "w-full"} bg-gradient-to-r from-brand-gold to-brand-goldDeep px-4 py-2.5 text-xs font-semibold uppercase tracking-widest text-brand-ink transition-opacity hover:opacity-90 disabled:opacity-50`}
+      >
+        Continuar
+      </button>
+    </div>
   );
 }
 
@@ -231,15 +378,17 @@ function SubmitButton({
   saving,
   label,
   savingLabel,
+  disabled = false,
 }: {
   saving: boolean;
   label: string;
   savingLabel: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="submit"
-      disabled={saving}
+      disabled={saving || disabled}
       className="group relative w-full overflow-hidden bg-gradient-to-r from-brand-gold to-brand-goldDeep px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-brand-ink transition-transform hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0"
     >
       <span

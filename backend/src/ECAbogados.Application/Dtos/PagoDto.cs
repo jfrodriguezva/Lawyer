@@ -1,3 +1,5 @@
+using ECAbogados.Domain.Entities;
+
 namespace ECAbogados.Application.Dtos;
 
 public record PagoDto(
@@ -5,4 +7,5 @@ public record PagoDto(
     int CasoId,
     string Concepto,
     decimal Monto,
-    DateTime Fecha);
+    DateTime Fecha,
+    TipoPago Tipo);

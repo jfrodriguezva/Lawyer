@@ -10,9 +10,6 @@ public class ListarDocumentosPorCasoQueryHandler(IDocumentoRepository documentoR
     public async Task<IReadOnlyList<DocumentoDto>> Handle(ListarDocumentosPorCasoQuery request, CancellationToken cancellationToken)
     {
         var documentos = await documentoRepository.GetByCasoIdAsync(request.CasoId);
-
-        return documentos
-            .Select(d => new DocumentoDto(d.Id, d.CasoId, d.NombreArchivo, d.TipoContenido, d.TamanoBytes, d.FechaCarga, d.RutaAlmacenamiento))
-            .ToList();
+        return documentos.Select(d => d.ToDto()).ToList();
     }
 }

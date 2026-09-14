@@ -18,15 +18,8 @@ public class AuthController(ISender sender) : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
     {
-        try
-        {
-            var result = await sender.Send(new LoginCommand(request.Email, request.Password));
-            return Ok(result);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
+        var result = await sender.Send(new LoginCommand(request.Email, request.Password));
+        return Ok(result);
     }
 
     [AllowAnonymous]
@@ -44,15 +37,8 @@ public class AuthController(ISender sender) : ControllerBase
     [HttpPost("restablecer-password")]
     public async Task<IActionResult> RestablecerPassword([FromBody] RestablecerPasswordRequest request)
     {
-        try
-        {
-            await sender.Send(new RestablecerPasswordCommand(request.Token, request.NuevaPassword));
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        await sender.Send(new RestablecerPasswordCommand(request.Token, request.NuevaPassword));
+        return NoContent();
     }
 }
 

@@ -41,7 +41,9 @@ const MENSAJES = {
 const COLOR_POR_ESTATUS: Record<Cita["estatus"], string> = {
   Pendiente: "#c9a24a",
   Confirmada: "#8c6b1f",
+  Realizada: "#4a7c59",
   Cancelada: "#3a3226",
+  NoAsistio: "#7c3a3a",
 };
 
 interface CitaEvento {
@@ -230,7 +232,7 @@ export default function AgendaPage() {
                 <a
                   href={buildWhatsAppLink(
                     seleccionada.telefono,
-                    `Hola ${seleccionada.nombreCliente}, te escribo de ECG Abogados por tu cita del ${new Date(seleccionada.fechaHora).toLocaleString("es-MX")}.`
+                    `Hola ${seleccionada.nombreCliente}, te escribo de ECGAbogados por tu cita del ${new Date(seleccionada.fechaHora).toLocaleString("es-MX")}.`
                   )}
                   target="_blank"
                   rel="noreferrer"

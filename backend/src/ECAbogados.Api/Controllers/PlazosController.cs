@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ECAbogados.Api.Controllers;
 
-[Authorize(Roles = "Administrador,Asistente")]
+[Authorize(Roles = "Abogado,Administrador")]
 [ApiController]
 [Route("api/[controller]")]
 public class PlazosController(ISender sender) : ControllerBase

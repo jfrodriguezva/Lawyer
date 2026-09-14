@@ -1,4 +1,4 @@
-# Manual técnico — ECG Abogados
+# Manual técnico — ECGAbogados
 
 ## 1. Arquitectura general
 
@@ -176,9 +176,9 @@ Distinto del portal anónimo por enlace mágico (4.4), que **sigue existiendo si
 
 El aviso de un lead nuevo sigue siendo 100% gratuito: el correo inmediato a `IStaffNotifier` ya existía (ver 4.2), y se sumó un botón "Abrir WhatsApp" en cada cita/mensaje del panel que arma un enlace `wa.me` (`lib/whatsapp.ts`, código de país `52` + 10 dígitos) con texto prellenado — abre una conversación de WhatsApp normal que la abogada contesta desde su propio teléfono, sin ninguna API de pago de WhatsApp Business.
 
-## 4.18 Rebrand y expansión de servicios (ECG Abogados)
+## 4.18 Rebrand y expansión de servicios (ECGAbogados)
 
-El despacho pasó de "EC Abogados" a **ECG Abogados** (rebrand de texto/marca visible únicamente — namespaces `.NET`, nombre de la base de datos, `Jwt:Issuer`/`Audience` y el repo se mantuvieron igual a propósito, es un cambio cosmético/de marketing, no técnico). El logo es un SVG dibujado a mano en `components/Monogram.tsx` (igual que antes, sin assets rasterizados) con un motivo de balanza de la justicia agregado.
+El despacho pasó de "EC Abogados" a **ECGAbogados** (rebrand de texto/marca visible únicamente — namespaces `.NET`, nombre de la base de datos, `Jwt:Issuer`/`Audience` y el repo se mantuvieron igual a propósito, es un cambio cosmético/de marketing, no técnico). El logo es un SVG dibujado a mano en `components/Monogram.tsx` (igual que antes, sin assets rasterizados) con un motivo de balanza de la justicia agregado.
 
 `frontend/web/lib/servicios.ts` creció de 4 a 11 entradas (`ServicioContenido[]`), cada una generando su propia página estática en `/servicios/{slug}` vía `generateStaticParams`. El campo `tipo` de cada entrada debe coincidir exactamente con: (a) el arreglo `TIPOS` en `app/(app)/casos/page.tsx` (dropdown al crear un expediente) y (b) las llaves del catálogo `RequisitosPorTipo.cs` (checklist automático) — los tres se mantienen sincronizados a mano; agregar un servicio nuevo requiere tocar los tres lugares para que genere un checklist real al crear un caso de ese tipo. `/servicios` es un índice nuevo que agrupa los 11 en "Derecho familiar" y "Asesoría fiscal y empresarial". La página de inicio agrega una franja de navegación rápida (`components/QuickNav.tsx`) para saltar entre secciones sin depender solo de scroll.
 

@@ -1,3 +1,4 @@
+using ECAbogados.Application.Auth.Shared;
 using ECAbogados.Application.Interfaces;
 using ECAbogados.Application.Mediation;
 
@@ -17,8 +18,7 @@ public class SolicitarResetPasswordCommandHandler(
             return;
         }
 
-        var token = Guid.NewGuid().ToString("N");
-        await usuarioRepository.SetResetTokenAsync(usuario.Id, token, DateTime.UtcNow.AddHours(1));
+        var token = await PasswordResetService.GenerarTokenAsync(usuarioRepository, usuario.Id, TimeSpan.FromHours(1));
         await passwordResetNotifier.EnviarEnlaceAsync(usuario.Email, token, cancellationToken);
     }
 }

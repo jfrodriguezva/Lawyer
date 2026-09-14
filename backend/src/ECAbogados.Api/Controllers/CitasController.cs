@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace ECAbogados.Api.Controllers;
 
-[Authorize(Roles = "Administrador,Asistente")]
+[Authorize(Roles = "Abogado,Administrador")]
 [ApiController]
 [Route("api/[controller]")]
 public class CitasController(ISender sender) : ControllerBase
@@ -33,15 +33,8 @@ public class CitasController(ISender sender) : ControllerBase
     [HttpPatch("{id:int}/estatus")]
     public async Task<IActionResult> CambiarEstatus(int id, [FromBody] CambiarEstatusCitaRequest request)
     {
-        try
-        {
-            await sender.Send(new CambiarEstatusCitaCommand(id, request.Estatus));
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
+        await sender.Send(new CambiarEstatusCitaCommand(id, request.Estatus));
+        return NoContent();
     }
 }
 

@@ -164,6 +164,14 @@ export function IconArrowRight({ className }: IconProps) {
   );
 }
 
+export function IconChevronDown({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+      <path d="M5 7.5 10 12.5 15 7.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function IconMenu({ className }: IconProps) {
   return (
     <svg viewBox="0 0 20 20" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
@@ -304,6 +312,20 @@ export function IconHandHeart({ className }: IconProps) {
       />
       <path d="M2.7 16.3c.9-1.9 2.8-2.4 4.2-1.3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
       <path d="M17.3 16.3c-.9-1.9-2.8-2.4-4.2-1.3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconBell({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M10 3.3c-2 0-3.6 1.6-3.6 3.6v2.3c0 .5-.2 1-.5 1.4l-.9 1.1c-.5.6-.1 1.5.6 1.5h8.8c.7 0 1.1-.9.6-1.5l-.9-1.1c-.3-.4-.5-.9-.5-1.4V6.9c0-2-1.6-3.6-3.6-3.6z"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+      <path d="M8.5 15.8a1.5 1.5 0 0 0 3 0" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
     </svg>
   );
 }

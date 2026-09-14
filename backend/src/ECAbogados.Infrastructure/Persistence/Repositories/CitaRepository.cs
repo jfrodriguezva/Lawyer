@@ -80,6 +80,22 @@ public class CitaRepository(SqlConnectionFactory connectionFactory) : ICitaRepos
         });
     }
 
+    public async Task<bool> ExisteEnHorarioAsync(DateTime fechaHora)
+    {
+        return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            const string sql = """
+                SELECT COUNT(1) FROM dbo.Citas
+                WHERE FechaHora = @FechaHora AND Estatus = @Estatus
+                """;
+
+            var count = await connection.ExecuteScalarAsync<int>(sql, new { FechaHora = fechaHora, Estatus = EstatusCita.Confirmada.ToString() });
+            return count > 0;
+        });
+    }
+
     public async Task MarkRecordatorioEnviadoAsync(int id)
     {
         await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>

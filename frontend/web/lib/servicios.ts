@@ -247,3 +247,28 @@ export const SERVICIOS: ServicioContenido[] = [
 export function getServicioPorSlug(slug: string): ServicioContenido | undefined {
   return SERVICIOS.find((s) => s.slug === slug);
 }
+
+// Agrupación de los 11 servicios en las dos áreas del despacho — fuente única
+// de verdad para el menú de navegación, la home y el índice /servicios.
+export const AREA_FAMILIAR = [
+  "divorcio-incausado",
+  "divorcio-mutuo-consentimiento",
+  "pension-alimenticia",
+  "custodia",
+  "regimen-de-visitas",
+  "violencia-familiar",
+];
+
+export const AREA_FISCAL_EMPRESARIAL = [
+  "tramites-sat",
+  "contratos",
+  "cobranza-pagares",
+  "sucesiones-herencias",
+  "asesoria-empresas",
+];
+
+export function serviciosPorArea(slugs: string[]): ServicioContenido[] {
+  return slugs
+    .map((slug) => getServicioPorSlug(slug))
+    .filter((s): s is ServicioContenido => Boolean(s));
+}

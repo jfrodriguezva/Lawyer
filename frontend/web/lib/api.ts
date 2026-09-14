@@ -4,7 +4,60 @@ export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
 export type EstatusCaso = "Activo" | "Revision" | "Cerrado";
-export type EstatusCita = "Pendiente" | "Confirmada" | "Cancelada";
+export type EstatusCita = "Pendiente" | "Confirmada" | "Realizada" | "Cancelada" | "NoAsistio";
+export type ModuloSolicitud = "Abogado" | "SAT";
+export type ModalidadCita = "Presencial" | "Videollamada" | "Llamada";
+export type EstatusSolicitudCita =
+  | "SolicitudRecibida"
+  | "EnRevision"
+  | "InformacionRequerida"
+  | "HorarioAlternativoPropuesto"
+  | "PendienteConfirmacionSolicitante"
+  | "Confirmada"
+  | "Realizada"
+  | "Cancelada"
+  | "NoAsistio"
+  | "Rechazada"
+  | "ConvertidaEnContratacion";
+export type AccionRevisionSolicitud = "Aceptar" | "ProponerOtroHorario" | "Rechazar" | "PedirInformacion";
+export type RespuestaSolicitante = "AceptarHorario" | "SolicitarOtroHorario";
+export type EtapaProspecto = "Nuevo" | "EnRevision" | "EntrevistaRealizada" | "Contratado" | "NoContratado";
+export type EstatusConflictoInteres = "Pendiente" | "Revisado" | "Autorizado" | "Rechazado";
+export type VisibilidadDocumento = "Interno" | "Compartido" | "SubidoPorCliente";
+export type EstatusDocumento = "Pendiente" | "Recibido" | "EnRevision" | "Aceptado" | "Rechazado" | "RequiereCorreccion";
+export type VisibilidadActualizacion = "Interna" | "Compartida";
+export type TipoPersona = "Fisica" | "Moral";
+export type TipoPago = "Anticipo" | "Pago" | "Ajuste";
+export type DestinatarioTipo = "Usuario" | "Cliente";
+export type EstatusTramiteSAT = "Pendiente" | "EnProceso" | "EsperandoCliente" | "Completado" | "Cancelado";
+
+export interface Flags {
+  satHabilitado: boolean;
+  comercializadoraHabilitada: boolean;
+}
+
+export interface CatalogoTramiteSAT {
+  id: number;
+  nombre: string;
+  requisitos: string | null;
+  etapas: string | null;
+  observaciones: string | null;
+  activo: boolean;
+}
+
+export interface TramiteSAT {
+  id: number;
+  clienteId: number;
+  clienteNombre: string | null;
+  catalogoTramiteId: number;
+  catalogoTramiteNombre: string | null;
+  estatus: EstatusTramiteSAT;
+  responsableUsuarioId: number | null;
+  responsableNombre: string | null;
+  fechaLimite: string | null;
+  observaciones: string | null;
+  fechaCreacion: string;
+}
 
 export interface Caso {
   id: number;
@@ -13,6 +66,11 @@ export interface Caso {
   estatus: EstatusCaso;
   fechaApertura: string;
   notas: string | null;
+  abogadoResponsableId: number | null;
+  abogadoResponsableNombre: string | null;
+  prioridad: string | null;
+  folioInterno: string | null;
+  archivado: boolean;
 }
 
 export interface ChecklistItem {
@@ -36,6 +94,62 @@ export interface Pago {
   concepto: string;
   monto: number;
   fecha: string;
+  tipo: TipoPago;
+}
+
+export interface TareaCaso {
+  id: number;
+  casoId: number;
+  descripcion: string;
+  responsableUsuarioId: number | null;
+  responsableNombre: string | null;
+  fechaVencimiento: string | null;
+  completada: boolean;
+  fechaCreacion: string;
+}
+
+export interface Notificacion {
+  id: number;
+  titulo: string;
+  mensaje: string;
+  leida: boolean;
+  fecha: string;
+  enlace: string | null;
+}
+
+export interface PlantillaMensaje {
+  id: number;
+  nombre: string;
+  contenido: string;
+}
+
+export interface RegistroTiempo {
+  id: number;
+  casoId: number;
+  usuarioId: number;
+  usuarioNombre: string | null;
+  minutos: number;
+  descripcion: string | null;
+  fecha: string;
+}
+
+export interface ReporteCasos {
+  totalCasos: number;
+  porEstatus: Record<string, number>;
+  porTipo: Record<string, number>;
+  porAbogado: Record<string, number>;
+  casos: Caso[];
+}
+
+export interface AuditoriaGlobalEntry {
+  id: number;
+  entidad: string;
+  entidadId: number;
+  accion: string;
+  detalle: string | null;
+  usuarioNombre: string | null;
+  fecha: string;
+  ip: string | null;
 }
 
 export interface Usuario {
@@ -51,6 +165,20 @@ export interface Cliente {
   email: string;
   nombre: string;
   activo: boolean;
+  tipoPersona: TipoPersona;
+  rfc: string | null;
+  telefono: string | null;
+  invitacionPendiente: boolean;
+  fechaCreacion: string;
+}
+
+export interface ActualizacionCaso {
+  id: number;
+  casoId: number;
+  texto: string;
+  visibilidad: VisibilidadActualizacion;
+  usuarioNombre: string | null;
+  fecha: string;
 }
 
 export interface CasoDetalle extends Caso {
@@ -62,6 +190,75 @@ export interface CasoDetalle extends Caso {
   clienteVinculadoId: number | null;
   clienteVinculadoNombre: string | null;
   clienteVinculadoEmail: string | null;
+  contraparteNombre: string | null;
+  autoridadOrganismo: string | null;
+  numeroExpedienteExterno: string | null;
+  fechaCierre: string | null;
+  motivoCierre: string | null;
+  montoAcordado: number | null;
+  actualizaciones: ActualizacionCaso[];
+  tareas: TareaCaso[];
+}
+
+export interface Prospecto {
+  id: number;
+  nombre: string;
+  email: string;
+  telefono: string;
+  medioContactoPreferido: string | null;
+  origen: string | null;
+  servicioInteres: string | null;
+  conflictoInteres: EstatusConflictoInteres;
+  responsableUsuarioId: number | null;
+  resultadoEntrevista: string | null;
+  etapa: EtapaProspecto;
+  motivoNoContratacion: string | null;
+  clienteId: number | null;
+  fechaCreacion: string;
+}
+
+export interface HistorialCitaCambio {
+  id: number;
+  fechaHoraPropuesta: string;
+  propuestoPor: "Staff" | "Solicitante";
+  motivo: string | null;
+  fecha: string;
+}
+
+export interface SolicitudCita {
+  id: number;
+  prospectoId: number | null;
+  clienteId: number | null;
+  nombreSolicitante: string;
+  emailSolicitante: string;
+  telefonoSolicitante: string;
+  medioContactoPreferido: string | null;
+  modulo: ModuloSolicitud;
+  servicioInteres: string | null;
+  descripcion: string | null;
+  fechaHoraPropuesta: string;
+  modalidad: ModalidadCita;
+  estatus: EstatusSolicitudCita;
+  responsableUsuarioId: number | null;
+  motivo: string | null;
+  citaId: number | null;
+  fechaCreacion: string;
+  historial: HistorialCitaCambio[];
+}
+
+export interface SolicitudCitaPublica {
+  nombreSolicitante: string;
+  modulo: ModuloSolicitud;
+  servicioInteres: string | null;
+  fechaHoraPropuesta: string;
+  modalidad: ModalidadCita;
+  estatus: EstatusSolicitudCita;
+  motivo: string | null;
+}
+
+export interface ProspectoDetalle {
+  prospecto: Prospecto;
+  solicitudes: SolicitudCita[];
 }
 
 export interface AuditoriaEntry {
@@ -80,6 +277,8 @@ export interface PortalCaso {
   fechaApertura: string;
   checklist: ChecklistItem[];
   documentos: Documento[];
+  actualizaciones: ActualizacionCaso[];
+  proximasCitas: Cita[];
 }
 
 export interface Cita {
@@ -99,6 +298,15 @@ export interface Documento {
   tipoContenido: string;
   tamanoBytes: number;
   fechaCarga: string;
+  descripcion: string | null;
+  categoria: string | null;
+  visibilidad: VisibilidadDocumento;
+  estatus: EstatusDocumento;
+  comentarioRevision: string | null;
+  version: number;
+  subidoPorTipo: "Staff" | "Cliente";
+  subidoPorNombre: string | null;
+  soloRegistro: boolean;
 }
 
 export interface LoginResponse {
@@ -135,11 +343,17 @@ export class ApiError extends Error {
   }
 }
 
+// Cookie que firma la sesión: "ec_token" para staff (Abogado/Consultor/Agente/
+// Administrador), "ecg_cliente_token" para el portal de Cliente. Un solo
+// wrapper parametrizado evita mantener dos copias casi idénticas del cliente HTTP.
+type SesionCookie = "ec_token" | "ecg_cliente_token";
+
 async function request<T>(
   path: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  cookieName: SesionCookie = "ec_token"
 ): Promise<T> {
-  const token = getCookie("ec_token");
+  const token = getCookie(cookieName);
   const headers = new Headers(options.headers);
 
   if (!(options.body instanceof FormData) && options.body) {
@@ -212,31 +426,48 @@ export function getCaso(id: number | string) {
   return request<CasoDetalle>(`/api/casos/${id}`);
 }
 
-export function createCaso(data: {
+export interface DatosCaso {
   clienteNombre: string;
   tipo: string;
   notas?: string | null;
-}) {
+  abogadoResponsableId?: number | null;
+  prioridad?: string | null;
+  folioInterno?: string | null;
+  contraparteNombre?: string | null;
+  autoridadOrganismo?: string | null;
+  numeroExpedienteExterno?: string | null;
+  montoAcordado?: number | null;
+}
+
+export function createCaso(data: DatosCaso) {
   return request<{ id: number }>("/api/casos", {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
-export function updateCaso(
-  id: number | string,
-  data: { clienteNombre: string; tipo: string; notas?: string | null }
-) {
+export function updateCaso(id: number | string, data: DatosCaso) {
   return request<void>(`/api/casos/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
 }
 
-export function cambiarEstatusCaso(id: number | string, estatus: EstatusCaso) {
+export function cambiarEstatusCaso(id: number | string, estatus: EstatusCaso, motivo?: string) {
   return request<void>(`/api/casos/${id}/estatus`, {
     method: "PATCH",
-    body: JSON.stringify({ estatus }),
+    body: JSON.stringify({ estatus, motivo }),
+  });
+}
+
+export function getActualizacionesCaso(id: number | string) {
+  return request<ActualizacionCaso[]>(`/api/casos/${id}/actualizaciones`);
+}
+
+export function crearActualizacionCaso(id: number | string, texto: string, visibilidad: VisibilidadActualizacion) {
+  return request<{ id: number }>(`/api/casos/${id}/actualizaciones`, {
+    method: "POST",
+    body: JSON.stringify({ texto, visibilidad }),
   });
 }
 
@@ -285,14 +516,47 @@ export function getDocumentosPorCaso(casoId: number | string) {
   return request<Documento[]>(`/api/documentos/caso/${casoId}`);
 }
 
-export function subirDocumento(casoId: number | string, file: File) {
+export function subirDocumento(
+  casoId: number | string,
+  file: File,
+  opciones?: { descripcion?: string; visibilidad?: VisibilidadDocumento }
+) {
   const formData = new FormData();
   formData.append("CasoId", String(casoId));
   formData.append("File", file);
+  if (opciones?.descripcion) formData.append("Descripcion", opciones.descripcion);
+  if (opciones?.visibilidad) formData.append("Visibilidad", opciones.visibilidad);
   return request<{ id: number }>("/api/documentos", {
     method: "POST",
     body: formData,
   });
+}
+
+export function cambiarEstatusDocumento(id: number | string, estatus: EstatusDocumento, comentarioRevision?: string | null) {
+  return request<void>(`/api/documentos/${id}/estatus`, {
+    method: "PATCH",
+    body: JSON.stringify({ estatus, comentarioRevision }),
+  });
+}
+
+// La descarga requiere el token del staff (Authorization header), así que no
+// puede ser un <a href> plano: se trae el archivo autenticado y se dispara
+// la descarga en el navegador con un blob temporal.
+export async function descargarDocumento(id: number | string, nombreArchivo: string) {
+  const token = getCookie("ec_token");
+  const res = await fetch(`${API_URL}/api/documentos/${id}/descargar`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  if (!res.ok) {
+    throw new ApiError(`Error ${res.status}`, res.status);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = nombreArchivo;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 // ---- Contacto ----
@@ -359,7 +623,7 @@ export function getPagosPorCaso(casoId: number | string) {
   return request<Pago[]>(`/api/pagos/caso/${casoId}`);
 }
 
-export function registrarPago(data: { casoId: number; concepto: string; monto: number }) {
+export function registrarPago(data: { casoId: number; concepto: string; monto: number; tipo?: TipoPago }) {
   return request<{ id: number }>("/api/pagos", {
     method: "POST",
     body: JSON.stringify(data),
@@ -370,6 +634,17 @@ export function registrarPago(data: { casoId: number; concepto: string; monto: n
 
 export function getUsuarios() {
   return request<Usuario[]>("/api/usuarios");
+}
+
+export interface DirectorioUsuario {
+  id: number;
+  nombre: string;
+}
+
+// Solo Id + Nombre: para Abogado/Consultor eligiendo un responsable, sin
+// exponer el directorio administrativo completo (exclusivo de Administrador).
+export function getDirectorioUsuarios() {
+  return request<DirectorioUsuario[]>("/api/usuarios/directorio");
 }
 
 export function crearUsuario(data: { email: string; password: string; nombre: string; rol: string }) {
@@ -422,6 +697,12 @@ export function getAuditoriaPorCaso(casoId: number | string) {
   return request<AuditoriaEntry[]>(`/api/auditoria/caso/${casoId}`);
 }
 
+export function getAuditoriaGlobal(page: number, pageSize: number, entidad?: string) {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  if (entidad) params.set("entidad", entidad);
+  return request<PagedResult<AuditoriaGlobalEntry>>(`/api/auditoria?${params.toString()}`);
+}
+
 // ---- Portal del cliente (enlace mágico, sin autenticación) ----
 
 export function getCasoPorToken(token: string) {
@@ -437,9 +718,7 @@ export function subirDocumentoPortal(token: string, file: File) {
   });
 }
 
-// ---- Portal del Cliente autenticado (cuenta real, cookie propia) ----
-// Usa su propio helper de request (con la cookie ecg_cliente_token) en vez del
-// wrapper de arriba, que siempre firma con la cookie de sesión del staff (ec_token).
+// ---- Portal del Cliente autenticado (cuenta real, cookie ecg_cliente_token) ----
 
 export function loginCliente(email: string, password: string) {
   return request<LoginResponse>("/api/cliente/login", {
@@ -448,34 +727,290 @@ export function loginCliente(email: string, password: string) {
   });
 }
 
-async function requestCliente<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getCookie("ecg_cliente_token");
-  const headers = new Headers(options.headers);
-
-  if (!(options.body instanceof FormData) && options.body) {
-    headers.set("Content-Type", "application/json");
-  }
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
-
-  if (!res.ok) {
-    let message = `Error ${res.status}`;
-    try {
-      const data = await res.json();
-      message = data?.message ?? data?.title ?? message;
-    } catch {
-      // response had no JSON body
-    }
-    throw new ApiError(message, res.status);
-  }
-
-  const text = await res.text();
-  return text ? (JSON.parse(text) as T) : (undefined as T);
+export function aceptarInvitacionCliente(token: string, nuevaPassword: string) {
+  return request<void>("/api/cliente/aceptar-invitacion", {
+    method: "POST",
+    body: JSON.stringify({ token, nuevaPassword }),
+  });
 }
 
 export function getMisCasos() {
-  return requestCliente<PortalCaso[]>("/api/cliente/mis-casos");
+  return request<PortalCaso[]>("/api/cliente/mis-casos", {}, "ecg_cliente_token");
+}
+
+export function subirDocumentoClientePortal(casoId: number | string, file: File) {
+  const formData = new FormData();
+  formData.append("File", file);
+  return request<{ id: number }>(`/api/cliente/casos/${casoId}/documentos`, {
+    method: "POST",
+    body: formData,
+  }, "ecg_cliente_token");
+}
+
+// ---- Invitación de cliente (alta sin contraseña) ----
+
+export function invitarCliente(data: { email: string; nombre: string; prospectoId?: number | null }) {
+  return request<{ id: number }>("/api/clientes/invitar", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+// ---- Prospectos ----
+
+export function getProspectos() {
+  return request<Prospecto[]>("/api/prospectos");
+}
+
+export function getProspecto(id: number | string) {
+  return request<ProspectoDetalle>(`/api/prospectos/${id}`);
+}
+
+export function registrarResultadoEntrevista(
+  id: number | string,
+  data: { resultadoEntrevista: string; conflictoInteres: EstatusConflictoInteres; motivoNoContratacion?: string | null }
+) {
+  return request<void>(`/api/prospectos/${id}/entrevista`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export interface ConvertirProspectoResultado {
+  clienteId: number;
+  casoId: number;
+}
+
+export function convertirProspecto(
+  id: number | string,
+  data: {
+    tipoCaso: string;
+    notasCaso?: string | null;
+    abogadoResponsableId?: number | null;
+    prioridad?: string | null;
+    password?: string | null;
+  }
+) {
+  return request<ConvertirProspectoResultado>(`/api/prospectos/${id}/convertir`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+// ---- Solicitudes de cita (negociación pública <-> despacho) ----
+
+export function crearSolicitudCita(data: {
+  nombreSolicitante: string;
+  emailSolicitante: string;
+  telefonoSolicitante: string;
+  medioContactoPreferido?: string | null;
+  modulo: ModuloSolicitud;
+  servicioInteres?: string | null;
+  descripcion?: string | null;
+  fechaHoraPropuesta: string;
+  modalidad: ModalidadCita;
+  aceptoAvisoPrivacidad: boolean;
+}) {
+  return request<{ id: number; tokenPublico: string }>("/api/solicitudes-cita", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function getSolicitudesCita() {
+  return request<SolicitudCita[]>("/api/solicitudes-cita");
+}
+
+export function revisarSolicitudCita(
+  id: number | string,
+  data: { accion: AccionRevisionSolicitud; nuevaFechaHora?: string | null; motivo?: string | null }
+) {
+  return request<void>(`/api/solicitudes-cita/${id}/revisar`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export function getSolicitudPorToken(token: string) {
+  return request<SolicitudCitaPublica>(`/api/solicitudes-cita/${token}`);
+}
+
+export function responderHorarioAlternativo(
+  token: string,
+  data: { respuesta: RespuestaSolicitante; nuevaFechaHoraPropuesta?: string | null }
+) {
+  return request<void>(`/api/solicitudes-cita/${token}/responder`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+// ---- Tareas ----
+
+export function getTareasPorCaso(casoId: number | string) {
+  return request<TareaCaso[]>(`/api/tareas/caso/${casoId}`);
+}
+
+export function getTareasPendientes() {
+  return request<TareaCaso[]>("/api/tareas/pendientes");
+}
+
+export function crearTarea(data: { casoId: number; descripcion: string; responsableUsuarioId?: number | null; fechaVencimiento?: string | null }) {
+  return request<{ id: number }>("/api/tareas", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function marcarTareaCompletada(id: number | string, completada: boolean) {
+  return request<void>(`/api/tareas/${id}/completada`, {
+    method: "PATCH",
+    body: JSON.stringify({ completada }),
+  });
+}
+
+// ---- Notificaciones ----
+
+export function getNotificaciones() {
+  return request<Notificacion[]>("/api/notificaciones");
+}
+
+export function marcarNotificacionLeida(id: number | string) {
+  return request<void>(`/api/notificaciones/${id}/leida`, { method: "PATCH" });
+}
+
+export function marcarTodasNotificacionesLeidas() {
+  return request<void>("/api/notificaciones/marcar-todas-leidas", { method: "PATCH" });
+}
+
+// ---- Plantillas de mensaje ----
+
+export function getPlantillas() {
+  return request<PlantillaMensaje[]>("/api/plantillas");
+}
+
+export function crearPlantilla(data: { nombre: string; contenido: string }) {
+  return request<{ id: number }>("/api/plantillas", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function actualizarPlantilla(id: number | string, data: { nombre: string; contenido: string }) {
+  return request<void>(`/api/plantillas/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function eliminarPlantilla(id: number | string) {
+  return request<void>(`/api/plantillas/${id}`, { method: "DELETE" });
+}
+
+// ---- Registro de tiempo dedicado ----
+
+export function getTiempoPorCaso(casoId: number | string) {
+  return request<RegistroTiempo[]>(`/api/registros-tiempo/caso/${casoId}`);
+}
+
+export function registrarTiempo(data: { casoId: number; minutos: number; descripcion?: string | null }) {
+  return request<{ id: number }>("/api/registros-tiempo", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+// ---- Reportes ----
+
+export function getReporteCasos(filtros: {
+  desde?: string | null;
+  hasta?: string | null;
+  abogadoResponsableId?: number | null;
+  tipo?: string | null;
+  estatus?: EstatusCaso | null;
+}) {
+  const params = new URLSearchParams();
+  if (filtros.desde) params.set("desde", filtros.desde);
+  if (filtros.hasta) params.set("hasta", filtros.hasta);
+  if (filtros.abogadoResponsableId) params.set("abogadoResponsableId", String(filtros.abogadoResponsableId));
+  if (filtros.tipo) params.set("tipo", filtros.tipo);
+  if (filtros.estatus) params.set("estatus", filtros.estatus);
+  return request<ReporteCasos>(`/api/reportes/casos?${params.toString()}`);
+}
+
+// ---- Perfil (autoservicio) ----
+
+export function actualizarMiPerfil(data: { nombre: string; passwordActual?: string | null; nuevaPassword?: string | null }) {
+  return request<void>("/api/perfil", {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+// ---- Configuración / feature flags (SAT, Comercializadora) ----
+
+export function getFlags() {
+  return request<Flags>("/api/configuracion/flags");
+}
+
+export function actualizarFlag(clave: string, valor: boolean) {
+  return request<void>(`/api/configuracion/flags/${clave}`, {
+    method: "PATCH",
+    body: JSON.stringify({ valor }),
+  });
+}
+
+// ---- Catálogo de trámites SAT (Administrador) ----
+
+export function getCatalogoSAT() {
+  return request<CatalogoTramiteSAT[]>("/api/catalogo-sat");
+}
+
+export function crearTramiteCatalogo(data: { nombre: string; requisitos?: string | null; etapas?: string | null; observaciones?: string | null }) {
+  return request<{ id: number }>("/api/catalogo-sat", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function actualizarTramiteCatalogo(id: number | string, data: { nombre: string; requisitos?: string | null; etapas?: string | null; observaciones?: string | null }) {
+  return request<void>(`/api/catalogo-sat/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function cambiarEstatusTramiteCatalogo(id: number | string, activo: boolean) {
+  return request<void>(`/api/catalogo-sat/${id}/estatus`, {
+    method: "PATCH",
+    body: JSON.stringify({ activo }),
+  });
+}
+
+// ---- Seguimiento de trámites SAT por cliente (Consultor) ----
+
+export function getTramitesSAT() {
+  return request<TramiteSAT[]>("/api/tramites-sat");
+}
+
+export function getTramitesSATPorCliente(clienteId: number | string) {
+  return request<TramiteSAT[]>(`/api/tramites-sat/cliente/${clienteId}`);
+}
+
+export function crearTramiteSAT(data: { clienteId: number; catalogoTramiteId: number; responsableUsuarioId?: number | null; fechaLimite?: string | null; observaciones?: string | null }) {
+  return request<{ id: number }>("/api/tramites-sat", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function actualizarTramiteSAT(id: number | string, data: { estatus: EstatusTramiteSAT; responsableUsuarioId?: number | null; fechaLimite?: string | null; observaciones?: string | null }) {
+  return request<void>(`/api/tramites-sat/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function getMisTramitesSAT() {
+  return request<TramiteSAT[]>("/api/cliente/mis-tramites-sat", {}, "ecg_cliente_token");
 }

@@ -9,4 +9,8 @@ public interface ICitaRepository
     Task<int> CreateAsync(Cita cita);
     Task UpdateEstatusAsync(int id, EstatusCita estatus);
     Task MarkRecordatorioEnviadoAsync(int id);
+
+    // Usado al confirmar una SolicitudCita: evita crear dos citas confirmadas
+    // en el mismo horario (prevención de horarios duplicados).
+    Task<bool> ExisteEnHorarioAsync(DateTime fechaHora);
 }

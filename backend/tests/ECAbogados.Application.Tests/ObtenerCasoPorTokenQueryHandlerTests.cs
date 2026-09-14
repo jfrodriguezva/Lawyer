@@ -9,7 +9,9 @@ public class ObtenerCasoPorTokenQueryHandlerTests
     private static (ObtenerCasoPorTokenQueryHandler Handler, FakeCasoRepository Casos) CrearHandler()
     {
         var casos = new FakeCasoRepository();
-        var handler = new ObtenerCasoPorTokenQueryHandler(casos, new FakeDocumentoRepository(), new FakeChecklistItemRepository());
+        var handler = new ObtenerCasoPorTokenQueryHandler(
+            casos, new FakeDocumentoRepository(), new FakeChecklistItemRepository(),
+            new FakeActualizacionCasoRepository(), new FakeCitaRepository());
         return (handler, casos);
     }
 

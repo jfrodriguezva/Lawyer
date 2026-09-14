@@ -1,3 +1,4 @@
+using ECAbogados.Application.Common.Exceptions;
 using ECAbogados.Application.Interfaces;
 using ECAbogados.Application.Mediation;
 using ECAbogados.Domain.Entities;
@@ -13,7 +14,7 @@ public class CrearClienteCommandHandler(
         var existente = await clienteRepository.GetByEmailAsync(request.Email);
         if (existente is not null)
         {
-            throw new InvalidOperationException("Ya existe un cliente con ese correo.");
+            throw new ConflictException("Ya existe un cliente con ese correo.");
         }
 
         var cliente = new Cliente

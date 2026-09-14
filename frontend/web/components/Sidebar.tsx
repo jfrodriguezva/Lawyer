@@ -4,20 +4,55 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Monogram from "./Monogram";
-import { IconPanel, IconFolder, IconCalendar, IconChat, IconLogout, IconUser, IconShield } from "./icons";
+import {
+  IconPanel,
+  IconFolder,
+  IconCalendar,
+  IconChat,
+  IconLogout,
+  IconUser,
+  IconShield,
+  IconClock,
+  IconHandHeart,
+  IconBriefcase,
+  IconFile,
+  IconLock,
+  IconCalculator,
+  IconDocumentLegal,
+} from "./icons";
 import { deleteCookie, getCookie } from "@/lib/cookies";
+import { getFlags } from "@/lib/api";
 
-const NAV = [
+// Visible para Abogado y Administrador: es el módulo jurídico completo.
+const NAV_JURIDICO = [
   { href: "/dashboard", label: "Panel", icon: IconPanel },
+  { href: "/solicitudes", label: "Solicitudes", icon: IconClock },
+  { href: "/prospectos", label: "Prospectos", icon: IconHandHeart },
   { href: "/casos", label: "Expedientes", icon: IconFolder },
+  { href: "/clientes", label: "Clientes", icon: IconShield },
   { href: "/agenda", label: "Agenda", icon: IconCalendar },
   { href: "/mensajes", label: "Mensajes", icon: IconChat },
+  { href: "/reportes", label: "Reportes", icon: IconBriefcase },
+  { href: "/plantillas", label: "Plantillas", icon: IconFile },
 ];
 
-const NAV_ADMIN = [
-  { href: "/clientes", label: "Clientes", icon: IconShield },
-  { href: "/usuarios", label: "Usuarios", icon: IconUser },
+// Visible únicamente para el rol Consultor (Administrador ya ve "Solicitudes"
+// en NAV_JURIDICO y "Trámites SAT" en NAV_ADMIN, sin duplicar el enlace).
+const NAV_SAT_CONSULTOR = [
+  { href: "/solicitudes", label: "Solicitudes SAT", icon: IconClock },
+  { href: "/tramites-sat", label: "Trámites SAT", icon: IconCalculator },
 ];
+
+// Solo Administrador: configuración global, no expedientes de casos.
+const NAV_ADMIN = [
+  { href: "/usuarios", label: "Usuarios", icon: IconUser },
+  { href: "/tramites-sat", label: "Trámites SAT", icon: IconCalculator },
+  { href: "/catalogo-sat", label: "Catálogo SAT", icon: IconDocumentLegal },
+  { href: "/auditoria", label: "Auditoría", icon: IconLock },
+];
+
+// Visible para cualquier rol autenticado del staff.
+const NAV_PERFIL = [{ href: "/perfil", label: "Mi perfil", icon: IconUser }];
 
 export default function Sidebar({
   open = false,
@@ -28,20 +63,33 @@ export default function Sidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [rol, setRol] = useState<string | null>(null);
+  const [satHabilitado, setSatHabilitado] = useState(false);
 
   useEffect(() => {
     const raw = getCookie("ec_user");
     if (raw) {
       try {
-        setIsAdmin(JSON.parse(raw).rol === "Administrador");
+        setRol(JSON.parse(raw).rol ?? null);
       } catch {
         // ignore malformed cookie
       }
     }
+    getFlags()
+      .then((flags) => setSatHabilitado(flags.satHabilitado))
+      .catch(() => undefined);
   }, []);
 
-  const items = isAdmin ? [...NAV, ...NAV_ADMIN] : NAV;
+  const esAdministrador = rol === "Administrador";
+  const esModuloJuridico = rol === "Abogado" || esAdministrador;
+  const esConsultor = rol === "Consultor" && satHabilitado;
+
+  const items = [
+    ...(esModuloJuridico ? NAV_JURIDICO : []),
+    ...(esConsultor ? NAV_SAT_CONSULTOR : []),
+    ...(esAdministrador ? NAV_ADMIN.filter((item) => item.href !== "/tramites-sat" || satHabilitado) : []),
+    ...(rol ? NAV_PERFIL : []),
+  ];
 
   function handleLogout() {
     deleteCookie("ec_token");
@@ -69,7 +117,7 @@ export default function Sidebar({
           <Monogram size={36} />
           <div>
             <p className="font-display text-sm font-semibold tracking-wide text-brand-cream">
-              ECG ABOGADOS
+              ECGABOGADOS
             </p>
             <p className="font-script text-xs italic text-brand-creamSoft">
               Lic. Erika Cruz García
@@ -99,6 +147,12 @@ export default function Sidebar({
               );
             })}
           </ul>
+
+          {!esModuloJuridico && !esAdministrador && rol && (
+            <p className="mt-6 px-4 text-xs text-brand-creamSoft">
+              Tu rol ({rol}) todavía no tiene un módulo activo en este panel.
+            </p>
+          )}
         </nav>
 
         <div className="border-t border-brand-line px-3 py-5">

@@ -13,5 +13,6 @@ public class SubirDocumentoCommandValidator : AbstractValidator<SubirDocumentoCo
         RuleFor(x => x.TipoContenido).NotEmpty().MaximumLength(150);
         RuleFor(x => x.TamanoBytes).GreaterThan(0).LessThanOrEqualTo(TiposPermitidos.TamanoMaximoBytes);
         RuleFor(x => x.RutaAlmacenamiento).NotEmpty().MaximumLength(500);
+        RuleFor(x => x.Descripcion).MaximumLength(500);
     }
 }

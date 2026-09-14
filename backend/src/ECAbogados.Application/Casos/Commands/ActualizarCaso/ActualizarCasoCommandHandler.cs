@@ -16,6 +16,13 @@ public class ActualizarCasoCommandHandler(
         caso.ClienteNombre = request.ClienteNombre;
         caso.Tipo = request.Tipo;
         caso.Notas = request.Notas;
+        caso.AbogadoResponsableId = request.AbogadoResponsableId;
+        caso.Prioridad = request.Prioridad;
+        caso.FolioInterno = request.FolioInterno;
+        caso.ContraparteNombre = request.ContraparteNombre;
+        caso.AutoridadOrganismo = request.AutoridadOrganismo;
+        caso.NumeroExpedienteExterno = request.NumeroExpedienteExterno;
+        caso.MontoAcordado = request.MontoAcordado;
 
         await casoRepository.UpdateAsync(caso);
 

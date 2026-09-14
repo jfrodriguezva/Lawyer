@@ -27,16 +27,16 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "ECG Abogados | Derecho familiar, fiscal y empresarial",
-    template: "%s | ECG Abogados",
+    default: "ECGAbogados | Derecho familiar, fiscal y empresarial",
+    template: "%s | ECGAbogados",
   },
   description:
     "Despacho jurídico de la Lic. Erika Cruz García. Divorcio incausado, pensión alimenticia, custodia, sucesiones, trámites ante el SAT y asesoría para empresas, con acompañamiento personalizado.",
   openGraph: {
-    title: "ECG Abogados | Derecho familiar, fiscal y empresarial",
+    title: "ECGAbogados | Derecho familiar, fiscal y empresarial",
     description:
       "Acompañamiento legal personalizado en trámites familiares, fiscales y empresariales: divorcio incausado, pensión alimenticia, custodia, SAT y más.",
-    siteName: "ECG Abogados",
+    siteName: "ECGAbogados",
     locale: "es_MX",
     type: "website",
   },

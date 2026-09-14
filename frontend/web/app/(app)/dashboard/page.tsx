@@ -4,8 +4,27 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import StatTile from "@/components/StatTile";
 import StatusPill from "@/components/StatusPill";
-import { getCasos, getCitas, getMensajesContacto, type Caso, type Cita, type MensajeContacto } from "@/lib/api";
+import {
+  getCasos,
+  getCitas,
+  getMensajesContacto,
+  getSolicitudesCita,
+  getTareasPendientes,
+  type Caso,
+  type Cita,
+  type MensajeContacto,
+  type SolicitudCita,
+  type TareaCaso,
+} from "@/lib/api";
 import { getCookie } from "@/lib/cookies";
+
+const SOLICITUDES_PENDIENTES = [
+  "SolicitudRecibida",
+  "EnRevision",
+  "InformacionRequerida",
+  "HorarioAlternativoPropuesto",
+  "PendienteConfirmacionSolicitante",
+];
 
 function saludo(): string {
   const h = new Date().getHours();
@@ -32,6 +51,8 @@ export default function DashboardPage() {
   const [casos, setCasos] = useState<Caso[]>([]);
   const [citas, setCitas] = useState<Cita[]>([]);
   const [mensajes, setMensajes] = useState<MensajeContacto[]>([]);
+  const [solicitudes, setSolicitudes] = useState<SolicitudCita[]>([]);
+  const [tareas, setTareas] = useState<TareaCaso[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,11 +66,13 @@ export default function DashboardPage() {
       }
     }
 
-    Promise.all([getCasos(), getCitas(), getMensajesContacto()])
-      .then(([casosData, citasData, mensajesData]) => {
+    Promise.all([getCasos(), getCitas(), getMensajesContacto(), getSolicitudesCita(), getTareasPendientes()])
+      .then(([casosData, citasData, mensajesData, solicitudesData, tareasData]) => {
         setCasos(casosData);
         setCitas(citasData);
         setMensajes(mensajesData);
+        setSolicitudes(solicitudesData);
+        setTareas(tareasData);
       })
       .catch(() => setError("No se pudieron cargar los datos del panel."))
       .finally(() => setLoading(false));
@@ -62,6 +85,14 @@ export default function DashboardPage() {
     .filter((c) => c.estatus !== "Cancelada")
     .sort((a, b) => new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime())
     .slice(0, 5);
+
+  const solicitudesPendientes = solicitudes.filter((s) => SOLICITUDES_PENDIENTES.includes(s.estatus));
+  const tareasOrdenadas = [...tareas].sort((a, b) => {
+    if (!a.fechaVencimiento) return 1;
+    if (!b.fechaVencimiento) return -1;
+    return new Date(a.fechaVencimiento).getTime() - new Date(b.fechaVencimiento).getTime();
+  });
+  const tareasVencidas = tareasOrdenadas.filter((t) => t.fechaVencimiento && new Date(t.fechaVencimiento) < new Date());
 
   const tasaConfirmacion =
     citas.length > 0
@@ -87,10 +118,11 @@ export default function DashboardPage() {
         </p>
       )}
 
-      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatTile label="Casos activos" value={loading ? "—" : activos.length} />
         <StatTile label="En revisión" value={loading ? "—" : revision.length} />
-        <StatTile label="Próximas citas" value={loading ? "—" : proximasCitas.length} />
+        <StatTile label="Solicitudes pendientes" value={loading ? "—" : solicitudesPendientes.length} />
+        <StatTile label="Tareas vencidas" value={loading ? "—" : tareasVencidas.length} />
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -155,6 +187,59 @@ export default function DashboardPage() {
                 <StatusPill estatus={c.estatus} />
               </li>
             ))}
+          </ul>
+        </section>
+
+        <section>
+          <div className="flex items-center justify-between border-b border-brand-line pb-3">
+            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+              Solicitudes pendientes de responder
+            </h2>
+            <Link href="/solicitudes" className="text-xs uppercase tracking-widest text-brand-gold hover:underline">
+              Ver todas
+            </Link>
+          </div>
+          <ul className="mt-4 space-y-3">
+            {!loading && solicitudesPendientes.length === 0 && (
+              <li className="text-sm text-brand-creamSoft">Sin solicitudes pendientes.</li>
+            )}
+            {solicitudesPendientes.slice(0, 5).map((s) => (
+              <li key={s.id} className="border border-brand-line px-4 py-3">
+                <p className="text-sm font-medium text-brand-cream">{s.nombreSolicitante}</p>
+                <p className="text-xs text-brand-creamSoft">{formatFecha(s.fechaHoraPropuesta)} · {s.estatus}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section>
+          <div className="flex items-center justify-between border-b border-brand-line pb-3">
+            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+              Tareas pendientes
+            </h2>
+          </div>
+          <ul className="mt-4 space-y-3">
+            {!loading && tareasOrdenadas.length === 0 && (
+              <li className="text-sm text-brand-creamSoft">Sin tareas pendientes.</li>
+            )}
+            {tareasOrdenadas.slice(0, 5).map((t) => {
+              const vencida = t.fechaVencimiento && new Date(t.fechaVencimiento) < new Date();
+              return (
+                <li
+                  key={t.id}
+                  className={`border px-4 py-3 ${vencida ? "border-red-500/50 bg-red-500/10" : "border-brand-line"}`}
+                >
+                  <Link href={`/casos/${t.casoId}`} className="block">
+                    <p className="text-sm font-medium text-brand-cream">{t.descripcion}</p>
+                    <p className={`text-xs ${vencida ? "text-red-400" : "text-brand-creamSoft"}`}>
+                      {t.responsableNombre ?? "Sin asignar"}
+                      {t.fechaVencimiento && ` · ${new Date(t.fechaVencimiento).toLocaleDateString("es-MX")}`}
+                      {vencida ? " · vencida" : ""}
+                    </p>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </section>
       </div>

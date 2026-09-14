@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Monogram from "@/components/Monogram";
 import StatusPill from "@/components/StatusPill";
-import { IconFile, IconLogout } from "@/components/icons";
-import { getMisCasos, type PortalCaso } from "@/lib/api";
+import { IconFile, IconLogout, IconUpload } from "@/components/icons";
+import { getMisCasos, getMisTramitesSAT, subirDocumentoClientePortal, type PortalCaso, type TramiteSAT } from "@/lib/api";
 import { deleteCookie, getCookie } from "@/lib/cookies";
 
 function formatBytes(bytes: number): string {
@@ -18,10 +18,20 @@ export default function ClientePortalPage() {
   const router = useRouter();
 
   const [casos, setCasos] = useState<PortalCaso[]>([]);
+  const [tramitesSAT, setTramitesSAT] = useState<TramiteSAT[]>([]);
   const [seleccionadoId, setSeleccionadoId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [nombre, setNombre] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function recargarCasos() {
+    getMisCasos()
+      .then(setCasos)
+      .catch(() => setError("No se pudieron cargar tus expedientes."));
+  }
 
   useEffect(() => {
     const raw = getCookie("ecg_cliente_user");
@@ -42,6 +52,10 @@ export default function ClientePortalPage() {
       })
       .catch(() => setError("No se pudieron cargar tus expedientes."))
       .finally(() => setLoading(false));
+
+    getMisTramitesSAT()
+      .then(setTramitesSAT)
+      .catch(() => undefined); // el módulo SAT puede estar desactivado; no es un error del portal
   }, []);
 
   function handleLogout() {
@@ -51,6 +65,22 @@ export default function ClientePortalPage() {
   }
 
   const caso = casos.find((c) => c.id === seleccionadoId) ?? null;
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !caso) return;
+    setUploading(true);
+    setUploadError(null);
+    try {
+      await subirDocumentoClientePortal(caso.id, file);
+      recargarCasos();
+    } catch {
+      setUploadError("No se pudo subir el documento.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
 
   return (
     <main className="min-h-screen bg-brand-ink px-4 py-14">
@@ -107,6 +137,25 @@ export default function ClientePortalPage() {
           </div>
         )}
 
+        {!loading && tramitesSAT.length > 0 && (
+          <div className="mt-8 border border-brand-line bg-brand-ink2 p-6">
+            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+              Trámites SAT
+            </h2>
+            <p className="mt-1 text-[11px] text-brand-creamSoft">
+              Seguimiento informativo — esto no es un servicio oficial del SAT.
+            </p>
+            <ul className="mt-4 space-y-2">
+              {tramitesSAT.map((t) => (
+                <li key={t.id} className="flex items-center justify-between border border-brand-line px-4 py-3 text-sm">
+                  <span className="text-brand-cream">{t.catalogoTramiteNombre ?? "Trámite"}</span>
+                  <span className="text-brand-creamSoft">{t.estatus}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {!loading && caso && (
           <div className="mt-6 space-y-6">
             <div className="border border-brand-line bg-brand-ink2 p-6">
@@ -121,6 +170,45 @@ export default function ClientePortalPage() {
                 Caso abierto el {new Date(caso.fechaApertura).toLocaleDateString("es-MX")}
               </p>
             </div>
+
+            {caso.proximasCitas.length > 0 && (
+              <div className="border border-brand-line bg-brand-ink2 p-6">
+                <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+                  Próxima cita
+                </h2>
+                <ul className="mt-4 space-y-2">
+                  {caso.proximasCitas.map((c) => (
+                    <li key={c.id} className="text-sm text-brand-cream">
+                      {new Date(c.fechaHora).toLocaleString("es-MX", {
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {caso.actualizaciones.length > 0 && (
+              <div className="border border-brand-line bg-brand-ink2 p-6">
+                <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+                  Avances de tu caso
+                </h2>
+                <ul className="mt-4 space-y-3">
+                  {caso.actualizaciones.map((a) => (
+                    <li key={a.id} className="border-l-2 border-brand-gold/50 pl-3">
+                      <p className="text-sm text-brand-cream">{a.texto}</p>
+                      <p className="mt-1 text-xs text-brand-creamSoft">
+                        {new Date(a.fecha).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" })}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {caso.checklist.length > 0 && (
               <div className="border border-brand-line bg-brand-ink2 p-6">
@@ -149,12 +237,20 @@ export default function ClientePortalPage() {
             )}
 
             <div className="border border-brand-line bg-brand-ink2 p-6">
-              <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
-                Documentos
-              </h2>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+                  Documentos
+                </h2>
+                <label className="flex cursor-pointer items-center gap-2 border border-brand-gold px-4 py-2 text-[11px] font-semibold uppercase tracking-widest text-brand-gold transition-colors hover:bg-brand-gold hover:text-brand-ink">
+                  <IconUpload className="h-4 w-4" />
+                  {uploading ? "Subiendo…" : "Subir documento"}
+                  <input ref={fileInputRef} type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
+                </label>
+              </div>
               <p className="mt-2 text-xs text-brand-creamSoft">
-                Aquí verás los documentos que tu abogada vaya cargando a tu expediente.
+                Documentos compartidos por tu abogada y los que tú subas aquí.
               </p>
+              {uploadError && <p className="mt-2 text-xs text-brand-gold">{uploadError}</p>}
               <ul className="mt-4 space-y-2">
                 {caso.documentos.length === 0 && (
                   <li className="text-sm text-brand-creamSoft">Aún no hay documentos.</li>
@@ -164,7 +260,9 @@ export default function ClientePortalPage() {
                     <IconFile className="h-5 w-5 text-brand-gold" />
                     <div>
                       <p className="text-sm text-brand-cream">{d.nombreArchivo}</p>
-                      <p className="text-xs text-brand-creamSoft">{formatBytes(d.tamanoBytes)}</p>
+                      <p className="text-xs text-brand-creamSoft">
+                        {formatBytes(d.tamanoBytes)} · {d.subidoPorTipo === "Cliente" ? "Subido por ti" : "Compartido por el despacho"}
+                      </p>
                     </div>
                   </li>
                 ))}

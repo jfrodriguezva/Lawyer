@@ -1,6 +1,6 @@
-# ECG Abogados - Backend
+# ECGAbogados - Backend
 
-Backend del sistema de gestión de casos para el despacho ECG Abogados, construido en .NET 10
+Backend del sistema de gestión de casos para el despacho ECGAbogados, construido en .NET 10
 con arquitectura por capas (Domain / Application / Infrastructure / Api) más un API Gateway
 basado en Ocelot.
 

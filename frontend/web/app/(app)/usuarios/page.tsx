@@ -14,11 +14,11 @@ export default function UsuariosPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nombre, setNombre] = useState("");
-  const [rol, setRol] = useState("Asistente");
+  const [rol, setRol] = useState("Abogado");
 
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [editNombre, setEditNombre] = useState("");
-  const [editRol, setEditRol] = useState("Asistente");
+  const [editRol, setEditRol] = useState("Abogado");
   const [editPassword, setEditPassword] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
@@ -88,7 +88,7 @@ export default function UsuariosPage() {
       setEmail("");
       setPassword("");
       setNombre("");
-      setRol("Asistente");
+      setRol("Abogado");
       load();
     } catch {
       setError("No se pudo crear el usuario (puede que el correo ya exista).");
@@ -157,7 +157,9 @@ export default function UsuariosPage() {
             onChange={(e) => setRol(e.target.value)}
             className="mt-2 w-full border border-brand-line bg-brand-ink px-4 py-2.5 text-brand-cream outline-none focus:border-brand-gold"
           >
-            <option value="Asistente">Asistente</option>
+            <option value="Abogado">Abogado</option>
+            <option value="Consultor">Consultor</option>
+            <option value="Agente">Agente</option>
             <option value="Administrador">Administrador</option>
           </select>
         </div>
@@ -212,7 +214,9 @@ export default function UsuariosPage() {
                     title={esMiCuenta ? "No puedes cambiar tu propio rol" : undefined}
                     className="border border-brand-line bg-brand-ink px-3 py-2 text-sm text-brand-cream outline-none focus:border-brand-gold disabled:opacity-50"
                   >
-                    <option value="Asistente">Asistente</option>
+                    <option value="Abogado">Abogado</option>
+                    <option value="Consultor">Consultor</option>
+                    <option value="Agente">Agente</option>
                     <option value="Administrador">Administrador</option>
                   </select>
                   <div className="flex gap-2">

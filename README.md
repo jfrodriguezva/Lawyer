@@ -1,4 +1,4 @@
-# ECG Abogados
+# ECGAbogados
 
 Sistema de gestión para el despacho de la Lic. Erika Cruz García: derecho familiar (divorcio incausado, pensión alimenticia, custodia, sucesiones), trámites fiscales ante el SAT y asesoría empresarial. Incluye un sitio público de captación, un portal de cliente y un panel administrativo privado para gestionar casos, citas, documentos y mensajes de contacto.
 

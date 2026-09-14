@@ -1,6 +1,6 @@
 namespace ECAbogados.Domain.Entities;
 
-public class Usuario
+public class Usuario : ICuentaSegura
 {
     public int Id { get; set; }
     public string Email { get; set; } = string.Empty;

@@ -6,8 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ECAbogados.Api.Controllers;
 
-// Los honorarios son información financiera; solo el rol Administrador los gestiona.
-[Authorize(Roles = "Administrador")]
+// Honorarios: parte de la gestión del caso, por lo que el Abogado responsable
+// también los administra (Administrador conserva acceso total como superusuario).
+[Authorize(Roles = "Abogado,Administrador")]
 [ApiController]
 [Route("api/[controller]")]
 public class PagosController(ISender sender) : ControllerBase

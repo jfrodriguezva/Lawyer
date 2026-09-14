@@ -1,3 +1,4 @@
+using ECAbogados.Application.Auditoria.Queries.ListarAuditoriaGlobal;
 using ECAbogados.Application.Auditoria.Queries.ListarAuditoriaPorCaso;
 using ECAbogados.Application.Mediation;
 using Microsoft.AspNetCore.Authorization;
@@ -17,5 +18,12 @@ public class AuditoriaController(ISender sender) : ControllerBase
     {
         var entradas = await sender.Send(new ListarAuditoriaPorCasoQuery(casoId));
         return Ok(entradas);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ListarGlobal([FromQuery] int page = 1, [FromQuery] int pageSize = 30, [FromQuery] string? entidad = null)
+    {
+        var resultado = await sender.Send(new ListarAuditoriaGlobalQuery(page, pageSize, entidad));
+        return Ok(resultado);
     }
 }

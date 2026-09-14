@@ -44,4 +44,21 @@ public class FakeClienteRepository : IClienteRepository
         cliente.BloqueadoHasta = bloqueadoHasta;
         return Task.CompletedTask;
     }
+
+    public Task<Cliente?> GetByResetTokenAsync(string resetToken) =>
+        Task.FromResult(_clientes.FirstOrDefault(c => c.ResetToken == resetToken));
+
+    public Task SetResetTokenAsync(int id, string? resetToken, DateTime? resetTokenExpira)
+    {
+        var cliente = _clientes.First(c => c.Id == id);
+        cliente.ResetToken = resetToken;
+        cliente.ResetTokenExpira = resetTokenExpira;
+        return Task.CompletedTask;
+    }
+
+    public Task UpdatePasswordHashAsync(int id, string passwordHash)
+    {
+        _clientes.First(c => c.Id == id).PasswordHash = passwordHash;
+        return Task.CompletedTask;
+    }
 }
