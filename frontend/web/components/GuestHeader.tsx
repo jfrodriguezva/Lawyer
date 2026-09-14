@@ -9,7 +9,6 @@ import { getFlags } from "@/lib/api";
 import { AREA_EMPRESARIAL, AREA_FAMILIAR, AREA_SAT, serviciosPorArea } from "@/lib/servicios";
 
 const TABS = [
-  { href: "/?tab=procesos", label: "Procesos", tab: "procesos" },
   { href: "/?tab=quienes-somos", label: "Quiénes somos", tab: "quienes-somos" },
   { href: "/?tab=mision", label: "Misión y valores", tab: "mision" },
 ];
@@ -69,6 +68,12 @@ function GuestHeaderInner() {
   const enServicios = pathname?.startsWith("/servicios") || (enHome && !!servicioActual);
   const enInicio = enHome && !tabActual && !servicioActual;
 
+  // "Inicio" siempre sube al principio de la página; si ya estábamos en "/" el
+  // cambio de query no mueve el scroll por sí solo (el pathname no cambia).
+  function irAlInicio() {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   return (
     <header
       className={`sticky top-0 z-40 transition-all duration-300 ${
@@ -100,7 +105,7 @@ function GuestHeaderInner() {
             Empieza en lg (1024px): con 6 enlaces + el menú de Servicios, md (768px,
             tablets) no tiene espacio suficiente y los elementos se encimaban. */}
         <nav className="hidden items-center gap-1 lg:flex">
-          <NavTab href="/" label="Inicio" active={enInicio} />
+          <NavTab href="/" label="Inicio" active={enInicio} onClick={irAlInicio} />
 
           <div className="relative">
             <button
@@ -196,6 +201,7 @@ function GuestHeaderInner() {
           <nav className="flex flex-col">
             <Link
               href="/"
+              onClick={irAlInicio}
               className={`py-3 text-sm uppercase tracking-widest ${enInicio ? "text-brand-gold" : "text-brand-cream"}`}
             >
               Inicio
@@ -241,10 +247,21 @@ function GuestHeaderInner() {
   );
 }
 
-function NavTab({ href, label, active }: { href: string; label: string; active?: boolean }) {
+function NavTab({
+  href,
+  label,
+  active,
+  onClick,
+}: {
+  href: string;
+  label: string;
+  active?: boolean;
+  onClick?: () => void;
+}) {
   return (
     <Link
       href={href}
+      onClick={onClick}
       className={`px-3 py-2 text-xs uppercase tracking-[0.2em] transition-colors ${
         active ? "text-brand-gold" : "text-brand-creamSoft hover:text-brand-cream"
       }`}
