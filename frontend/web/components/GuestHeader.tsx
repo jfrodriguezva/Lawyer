@@ -8,9 +8,10 @@ import { IconChevronDown, IconClose, IconMenu } from "@/components/icons";
 import { AREA_FAMILIAR, AREA_FISCAL_EMPRESARIAL, serviciosPorArea } from "@/lib/servicios";
 
 const TABS = [
+  { href: "/?tab=procesos", label: "Procesos", tab: "procesos" },
+  { href: "/?tab=agendar", label: "Agendar", tab: "agendar" },
   { href: "/?tab=quienes-somos", label: "Quiénes somos", tab: "quienes-somos" },
   { href: "/?tab=mision", label: "Misión y valores", tab: "mision" },
-  { href: "/#agenda", label: "Agendar", tab: null },
 ];
 
 const ACCESOS = [

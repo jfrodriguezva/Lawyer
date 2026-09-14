@@ -33,7 +33,7 @@ export default function GuestLandingPage() {
       <GuestHeader />
 
       <main className="relative mx-auto max-w-6xl px-6 pb-28">
-        {/* Hero */}
+        {/* Hero: presentación general del despacho, sin repetir el detalle de un servicio puntual (eso vive en la pestaña Servicios) */}
         <section className="grid grid-cols-1 gap-10 pt-14 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:pt-20">
           <div>
             <Reveal>
@@ -43,16 +43,15 @@ export default function GuestLandingPage() {
             </Reveal>
             <Reveal delay={80}>
               <h1 className="mt-3 text-balance font-display text-5xl font-extrabold leading-[1.05] text-brand-cream sm:text-6xl">
-                Divorcio incausado
+                Asesoría legal cercana, clara y con resultados
               </h1>
             </Reveal>
             <Reveal delay={160}>
               <p className="mt-5 max-w-lg text-lg text-brand-creamSoft">
-                ¿Quieres divorciarte y tu pareja no está de acuerdo? En el
-                divorcio incausado no necesitas su consentimiento, ni expresar
-                una causa para solicitarlo. Te acompañamos en cada paso, de
-                principio a fin, con la Lic. Erika Cruz García al frente de tu
-                caso.
+                Acompañamos a personas, familias y negocios en derecho
+                familiar, trámites fiscales y asesoría empresarial, con la
+                Lic. Erika Cruz García al frente de cada caso, de principio a
+                fin.
               </p>
             </Reveal>
 
@@ -79,7 +78,7 @@ export default function GuestLandingPage() {
 
             <Reveal delay={320}>
               <ul className="mt-10 flex flex-wrap gap-x-8 gap-y-3 border-t border-brand-line pt-6">
-                {["100% confidencial", "No necesitas el consentimiento de tu pareja", "Respuesta en menos de 24 h"].map(
+                {["100% confidencial", "Trato directo con tu abogada", "Respuesta en menos de 24 h"].map(
                   (item) => (
                     <li
                       key={item}

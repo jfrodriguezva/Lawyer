@@ -9,6 +9,8 @@ import {
   IconArrowRight,
   IconBriefcase,
   IconCalculator,
+  IconCalendar,
+  IconChevronDown,
   IconClock,
   IconDocumentLegal,
   IconFamily,
@@ -28,6 +30,7 @@ import {
   AREA_FAMILIAR,
   AREA_FISCAL_EMPRESARIAL,
   getServicioPorSlug,
+  SERVICIOS,
   serviciosPorArea,
   type IconoBeneficio,
 } from "@/lib/servicios";
@@ -46,10 +49,14 @@ const ICONOS_BENEFICIO: Record<IconoBeneficio, typeof IconScale> = {
   calculator: IconCalculator,
 };
 
-type TabKey = "servicios" | "quienes-somos" | "mision";
+type TabKey = "servicios" | "procesos" | "agendar" | "quienes-somos" | "mision";
+
+const TAB_KEYS: TabKey[] = ["servicios", "procesos", "agendar", "quienes-somos", "mision"];
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "servicios", label: "Servicios" },
+  { key: "procesos", label: "Procesos" },
+  { key: "agendar", label: "Agendar" },
   { key: "quienes-somos", label: "Quiénes somos" },
   { key: "mision", label: "Misión y valores" },
 ];
@@ -78,7 +85,7 @@ function LandingExperienceInner() {
   const servicioParam = searchParams.get("servicio");
 
   const [activeTab, setActiveTab] = useState<TabKey>(
-    tabParam === "quienes-somos" || tabParam === "mision" ? tabParam : "servicios"
+    TAB_KEYS.includes(tabParam as TabKey) ? (tabParam as TabKey) : "servicios"
   );
   const [servicioSlug, setServicioSlug] = useState(
     servicioParam && getServicioPorSlug(servicioParam) ? servicioParam : "divorcio-incausado"
@@ -90,8 +97,8 @@ function LandingExperienceInner() {
     if (servicioParam && getServicioPorSlug(servicioParam)) {
       setServicioSlug(servicioParam);
       setActiveTab("servicios");
-    } else if (tabParam === "quienes-somos" || tabParam === "mision" || tabParam === "servicios") {
-      setActiveTab(tabParam);
+    } else if (TAB_KEYS.includes(tabParam as TabKey)) {
+      setActiveTab(tabParam as TabKey);
     }
   }, [tabParam, servicioParam]);
 
@@ -135,6 +142,8 @@ function LandingExperienceInner() {
             {activeTab === "servicios" && (
               <TabServicios servicio={servicio} servicioSlug={servicioSlug} onSelect={irAServicio} />
             )}
+            {activeTab === "procesos" && <TabProcesos />}
+            {activeTab === "agendar" && <TabAgendar />}
             {activeTab === "quienes-somos" && <TabQuienesSomos />}
             {activeTab === "mision" && <TabMision />}
           </div>
@@ -295,6 +304,128 @@ function ServicioChip({
     >
       {servicio.titulo}
     </button>
+  );
+}
+
+function TabProcesos() {
+  const [abierto, setAbierto] = useState<string>(SERVICIOS[0].slug);
+  const familiares = serviciosPorArea(AREA_FAMILIAR);
+  const fiscalEmpresarial = serviciosPorArea(AREA_FISCAL_EMPRESARIAL);
+
+  return (
+    <Reveal>
+      <p className="font-script text-lg italic text-brand-gold">Paso a paso</p>
+      <h2 className="mt-1 text-balance font-display text-3xl font-bold text-brand-cream sm:text-4xl">
+        Así avanza cada tipo de caso
+      </h2>
+      <p className="mt-4 max-w-2xl text-brand-creamSoft">
+        Cada asunto sigue su propio procedimiento legal. Consulta cómo avanza el tuyo, desde la primera asesoría
+        hasta la resolución.
+      </p>
+
+      <div className="mt-8">
+        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-brand-creamSoft">Derecho familiar</p>
+        <ProcesoAcordeon servicios={familiares} abierto={abierto} onToggle={setAbierto} />
+
+        <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+          Fiscal y empresarial
+        </p>
+        <ProcesoAcordeon servicios={fiscalEmpresarial} abierto={abierto} onToggle={setAbierto} />
+      </div>
+    </Reveal>
+  );
+}
+
+function ProcesoAcordeon({
+  servicios,
+  abierto,
+  onToggle,
+}: {
+  servicios: ReturnType<typeof serviciosPorArea>;
+  abierto: string;
+  onToggle: (slug: string) => void;
+}) {
+  return (
+    <div className="mt-3 divide-y divide-brand-line border border-brand-line">
+      {servicios.map((s) => {
+        const expandido = abierto === s.slug;
+        return (
+          <div key={s.slug} className="bg-brand-ink2">
+            <button
+              type="button"
+              onClick={() => onToggle(expandido ? "" : s.slug)}
+              className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left"
+              aria-expanded={expandido}
+            >
+              <span className="font-display text-sm font-bold text-brand-cream">{s.titulo}</span>
+              <IconChevronDown
+                className={`h-3.5 w-3.5 shrink-0 text-brand-gold transition-transform ${expandido ? "rotate-180" : ""}`}
+              />
+            </button>
+            {expandido && (
+              <div className="grid grid-cols-1 gap-3 border-t border-brand-line px-4 py-4 sm:grid-cols-3">
+                {s.proceso.map((paso) => (
+                  <div key={paso.numero}>
+                    <span className="font-display text-lg font-extrabold text-brand-gold/30">{paso.numero}</span>
+                    <h4 className="mt-1 font-display text-xs font-bold text-brand-cream">{paso.titulo}</h4>
+                    <p className="mt-1 text-xs leading-relaxed text-brand-creamSoft">{paso.texto}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function TabAgendar() {
+  const PASOS = [
+    { titulo: "Cuéntanos tu caso", texto: "Comparte tus datos de contacto y una breve descripción de tu situación." },
+    { titulo: "Elige fecha y modalidad", texto: "Propón el horario que te acomode: presencial, videollamada o llamada." },
+    { titulo: "Confirmamos contigo", texto: "El despacho revisa tu solicitud y te confirma por correo o WhatsApp." },
+  ];
+
+  return (
+    <Reveal>
+      <p className="font-script text-lg italic text-brand-gold">Sin filas, sin esperas</p>
+      <h2 className="mt-1 text-balance font-display text-3xl font-bold text-brand-cream sm:text-4xl">
+        Agenda tu asesoría en tres pasos
+      </h2>
+      <p className="mt-4 max-w-2xl text-brand-creamSoft">
+        Llena el formulario a la derecha (o abajo, en móvil) y el despacho confirmará tu cita. No necesitas
+        llamar ni esperar en línea.
+      </p>
+
+      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {PASOS.map((paso, i) => (
+          <div key={paso.titulo} className="border border-brand-line bg-brand-ink2 p-5">
+            <span className="font-display text-2xl font-extrabold text-brand-gold/25">{`0${i + 1}`}</span>
+            <h3 className="mt-2 font-display text-sm font-bold text-brand-cream">{paso.titulo}</h3>
+            <p className="mt-1.5 text-xs leading-relaxed text-brand-creamSoft">{paso.texto}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-8 flex flex-col gap-4 border border-brand-gold/40 bg-brand-gold/5 p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-gold/60 text-brand-gold">
+            <IconCalendar className="h-4 w-4" />
+          </span>
+          <p className="text-sm text-brand-creamSoft">
+            Tu primera asesoría se agenda directamente con la Lic. Erika Cruz García.
+          </p>
+        </div>
+        <a
+          href="#agenda"
+          className="inline-flex shrink-0 items-center justify-center gap-2 bg-gradient-to-r from-brand-gold to-brand-goldDeep px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-ink transition-transform hover:-translate-y-0.5"
+        >
+          Ir al formulario
+          <IconArrowRight className="h-3.5 w-3.5" />
+        </a>
+      </div>
+    </Reveal>
   );
 }
 
