@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import GuestPanel from "@/components/GuestPanel";
 import Reveal from "@/components/Reveal";
@@ -32,7 +32,6 @@ import {
   AREA_FAMILIAR,
   AREA_SAT,
   getServicioPorSlug,
-  SERVICIOS,
   serviciosPorArea,
   type IconoBeneficio,
 } from "@/lib/servicios";
@@ -51,17 +50,9 @@ const ICONOS_BENEFICIO: Record<IconoBeneficio, typeof IconScale> = {
   calculator: IconCalculator,
 };
 
-type TabKey = "inicio" | "servicios" | "procesos" | "quienes-somos" | "mision";
+type SeccionExtra = "procesos" | "quienes-somos" | "mision" | null;
 
-const TAB_KEYS: TabKey[] = ["inicio", "servicios", "procesos", "quienes-somos", "mision"];
-
-const TABS: { key: TabKey; label: string }[] = [
-  { key: "inicio", label: "Inicio" },
-  { key: "servicios", label: "Servicios" },
-  { key: "procesos", label: "Procesos" },
-  { key: "quienes-somos", label: "Quiénes somos" },
-  { key: "mision", label: "Misión y valores" },
-];
+const SECCIONES_VALIDAS: SeccionExtra[] = ["procesos", "quienes-somos", "mision"];
 
 const VALORES = [
   { titulo: "Integridad", texto: "Decimos lo que pensamos y actuamos conforme a lo que decimos, incluso cuando es la respuesta difícil." },
@@ -80,14 +71,13 @@ export default function LandingExperience() {
 }
 
 function LandingExperienceInner() {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   const tabParam = searchParams.get("tab");
   const servicioParam = searchParams.get("servicio");
 
-  const [activeTab, setActiveTab] = useState<TabKey>(
-    TAB_KEYS.includes(tabParam as TabKey) ? (tabParam as TabKey) : "inicio"
+  const [seccion, setSeccion] = useState<SeccionExtra>(
+    SECCIONES_VALIDAS.includes(tabParam as SeccionExtra) ? (tabParam as SeccionExtra) : null
   );
   const [servicioSlug, setServicioSlug] = useState(
     servicioParam && getServicioPorSlug(servicioParam) ? servicioParam : "divorcio-incausado"
@@ -100,168 +90,144 @@ function LandingExperienceInner() {
       .catch(() => undefined);
   }, []);
 
-  // Un enlace externo (menú de Servicios, tarjeta de otra página) puede llegar con
+  // Un enlace externo (menú de Servicios del encabezado, "Inicio") puede llegar con
   // ?servicio= o ?tab= en la URL; sincronizamos el estado interno cuando cambian.
   useEffect(() => {
     if (servicioParam && getServicioPorSlug(servicioParam)) {
       setServicioSlug(servicioParam);
-      setActiveTab("servicios");
-    } else if (TAB_KEYS.includes(tabParam as TabKey)) {
-      setActiveTab(tabParam as TabKey);
-    } else if (!tabParam && !servicioParam) {
-      setActiveTab("inicio");
+      setSeccion(null);
+    } else if (SECCIONES_VALIDAS.includes(tabParam as SeccionExtra)) {
+      setSeccion(tabParam as SeccionExtra);
+    } else {
+      setSeccion(null);
     }
   }, [tabParam, servicioParam]);
-
-  function irATab(tab: TabKey) {
-    setActiveTab(tab);
-    router.replace(tab === "inicio" ? "/" : `/?tab=${tab}`, { scroll: false });
-  }
-
-  function irAServicio(slug: string) {
-    setServicioSlug(slug);
-    setActiveTab("servicios");
-    router.replace(`/?servicio=${slug}`, { scroll: false });
-  }
 
   const servicio = getServicioPorSlug(servicioSlug) ?? getServicioPorSlug("divorcio-incausado")!;
 
   return (
-    <section id="explorar" className="mt-10 scroll-mt-24">
-      <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.5fr_1fr] lg:items-start">
-        {/* Columna izquierda: única fuente de contenido navegable, por pestañas y sin scroll largo */}
-        <div>
-          <div className="flex flex-wrap gap-1 border-b border-brand-line">
-            {TABS.map((t) => (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() => irATab(t.key)}
-                className={`relative px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] transition-colors ${
-                  activeTab === t.key ? "text-brand-gold" : "text-brand-creamSoft hover:text-brand-cream"
-                }`}
+    <div>
+      {/* El servicio destacado es siempre lo primero que se ve, sin pestañas propias:
+          el encabezado (Inicio/Servicios/Procesos/Quiénes somos/Misión) ya es la única
+          navegación de la página. */}
+      <ServicioDestacado servicio={servicio} />
+
+      {seccion && (
+        <section id="explorar" className="mt-20 scroll-mt-24 border-t border-brand-line pt-14 lg:mt-28">
+          {seccion === "procesos" && <SeccionProcesos satHabilitado={satHabilitado} />}
+          {seccion === "quienes-somos" && <SeccionQuienesSomos />}
+          {seccion === "mision" && <SeccionMision />}
+        </section>
+      )}
+
+      <SeccionAgenda servicio={servicio} />
+    </div>
+  );
+}
+
+function ServicioDestacado({ servicio }: { servicio: ReturnType<typeof getServicioPorSlug> }) {
+  if (!servicio) return null;
+
+  return (
+    <section className="pt-4">
+      <Reveal key={servicio.slug}>
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+          <div>
+            <p className="font-script text-xl italic text-brand-gold">{servicio.frase}</p>
+            <h1 className="mt-3 text-balance font-display text-4xl font-extrabold leading-[1.05] text-brand-cream sm:text-5xl lg:text-6xl">
+              {servicio.titulo}
+            </h1>
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-brand-creamSoft">{servicio.descripcion}</p>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <a
+                href="#agenda"
+                className="group inline-flex items-center justify-center gap-2 bg-gradient-to-r from-brand-gold to-brand-goldDeep px-6 py-3.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-ink transition-transform hover:-translate-y-0.5"
               >
-                {t.label}
-                {activeTab === t.key && (
-                  <span className="absolute inset-x-0 -bottom-px h-[2px] bg-gradient-to-r from-brand-gold to-brand-goldDeep" />
-                )}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-10">
-            {activeTab === "inicio" && <TabInicio onIrAServicios={() => irATab("servicios")} />}
-            {activeTab === "servicios" && (
-              <TabServicios
-                servicio={servicio}
-                servicioSlug={servicioSlug}
-                satHabilitado={satHabilitado}
-                onSelect={irAServicio}
-              />
-            )}
-            {activeTab === "procesos" && <TabProcesos satHabilitado={satHabilitado} />}
-            {activeTab === "quienes-somos" && <TabQuienesSomos />}
-            {activeTab === "mision" && <TabMision />}
-          </div>
-        </div>
-
-        {/* Columna derecha: agenda, fija y siempre visible sin importar la pestaña activa */}
-        <div id="agenda" className="scroll-mt-24 lg:sticky lg:top-24">
-          <Reveal>
-            <div className="border border-brand-line bg-brand-ink2 p-6">
-              <p className="font-script text-lg italic text-brand-gold">Hablemos</p>
-              <h2 className="mt-1 font-display text-2xl font-bold text-brand-cream">Empieza una nueva etapa</h2>
-              <p className="mt-3 text-sm text-brand-creamSoft">
-                Escríbenos o agenda tu asesoría inicial. Te responderemos personalmente para conocer tu caso.
-              </p>
-              <div className="mt-6 space-y-3 border-t border-brand-line pt-5">
-                <a
-                  href="https://wa.me/522205801140"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-3 text-sm text-brand-cream transition-all duration-200 hover:translate-x-1 hover:text-brand-gold"
-                >
-                  <IconWhatsapp className="h-4 w-4 text-brand-gold" /> WhatsApp · 220 580 1140
-                </a>
-                <a
-                  href="tel:+525512592388"
-                  className="flex items-center gap-3 text-sm text-brand-cream transition-all duration-200 hover:translate-x-1 hover:text-brand-gold"
-                >
-                  <IconPhone className="h-4 w-4 text-brand-gold" /> Tel · 55 12 59 23 88
-                </a>
-                <a
-                  href="mailto:erika.c.abogada@gmail.com"
-                  className="flex items-center gap-3 text-sm text-brand-cream transition-all duration-200 hover:translate-x-1 hover:text-brand-gold"
-                >
-                  <IconMail className="h-4 w-4 text-brand-gold" /> erika.c.abogada@gmail.com
-                </a>
-                <p className="pt-1 text-xs text-brand-creamSoft">Lic. Erika Cruz García</p>
-              </div>
+                Agenda tu asesoría hoy
+                <IconArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </a>
+              <a
+                href="https://wa.me/522205801140"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center gap-2 border border-brand-line px-6 py-3.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-cream transition-colors hover:border-brand-gold hover:text-brand-gold"
+              >
+                <IconWhatsapp className="h-4 w-4" />
+                Escríbenos por WhatsApp
+              </a>
             </div>
-          </Reveal>
 
-          <Reveal delay={100} className="mt-4">
-            <GuestPanel servicioInteres={servicio.tipo} />
-          </Reveal>
+            <ul className="mt-10 flex flex-wrap gap-x-8 gap-y-3 border-t border-brand-line pt-6">
+              {["100% confidencial", "Trato directo con tu abogada", "Respuesta en menos de 24 h"].map((item) => (
+                <li key={item} className="flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-brand-creamSoft">
+                  <IconCheck className="h-3.5 w-3.5 text-brand-gold" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <JusticeMark />
         </div>
+      </Reveal>
+
+      <div className="mt-16 lg:mt-20">
+        <Reveal delay={80}>
+          <p className="font-script text-lg italic text-brand-gold">Paso a paso</p>
+          <h2 className="mt-1 text-balance font-display text-3xl font-bold text-brand-cream sm:text-4xl">
+            Así avanza tu proceso
+          </h2>
+        </Reveal>
+
+        <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
+          {servicio.proceso.map((paso, i) => (
+            <Reveal key={paso.numero} delay={120 + i * 80}>
+              <div className="h-full border border-brand-line bg-brand-ink2 p-6">
+                <span className="font-display text-3xl font-extrabold text-brand-gold/25">{paso.numero}</span>
+                <h3 className="mt-3 font-display text-base font-bold text-brand-cream">{paso.titulo}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-brand-creamSoft">{paso.texto}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
+          {servicio.beneficios.map((b, i) => {
+            const Icono = ICONOS_BENEFICIO[b.icono];
+            return (
+              <Reveal key={b.titulo} delay={160 + i * 80}>
+                <div className="flex gap-4 border border-brand-line bg-brand-ink2 p-5">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-gold/60 text-brand-gold">
+                    <Icono className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <h3 className="font-display text-base font-bold text-brand-cream">{b.titulo}</h3>
+                    <p className="mt-1.5 text-sm leading-relaxed text-brand-creamSoft">{b.texto}</p>
+                  </div>
+                </div>
+              </Reveal>
+            );
+          })}
+        </div>
+
+        <Reveal delay={280}>
+          <Link
+            href="/servicios"
+            className="mt-8 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-widest text-brand-gold hover:underline"
+          >
+            Ver la ficha completa de cada servicio
+            <IconArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </Reveal>
       </div>
     </section>
   );
 }
 
-function TabInicio({ onIrAServicios }: { onIrAServicios: () => void }) {
-  return (
-    <Reveal>
-      <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-        <div>
-          <p className="font-script text-xl italic text-brand-gold">Tu causa, nuestra prioridad</p>
-          <h1 className="mt-3 text-balance font-display text-4xl font-extrabold leading-[1.05] text-brand-cream sm:text-5xl">
-            Asesoría legal cercana, clara y con resultados
-          </h1>
-          <p className="mt-5 max-w-lg text-lg text-brand-creamSoft">
-            Acompañamos a personas, familias y negocios en derecho familiar, trámites fiscales y asesoría
-            empresarial, con la Lic. Erika Cruz García al frente de cada caso, de principio a fin.
-          </p>
-
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <button
-              type="button"
-              onClick={onIrAServicios}
-              className="group inline-flex items-center justify-center gap-2 bg-gradient-to-r from-brand-gold to-brand-goldDeep px-6 py-3.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-ink transition-transform hover:-translate-y-0.5"
-            >
-              Ver nuestros servicios
-              <IconArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </button>
-            <a
-              href="https://wa.me/522205801140"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center gap-2 border border-brand-line px-6 py-3.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-cream transition-colors hover:border-brand-gold hover:text-brand-gold"
-            >
-              <IconWhatsapp className="h-4 w-4" />
-              Escríbenos por WhatsApp
-            </a>
-          </div>
-
-          <ul className="mt-10 flex flex-wrap gap-x-8 gap-y-3 border-t border-brand-line pt-6">
-            {["100% confidencial", "Trato directo con tu abogada", "Respuesta en menos de 24 h"].map((item) => (
-              <li key={item} className="flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-brand-creamSoft">
-                <IconCheck className="h-3.5 w-3.5 text-brand-gold" />
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <JusticeMark />
-      </div>
-    </Reveal>
-  );
-}
-
 function JusticeMark() {
   return (
-    <div className="relative mx-auto hidden aspect-square w-full max-w-[220px] items-center justify-center sm:max-w-[260px] lg:flex">
+    <div className="relative mx-auto flex aspect-square w-full max-w-[220px] items-center justify-center sm:max-w-[260px] lg:max-w-sm">
       <svg
         viewBox="0 0 240 240"
         className="h-full w-full max-w-[22rem] text-brand-gold/70"
@@ -282,167 +248,11 @@ function JusticeMark() {
   );
 }
 
-function TabServicios({
-  servicio,
-  servicioSlug,
-  satHabilitado,
-  onSelect,
-}: {
-  servicio: ReturnType<typeof getServicioPorSlug>;
-  servicioSlug: string;
-  satHabilitado: boolean;
-  onSelect: (slug: string) => void;
-}) {
-  if (!servicio) return null;
-
-  return (
-    <div>
-      {/* Submenú de servicios, agrupado por módulo — igual que el menú del encabezado, para
-          que al entrar a esta pestaña se vea de inmediato sin tener que bajar a buscarlo. */}
-      <SubmenuServicios servicioSlug={servicioSlug} satHabilitado={satHabilitado} onSelect={onSelect} />
-
-      <div className="mt-10 border-t border-brand-line pt-8">
-        <Reveal key={servicio.slug}>
-          <p className="font-script text-lg italic text-brand-gold">{servicio.frase}</p>
-          <h2 className="mt-1 text-balance font-display text-3xl font-bold text-brand-cream sm:text-4xl">
-            {servicio.titulo}
-          </h2>
-          <p className="mt-4 max-w-2xl text-brand-creamSoft">{servicio.descripcion}</p>
-          <a
-            href="https://wa.me/522205801140"
-            target="_blank"
-            rel="noreferrer"
-            className="mt-6 inline-flex items-center justify-center gap-2 border border-brand-line px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-cream transition-colors hover:border-brand-gold hover:text-brand-gold"
-          >
-            <IconWhatsapp className="h-4 w-4" />
-            Escríbenos por WhatsApp
-          </a>
-        </Reveal>
-
-        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {servicio.proceso.map((paso) => (
-            <div key={paso.numero} className="border border-brand-line bg-brand-ink2 p-5">
-              <span className="font-display text-2xl font-extrabold text-brand-gold/25">{paso.numero}</span>
-              <h3 className="mt-2 font-display text-sm font-bold text-brand-cream">{paso.titulo}</h3>
-              <p className="mt-1.5 text-xs leading-relaxed text-brand-creamSoft">{paso.texto}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {servicio.beneficios.map((b) => {
-            const Icono = ICONOS_BENEFICIO[b.icono];
-            return (
-              <div key={b.titulo} className="flex gap-3 border border-brand-line bg-brand-ink2 p-4">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-gold/60 text-brand-gold">
-                  <Icono className="h-3.5 w-3.5" />
-                </span>
-                <div>
-                  <h3 className="font-display text-sm font-bold text-brand-cream">{b.titulo}</h3>
-                  <p className="mt-1 text-xs leading-relaxed text-brand-creamSoft">{b.texto}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <Link
-          href="/servicios"
-          className="mt-8 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-widest text-brand-gold hover:underline"
-        >
-          Ver la ficha completa de cada servicio
-          <IconArrowRight className="h-3.5 w-3.5" />
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-// Mismos grupos que el menú "Servicios" del encabezado, en el mismo orden: Derecho
-// familiar y Fiscal y empresarial (ambos módulo Abogado), Trámites SAT (módulo SAT,
-// rol Consultor) y Comercializadora (módulo futuro). Nunca mezclados entre sí.
-function SubmenuServicios({
-  servicioSlug,
-  satHabilitado,
-  onSelect,
-}: {
-  servicioSlug: string;
-  satHabilitado: boolean;
-  onSelect: (slug: string) => void;
-}) {
+function SeccionProcesos({ satHabilitado }: { satHabilitado: boolean }) {
   const familiares = serviciosPorArea(AREA_FAMILIAR);
   const empresarial = serviciosPorArea(AREA_EMPRESARIAL);
   const sat = serviciosPorArea(AREA_SAT);
-
-  return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-      <GrupoSubmenu titulo="Derecho familiar">
-        {familiares.map((s) => (
-          <ServicioChip key={s.slug} servicio={s} activo={s.slug === servicioSlug} onSelect={onSelect} />
-        ))}
-      </GrupoSubmenu>
-
-      <GrupoSubmenu titulo="Fiscal y empresarial">
-        {empresarial.map((s) => (
-          <ServicioChip key={s.slug} servicio={s} activo={s.slug === servicioSlug} onSelect={onSelect} />
-        ))}
-      </GrupoSubmenu>
-
-      <GrupoSubmenu titulo="Trámites SAT">
-        {satHabilitado ? (
-          sat.map((s) => (
-            <ServicioChip key={s.slug} servicio={s} activo={s.slug === servicioSlug} onSelect={onSelect} />
-          ))
-        ) : (
-          <span className="text-xs italic text-brand-creamSoft/70">Próximamente</span>
-        )}
-      </GrupoSubmenu>
-
-      <GrupoSubmenu titulo="Comercializadora">
-        <span className="text-xs italic text-brand-creamSoft/70">Próximamente</span>
-      </GrupoSubmenu>
-    </div>
-  );
-}
-
-function GrupoSubmenu({ titulo, children }: { titulo: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-gold">{titulo}</p>
-      <div className="mt-3 flex flex-wrap gap-2">{children}</div>
-    </div>
-  );
-}
-
-function ServicioChip({
-  servicio,
-  activo,
-  onSelect,
-}: {
-  servicio: { slug: string; titulo: string };
-  activo: boolean;
-  onSelect: (slug: string) => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(servicio.slug)}
-      className={`border px-3.5 py-2 text-xs transition-colors ${
-        activo
-          ? "border-brand-gold text-brand-gold"
-          : "border-brand-line text-brand-creamSoft hover:border-brand-gold/60 hover:text-brand-cream"
-      }`}
-    >
-      {servicio.titulo}
-    </button>
-  );
-}
-
-function TabProcesos({ satHabilitado }: { satHabilitado: boolean }) {
-  const [abierto, setAbierto] = useState<string>(SERVICIOS[0].slug);
-  const familiares = serviciosPorArea(AREA_FAMILIAR);
-  const empresarial = serviciosPorArea(AREA_EMPRESARIAL);
-  const sat = serviciosPorArea(AREA_SAT);
+  const [abierto, setAbierto] = useState<string>(familiares[0].slug);
 
   return (
     <Reveal>
@@ -521,7 +331,7 @@ function ProcesoAcordeon({
   );
 }
 
-function TabQuienesSomos() {
+function SeccionQuienesSomos() {
   return (
     <Reveal>
       <p className="font-script text-lg italic text-brand-gold">Quiénes somos</p>
@@ -571,7 +381,7 @@ function TabQuienesSomos() {
   );
 }
 
-function TabMision() {
+function SeccionMision() {
   return (
     <Reveal>
       <p className="font-script text-lg italic text-brand-gold">Lo que nos guía</p>
@@ -623,5 +433,61 @@ function TabMision() {
         </p>
       </div>
     </Reveal>
+  );
+}
+
+// Sección de contacto/agenda: siempre al final de la página, a todo lo ancho — ya
+// no es una columna lateral fija, para dejar que el servicio destacado sea lo
+// principal arriba.
+function SeccionAgenda({ servicio }: { servicio: ReturnType<typeof getServicioPorSlug> }) {
+  return (
+    <section id="agenda" className="mt-20 scroll-mt-24 border-t border-brand-line pt-14 lg:mt-28">
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
+        <Reveal>
+          <div className="flex h-full flex-col justify-between">
+            <div>
+              <p className="font-script text-lg italic text-brand-gold">Hablemos</p>
+              <h2 className="mt-1 text-balance font-display text-3xl font-bold text-brand-cream sm:text-4xl">
+                Empieza una nueva etapa
+              </h2>
+              <p className="mt-4 max-w-md text-brand-creamSoft">
+                Escríbenos o agenda tu asesoría inicial. Te responderemos personalmente para conocer tu caso.
+              </p>
+            </div>
+
+            <div className="mt-8 space-y-3 border border-brand-line bg-brand-ink2 p-6">
+              <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
+                Contáctanos directamente
+              </p>
+              <a
+                href="https://wa.me/522205801140"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-3 text-sm text-brand-cream transition-all duration-200 hover:translate-x-1 hover:text-brand-gold"
+              >
+                <IconWhatsapp className="h-4 w-4 text-brand-gold" /> WhatsApp · 220 580 1140
+              </a>
+              <a
+                href="tel:+525512592388"
+                className="flex items-center gap-3 text-sm text-brand-cream transition-all duration-200 hover:translate-x-1 hover:text-brand-gold"
+              >
+                <IconPhone className="h-4 w-4 text-brand-gold" /> Tel · 55 12 59 23 88
+              </a>
+              <a
+                href="mailto:erika.c.abogada@gmail.com"
+                className="flex items-center gap-3 text-sm text-brand-cream transition-all duration-200 hover:translate-x-1 hover:text-brand-gold"
+              >
+                <IconMail className="h-4 w-4 text-brand-gold" /> erika.c.abogada@gmail.com
+              </a>
+              <p className="pt-1 text-xs text-brand-creamSoft">Lic. Erika Cruz García</p>
+            </div>
+          </div>
+        </Reveal>
+
+        <Reveal delay={150}>
+          <GuestPanel servicioInteres={servicio?.tipo} />
+        </Reveal>
+      </div>
+    </section>
   );
 }

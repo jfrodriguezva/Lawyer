@@ -50,22 +50,24 @@ function formatFecha(iso: string): string {
   }
 }
 
-export default function DashboardPage() {
-  const [nombre, setNombre] = useState("");
-  const [rol, setRol] = useState<string | null>(null);
+function leerUsuario(): { nombre: string; rol: string | null } {
+  if (typeof document === "undefined") return { nombre: "", rol: null };
+  const raw = getCookie("ec_user");
+  if (!raw) return { nombre: "", rol: null };
+  try {
+    const user = JSON.parse(raw);
+    return { nombre: user.nombre ?? "", rol: user.rol ?? null };
+  } catch {
+    return { nombre: "", rol: null };
+  }
+}
 
-  useEffect(() => {
-    const raw = getCookie("ec_user");
-    if (raw) {
-      try {
-        const user = JSON.parse(raw);
-        setNombre(user.nombre ?? "");
-        setRol(user.rol ?? null);
-      } catch {
-        // ignore malformed cookie
-      }
-    }
-  }, []);
+export default function DashboardPage() {
+  // Se lee el rol de forma síncrona (no en un efecto) para que el panel correcto
+  // se elija desde el primer render: si se esperara a un efecto, el valor inicial
+  // null caía en el panel de Abogado por defecto y disparaba llamadas a endpoints
+  // de Casos que Consultor/Agente no pueden ver, generando 403 innecesarios.
+  const [{ nombre, rol }] = useState(leerUsuario);
 
   if (rol === "Consultor") return <PanelConsultor nombre={nombre} />;
   if (rol === "Agente") return <PanelAgente nombre={nombre} />;

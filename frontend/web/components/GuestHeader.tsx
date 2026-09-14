@@ -63,7 +63,7 @@ function GuestHeaderInner() {
   const enHome = pathname === "/";
   const tabActual = enHome ? searchParams.get("tab") : null;
   const servicioActual = enHome ? searchParams.get("servicio") : null;
-  const enServicios = pathname?.startsWith("/servicios") || (enHome && (!!servicioActual || tabActual === "servicios"));
+  const enServicios = pathname?.startsWith("/servicios") || (enHome && !!servicioActual);
   const enInicio = enHome && !tabActual && !servicioActual;
 
   return (
@@ -271,7 +271,7 @@ function ServiciosMenu({ satHabilitado, onNavigate }: { satHabilitado: boolean; 
         <GrupoProximamente titulo="Comercializadora" />
       </div>
       <Link
-        href="/?tab=servicios"
+        href="/servicios"
         onClick={onNavigate}
         className="mt-6 block border-t border-brand-line pt-4 text-center text-xs font-semibold uppercase tracking-widest text-brand-gold hover:underline"
       >
@@ -358,7 +358,7 @@ function ServiciosMenuMovil({ satHabilitado }: { satHabilitado: boolean }) {
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gold">Comercializadora</p>
         <p className="py-1.5 text-sm italic text-brand-creamSoft/70">Próximamente</p>
       </div>
-      <Link href="/?tab=servicios" className="py-1.5 text-sm font-semibold text-brand-gold">
+      <Link href="/servicios" className="py-1.5 text-sm font-semibold text-brand-gold">
         Ver todos →
       </Link>
     </div>
