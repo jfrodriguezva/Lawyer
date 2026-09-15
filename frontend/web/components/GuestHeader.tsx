@@ -1,21 +1,17 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState, type ComponentType } from "react";
+import { Suspense, useEffect, useState, type ReactNode } from "react";
 import Monogram from "@/components/Monogram";
-import { IconCaduceus, IconChevronDown, IconClose, IconMegaphone, IconMenu } from "@/components/icons";
+import { IconChevronDown, IconClose, IconMenu } from "@/components/icons";
 import { getFlags } from "@/lib/api";
 import { AREA_EMPRESARIAL, AREA_FAMILIAR, AREA_SAT, serviciosPorArea } from "@/lib/servicios";
 
 const TABS = [
   { href: "/?tab=quienes-somos", label: "Quiénes somos", tab: "quienes-somos" },
   { href: "/?tab=mision", label: "Misión y valores", tab: "mision" },
-];
-
-const ACCESOS = [
-  { href: "/login", label: "Personal del despacho", hint: "Staff" },
-  { href: "/cliente/login", label: "Portal de clientes", hint: "Cliente" },
 ];
 
 export default function GuestHeader() {
@@ -31,7 +27,6 @@ function GuestHeaderInner() {
   const searchParams = useSearchParams();
   const [scrolled, setScrolled] = useState(false);
   const [serviciosOpen, setServiciosOpen] = useState(false);
-  const [accesoOpen, setAccesoOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileServiciosOpen, setMobileServiciosOpen] = useState(false);
   const [satHabilitado, setSatHabilitado] = useState(false);
@@ -57,7 +52,6 @@ function GuestHeaderInner() {
   // solo mirar el pathname dejaba el menú móvil abierto y tapando el contenido.
   useEffect(() => {
     setServiciosOpen(false);
-    setAccesoOpen(false);
     setMobileOpen(false);
     setMobileServiciosOpen(false);
   }, [pathname, searchParams]);
@@ -72,6 +66,13 @@ function GuestHeaderInner() {
   // cambio de query no mueve el scroll por sí solo (el pathname no cambia).
   function irAlInicio() {
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // "Agendar" solo baja a la sección de agenda: nunca navega ni toca el query
+  // string, porque cambiar el query dispara el efecto que resetea el panel de
+  // servicios y provoca una carrera con el scroll (bug reportado por el usuario).
+  function irAAgendar() {
+    document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   return (
@@ -110,10 +111,7 @@ function GuestHeaderInner() {
           <div className="relative">
             <button
               type="button"
-              onClick={() => {
-                setServiciosOpen((v) => !v);
-                setAccesoOpen(false);
-              }}
+              onClick={() => setServiciosOpen((v) => !v)}
               className={`flex items-center gap-1 px-3 py-2 text-xs uppercase tracking-[0.2em] transition-colors ${
                 enServicios || serviciosOpen
                   ? "text-brand-gold"
@@ -141,47 +139,24 @@ function GuestHeaderInner() {
             <NavTab key={tab.href} href={tab.href} label={tab.label} active={tabActual === tab.tab} />
           ))}
 
-          <NavTab href="/#agenda" label="Agendar" />
+          <button
+            type="button"
+            onClick={irAAgendar}
+            className="px-3 py-2 text-xs uppercase tracking-[0.2em] text-brand-creamSoft transition-colors hover:text-brand-cream"
+          >
+            Agendar
+          </button>
         </nav>
 
         <div className="flex items-center gap-4">
-          {/* Acceso: un solo control que distingue personal vs. clientes */}
-          <div className="relative hidden lg:block">
-            <button
-              type="button"
-              onClick={() => {
-                setAccesoOpen((v) => !v);
-                setServiciosOpen(false);
-              }}
-              className="flex items-center gap-1.5 border border-brand-line px-3.5 py-2 text-xs uppercase tracking-widest text-brand-creamSoft transition-colors hover:border-brand-gold hover:text-brand-gold"
-              aria-expanded={accesoOpen}
-            >
-              Acceso
-              <IconChevronDown className={`h-3 w-3 transition-transform ${accesoOpen ? "rotate-180" : ""}`} />
-            </button>
-
-            {accesoOpen && (
-              <>
-                <button
-                  aria-label="Cerrar menú de acceso"
-                  className="fixed inset-0 z-40 cursor-default"
-                  onClick={() => setAccesoOpen(false)}
-                />
-                <div className="absolute right-0 z-50 mt-2 w-64 border border-brand-line bg-brand-ink2 py-2 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.6)]">
-                  {ACCESOS.map((a) => (
-                    <Link
-                      key={a.href}
-                      href={a.href}
-                      className="flex items-center justify-between px-4 py-3 text-sm text-brand-cream transition-colors hover:bg-brand-ink hover:text-brand-gold"
-                    >
-                      {a.label}
-                      <span className="text-[10px] uppercase tracking-widest text-brand-creamSoft">{a.hint}</span>
-                    </Link>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+          {/* Acceso: un solo botón, sin elegir de antemano el tipo de cuenta.
+              El sistema detecta si es personal o cliente y redirige a su portal. */}
+          <Link
+            href="/acceso"
+            className="hidden items-center gap-1.5 border border-brand-line px-3.5 py-2 text-xs uppercase tracking-widest text-brand-creamSoft transition-colors hover:border-brand-gold hover:text-brand-gold lg:flex"
+          >
+            Acceso
+          </Link>
 
           {/* Toggle de navegación móvil */}
           <button
@@ -224,21 +199,24 @@ function GuestHeaderInner() {
                 {tab.label}
               </Link>
             ))}
-            <Link href="/#agenda" className="py-3 text-sm uppercase tracking-widest text-brand-cream">
+            <button
+              type="button"
+              onClick={() => {
+                setMobileOpen(false);
+                irAAgendar();
+              }}
+              className="py-3 text-left text-sm uppercase tracking-widest text-brand-cream"
+            >
               Agendar
-            </Link>
+            </button>
 
-            <div className="mt-3 flex flex-col gap-2 border-t border-brand-line pt-4">
-              {ACCESOS.map((a) => (
-                <Link
-                  key={a.href}
-                  href={a.href}
-                  className="flex items-center justify-between border border-brand-line px-4 py-3 text-sm text-brand-creamSoft"
-                >
-                  {a.label}
-                  <span className="text-[10px] uppercase tracking-widest">{a.hint}</span>
-                </Link>
-              ))}
+            <div className="mt-3 border-t border-brand-line pt-4">
+              <Link
+                href="/acceso"
+                className="block border border-brand-line px-4 py-3 text-center text-sm uppercase tracking-widest text-brand-creamSoft"
+              >
+                Acceso
+              </Link>
             </div>
           </nav>
         </div>
@@ -286,11 +264,26 @@ function ServiciosMenu({ satHabilitado, onNavigate }: { satHabilitado: boolean; 
         <GrupoServicios titulo="Derecho familiar" servicios={familiares} onNavigate={onNavigate} />
         <GrupoServicios titulo="Fiscal y empresarial" servicios={empresarial} onNavigate={onNavigate} />
         {satHabilitado ? (
-          <GrupoServicios titulo="Trámites SAT" icono={IconCaduceus} servicios={sat} onNavigate={onNavigate} />
+          <GrupoServicios
+            titulo="Trámites SAT"
+            icono={<ChipImagen src="/images/sat-gold.png" />}
+            servicios={sat}
+            onNavigate={onNavigate}
+          />
         ) : (
-          <GrupoProximamente titulo="Trámites SAT" icono={IconCaduceus} />
+          <GrupoProximamente titulo="Trámites SAT" icono={<ChipImagen src="/images/sat-gold.png" />} />
         )}
-        <GrupoProximamente titulo="Comercializadora" icono={IconMegaphone} />
+        <div>
+          <Link
+            href="/?tab=comercializadora"
+            onClick={onNavigate}
+            className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-creamSoft transition-colors hover:text-brand-gold"
+          >
+            <ChipImagen src="/images/comercializadora-gold.png" />
+            Comercializadora
+          </Link>
+          <p className="mt-3 text-sm italic text-brand-creamSoft">Próximamente</p>
+        </div>
       </div>
       <Link
         href="/servicios"
@@ -305,19 +298,19 @@ function ServiciosMenu({ satHabilitado, onNavigate }: { satHabilitado: boolean; 
 
 function GrupoServicios({
   titulo,
-  icono: Icono,
+  icono,
   servicios,
   onNavigate,
 }: {
   titulo: string;
-  icono?: ComponentType<{ className?: string }>;
+  icono?: ReactNode;
   servicios: ReturnType<typeof serviciosPorArea>;
   onNavigate: () => void;
 }) {
   return (
     <div>
       <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-gold">
-        {Icono && <Icono className="h-3.5 w-3.5" />}
+        {icono}
         {titulo}
       </p>
       <ul className="mt-3 space-y-2">
@@ -337,21 +330,25 @@ function GrupoServicios({
   );
 }
 
-function GrupoProximamente({
-  titulo,
-  icono: Icono,
-}: {
-  titulo: string;
-  icono?: ComponentType<{ className?: string }>;
-}) {
+function GrupoProximamente({ titulo, icono }: { titulo: string; icono?: ReactNode }) {
   return (
     <div className="opacity-50">
       <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-creamSoft">
-        {Icono && <Icono className="h-3.5 w-3.5" />}
+        {icono}
         {titulo}
       </p>
       <p className="mt-3 text-sm italic text-brand-creamSoft">Próximamente</p>
     </div>
+  );
+}
+
+// Versiones doradas y sin fondo de las imágenes reales (public/images/*-gold.png),
+// pensadas para verse directamente sobre el fondo oscuro del menú.
+function ChipImagen({ src }: { src: string }) {
+  return (
+    <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+      <Image src={src} alt="" width={32} height={32} unoptimized className="h-full w-full object-contain" />
+    </span>
   );
 }
 
@@ -380,7 +377,7 @@ function ServiciosMenuMovil({ satHabilitado }: { satHabilitado: boolean }) {
       </div>
       <div>
         <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gold">
-          <IconCaduceus className="h-3.5 w-3.5" />
+          <ChipImagen src="/images/sat-gold.png" />
           Trámites SAT
         </p>
         {satHabilitado ? (
@@ -394,10 +391,13 @@ function ServiciosMenuMovil({ satHabilitado }: { satHabilitado: boolean }) {
         )}
       </div>
       <div>
-        <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gold">
-          <IconMegaphone className="h-3.5 w-3.5" />
+        <Link
+          href="/?tab=comercializadora"
+          className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gold"
+        >
+          <ChipImagen src="/images/comercializadora-gold.png" />
           Comercializadora
-        </p>
+        </Link>
         <p className="py-1.5 text-sm italic text-brand-creamSoft/70">Próximamente</p>
       </div>
       <Link href="/servicios" className="py-1.5 text-sm font-semibold text-brand-gold">

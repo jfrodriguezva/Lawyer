@@ -1,5 +1,6 @@
 import GuestHeader from "@/components/GuestHeader";
 import LandingExperience from "@/components/LandingExperience";
+import Monogram from "@/components/Monogram";
 import Reveal from "@/components/Reveal";
 
 const JSON_LD = {
@@ -39,7 +40,8 @@ export default function GuestLandingPage() {
 
         <Reveal>
           <footer className="mt-24 border-t border-brand-line pt-8 text-center">
-            <p className="font-script text-base italic text-brand-creamSoft">
+            <Monogram size={44} />
+            <p className="mt-4 font-script text-base italic text-brand-creamSoft">
               Empieza una nueva etapa. Estamos para ayudarte.
             </p>
             <p className="mt-3 text-[11px] uppercase tracking-[0.25em] text-brand-creamSoft/70">

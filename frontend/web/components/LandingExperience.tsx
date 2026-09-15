@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -41,12 +42,15 @@ const ICONOS_BENEFICIO: Record<IconoBeneficio, typeof IconScale> = {
   calculator: IconCalculator,
 };
 
-// Solo 3 paneles se intercambian (se muestra uno, se ocultan los otros dos), sin
-// apilarse: Servicios (con el proceso del servicio elegido), Quiénes somos y
-// Misión y valores. Agendar no es un panel: es la sección fija de más abajo.
-type Panel = "servicios" | "quienes-somos" | "mision";
+// Los paneles se intercambian (se muestra uno, se ocultan los demás), sin
+// apilarse: Servicios (con el proceso del servicio elegido), Quiénes somos,
+// Misión y valores, y Comercializadora (en construcción). Agendar no es un
+// panel: es la sección fija de más abajo.
+type Panel = "servicios" | "quienes-somos" | "mision" | "comercializadora";
 
-const PANELES_VALIDOS: Panel[] = ["servicios", "quienes-somos", "mision"];
+const PANELES_VALIDOS: Panel[] = ["servicios", "quienes-somos", "mision", "comercializadora"];
+
+const SLUG_SAT = "tramites-sat";
 
 const VALORES = [
   { titulo: "Integridad", texto: "Decimos lo que pensamos y actuamos conforme a lo que decimos, incluso cuando es la respuesta difícil." },
@@ -112,6 +116,7 @@ function LandingExperienceInner() {
         {panel === "servicios" && <PanelServicios servicio={servicio} />}
         {panel === "quienes-somos" && <PanelQuienesSomos />}
         {panel === "mision" && <PanelMision />}
+        {panel === "comercializadora" && <PanelComercializadora />}
       </div>
 
       <SeccionAgenda servicio={servicio} />
@@ -162,7 +167,16 @@ function PanelServicios({ servicio }: { servicio: ReturnType<typeof getServicioP
             </ul>
           </div>
 
-          <JusticeMark />
+          {servicio.slug === SLUG_SAT ? (
+            <ImagenEmblema src="/images/sat-gold.png" width={348} height={402} alt="Símbolo de trámites ante el SAT" />
+          ) : (
+            <ImagenEmblema
+              src="/images/justicia-gold.png"
+              width={427}
+              height={719}
+              alt="La justicia: venda en los ojos, balanza y espada"
+            />
+          )}
         </div>
       </Reveal>
 
@@ -219,57 +233,32 @@ function PanelServicios({ servicio }: { servicio: ReturnType<typeof getServicioP
   );
 }
 
-// Silueta de la justicia en dorado sólido: cabello recogido, venda en los ojos,
-// brazo en alto con la balanza (cadenas y platillos) y toga con caída de tela,
-// a juego con los tonos de la marca en vez del icono abstracto que había antes.
-function JusticeMark() {
+// Emblema del panel activo: las versiones "-gold" de las imágenes reales (ver
+// public/images) ya tienen el fondo eliminado y el trazo negro pasado a dorado,
+// así que se colocan directamente, sin tarjeta ni anillo de fondo.
+function ImagenEmblema({
+  src,
+  width,
+  height,
+  alt,
+}: {
+  src: string;
+  width: number;
+  height: number;
+  alt: string;
+}) {
   return (
-    <div className="relative mx-auto flex w-full max-w-[170px] items-center justify-center sm:max-w-[200px] lg:max-w-[240px]">
-      <svg viewBox="0 0 220 280" className="h-auto w-full" xmlns="http://www.w3.org/2000/svg">
-        {/* Anillos decorativos, a juego con el resto de los emblemas de la marca */}
-        <circle cx="112" cy="140" r="125" className="text-brand-gold" stroke="currentColor" strokeOpacity="0.16" strokeWidth="1" fill="none" />
-        <circle cx="112" cy="140" r="104" className="text-brand-gold" stroke="currentColor" strokeOpacity="0.24" strokeWidth="1" fill="none" />
-
-        <g className="text-brand-gold" fill="currentColor">
-          {/* Cabeza y cabello recogido */}
-          <circle cx="152" cy="30" r="14" />
-          <circle cx="163" cy="16" r="8" />
-          <path d="M166 12c3 1 4 5 2 8-1-3-2-5-5-6z" opacity="0.9" />
-
-          {/* Venda sobre los ojos */}
-          <rect x="138" y="27" width="29" height="6" rx="2" fill="#15130f" />
-
-          {/* Brazo en alto */}
-          <path d="M142 54 C 118 48 86 36 56 24 C 51 22 46 26 49 32 C 74 43 106 54 131 63 Z" />
-
-          {/* Fiel: un poste corto entre la mano y la barra de la balanza */}
-          <rect x="46" y="10" width="4" height="19" rx="1" />
-          <circle cx="48" cy="10" r="3.2" />
-
-          {/* Barra y cadenas de la balanza */}
-          <rect x="6" y="12" width="86" height="3" rx="1.5" />
-          <rect x="10" y="15" width="2" height="19" />
-          <rect x="86" y="15" width="2" height="19" />
-
-          {/* Platillos */}
-          <path d="M2 34a12 6 0 0 0 24 0z" />
-          <path d="M78 34a12 6 0 0 0 24 0z" />
-
-          {/* Toga con caída de tela */}
-          <path d="M140 49 C 121 58 110 82 115 109 C 118 130 109 152 105 178 C 102 197 106 219 120 235 L 178 235 C 184 213 176 191 179 168 C 182 140 175 108 161 76 C 156 65 149 55 140 49 Z" />
-          <path
-            d="M132 95c-3 40-10 82-16 132M148 95c3 40 10 82 16 132"
-            stroke="#15130f"
-            strokeOpacity="0.25"
-            strokeWidth="2"
-            fill="none"
-          />
-
-          {/* Base */}
-          <rect x="96" y="235" width="90" height="10" rx="1.5" />
-          <rect x="86" y="245" width="110" height="8" rx="1.5" />
-        </g>
-      </svg>
+    <div className="relative mx-auto flex w-full max-w-[200px] items-center justify-center sm:max-w-[230px] lg:max-w-[270px]">
+      <Image
+        key={src}
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        unoptimized
+        className="relative h-auto w-full drop-shadow-[0_20px_35px_rgba(201,162,74,0.35)]"
+        priority
+      />
     </div>
   );
 }
@@ -278,23 +267,38 @@ function PanelQuienesSomos() {
   return (
     <Reveal>
       <section className="pt-4 scroll-mt-24">
-        <p className="font-script text-lg italic text-brand-gold">Quiénes somos</p>
-        <h2 className="mt-1 text-balance font-display text-3xl font-bold text-brand-cream sm:text-4xl">
-          Un despacho cercano, con respaldo profesional
-        </h2>
-        <div className="mt-6 max-w-2xl space-y-4 text-brand-creamSoft">
-          <p>
-            ECGAbogados es un despacho jurídico encabezado por la Lic. Erika Cruz García, especializado en derecho
-            familiar, trámites fiscales y asesoría legal para empresas y emprendedores.
-          </p>
-          <p>
-            Atendemos cada asunto de forma personalizada: revisamos tu situación particular antes de proponer una
-            estrategia, y damos seguimiento cercano a tu expediente desde la primera consulta hasta su resolución.
-          </p>
-          <p>
-            Ofrecemos asesoría presencial o en línea, según lo que te resulte más cómodo, siempre con la misma
-            seriedad, confidencialidad y trato humano.
-          </p>
+        <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1fr_auto]">
+          <div>
+            <p className="font-script text-lg italic text-brand-gold">Quiénes somos</p>
+            <h2 className="mt-1 text-balance font-display text-3xl font-bold text-brand-cream sm:text-4xl">
+              Un despacho cercano, con respaldo profesional
+            </h2>
+            <div className="mt-6 max-w-2xl space-y-4 text-brand-creamSoft">
+              <p>
+                ECGAbogados es un despacho jurídico encabezado por la Lic. Erika Cruz García, especializado en derecho
+                familiar, trámites fiscales y asesoría legal para empresas y emprendedores.
+              </p>
+              <p>
+                Atendemos cada asunto de forma personalizada: revisamos tu situación particular antes de proponer una
+                estrategia, y damos seguimiento cercano a tu expediente desde la primera consulta hasta su resolución.
+              </p>
+              <p>
+                Ofrecemos asesoría presencial o en línea, según lo que te resulte más cómodo, siempre con la misma
+                seriedad, confidencialidad y trato humano.
+              </p>
+            </div>
+          </div>
+
+          <div className="mx-auto shrink-0">
+            <Image
+              src="/images/logo-ecg.png"
+              alt="Sello ECG Abogados — Erika Cruz García"
+              width={280}
+              height={280}
+              unoptimized
+              className="h-40 w-40 rounded-full ring-1 ring-brand-gold/70 drop-shadow-[0_10px_30px_rgba(201,162,74,0.3)] sm:h-52 sm:w-52"
+            />
+          </div>
         </div>
 
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -376,6 +380,36 @@ function PanelMision() {
           <p className="mt-2 text-sm leading-relaxed text-brand-creamSoft">
             Acompañarte hasta la resolución de tu asunto legal, con un seguimiento puntual de tu expediente y
             comunicación clara en cada paso, para que enfrentes tu proceso con la certeza de no estar solo.
+          </p>
+        </div>
+      </section>
+    </Reveal>
+  );
+}
+
+function PanelComercializadora() {
+  return (
+    <Reveal>
+      <section className="pt-4 scroll-mt-24">
+        <div className="flex flex-col items-center gap-6 border border-brand-line bg-brand-ink2 px-8 py-16 text-center">
+          <Image
+            src="/images/comercializadora-gold.png"
+            alt="Comercializadora"
+            width={554}
+            height={554}
+            unoptimized
+            className="h-16 w-16"
+          />
+          <div>
+            <p className="font-script text-lg italic text-brand-gold">Próximamente</p>
+            <h2 className="mt-1 text-balance font-display text-3xl font-bold text-brand-cream sm:text-4xl">
+              Comercializadora en construcción
+            </h2>
+          </div>
+          <p className="max-w-xl text-brand-creamSoft">
+            Este módulo todavía no está disponible. Cuando esté listo, aquí encontrarás la parte comercial del
+            despacho — por ahora, puedes seguir agendando tu asesoría jurídica o de trámites SAT desde este mismo
+            sitio.
           </p>
         </div>
       </section>
