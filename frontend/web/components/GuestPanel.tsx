@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { IconCalendar, IconCheck, IconChat } from "@/components/icons";
 import { crearSolicitudCita, enviarMensajeContacto, getFlags, type ModalidadCita, type ModuloSolicitud } from "@/lib/api";
 import Stepper from "@/components/Stepper";
@@ -228,7 +229,11 @@ function AgendaForm({ servicioInteres }: { servicioInteres?: string }) {
               onChange={(e) => setAceptaAviso(e.target.checked)}
               className="mt-0.5"
             />
-            He leído y acepto el aviso de privacidad del despacho para el tratamiento de mis datos de contacto.
+            He leído y acepto el{" "}
+            <Link href="/aviso-privacidad" target="_blank" className="text-brand-gold underline hover:no-underline">
+              aviso de privacidad
+            </Link>{" "}
+            del despacho para el tratamiento de mis datos de contacto.
           </label>
 
           {error && <ErrorNote text={error} />}
@@ -354,6 +359,14 @@ function ContactForm({ servicioInteres }: { servicioInteres?: string }) {
       </Field>
 
       {error && <ErrorNote text={error} />}
+
+      <p className="text-xs text-brand-creamSoft">
+        Al enviar este formulario aceptas el{" "}
+        <Link href="/aviso-privacidad" target="_blank" className="text-brand-gold underline hover:no-underline">
+          aviso de privacidad
+        </Link>{" "}
+        del despacho.
+      </p>
 
       <SubmitButton saving={saving} label="Enviar mensaje" savingLabel="Enviando…" />
     </form>

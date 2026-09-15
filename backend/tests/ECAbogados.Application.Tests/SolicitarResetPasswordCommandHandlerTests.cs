@@ -18,14 +18,14 @@ public class SolicitarResetPasswordCommandHandlerTests
     public async Task Correo_existente_y_activo_genera_token_y_envia_enlace()
     {
         var (handler, usuarios, notifier) = CrearHandler();
-        usuarios.Seed(new Usuario { Email = "erika@ecabogados.mx", PasswordHash = "hashed:x", Nombre = "Erika", Rol = "Administrador", Activo = true });
+        usuarios.Seed(new Usuario { Email = "erika@ecgabogados.com", PasswordHash = "hashed:x", Nombre = "Erika", Rol = "Administrador", Activo = true });
 
-        await handler.Handle(new SolicitarResetPasswordCommand("erika@ecabogados.mx"), CancellationToken.None);
+        await handler.Handle(new SolicitarResetPasswordCommand("erika@ecgabogados.com"), CancellationToken.None);
 
         Assert.Single(notifier.Enviados);
-        Assert.Equal("erika@ecabogados.mx", notifier.Enviados[0].Email);
+        Assert.Equal("erika@ecgabogados.com", notifier.Enviados[0].Email);
 
-        var usuario = await usuarios.GetByEmailAsync("erika@ecabogados.mx");
+        var usuario = await usuarios.GetByEmailAsync("erika@ecgabogados.com");
         Assert.NotNull(usuario!.ResetToken);
         Assert.NotNull(usuario.ResetTokenExpira);
     }
@@ -35,7 +35,7 @@ public class SolicitarResetPasswordCommandHandlerTests
     {
         var (handler, _, notifier) = CrearHandler();
 
-        await handler.Handle(new SolicitarResetPasswordCommand("no-existe@ecabogados.mx"), CancellationToken.None);
+        await handler.Handle(new SolicitarResetPasswordCommand("no-existe@ecgabogados.com"), CancellationToken.None);
 
         Assert.Empty(notifier.Enviados);
     }
@@ -44,9 +44,9 @@ public class SolicitarResetPasswordCommandHandlerTests
     public async Task Usuario_inactivo_no_recibe_enlace()
     {
         var (handler, usuarios, notifier) = CrearHandler();
-        usuarios.Seed(new Usuario { Email = "inactivo@ecabogados.mx", PasswordHash = "hashed:x", Nombre = "Inactivo", Rol = "Asistente", Activo = false });
+        usuarios.Seed(new Usuario { Email = "inactivo@ecgabogados.com", PasswordHash = "hashed:x", Nombre = "Inactivo", Rol = "Asistente", Activo = false });
 
-        await handler.Handle(new SolicitarResetPasswordCommand("inactivo@ecabogados.mx"), CancellationToken.None);
+        await handler.Handle(new SolicitarResetPasswordCommand("inactivo@ecgabogados.com"), CancellationToken.None);
 
         Assert.Empty(notifier.Enviados);
     }

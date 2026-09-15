@@ -74,7 +74,7 @@ export default function AccesoPage() {
     <main className="flex min-h-screen items-center justify-center bg-brand-ink px-4">
       <div className="w-full max-w-md border border-brand-line bg-brand-ink2 px-10 py-12">
         <div className="flex flex-col items-center text-center">
-          <Monogram size={56} />
+          <Monogram size={96} />
           <h1 className="mt-5 font-display text-2xl font-bold tracking-wide text-brand-cream">
             ECG ABOGADOS
           </h1>

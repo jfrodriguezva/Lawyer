@@ -209,7 +209,7 @@ SQL Server. Esquema completo en `backend/database/schema.sql`.
 **Tablas:** `Usuarios`, `Clientes`, `Casos`, `Citas`, `Documentos`, `MensajesContacto`, `ChecklistItems`, `Plazos`, `Pagos`.
 
 El script es idempotente (usa `IF NOT EXISTS`) e incluye datos semilla:
-- Usuario administrador: `erika@ecabogados.mx` / contraseña `Cambiar123!` (hash bcrypt ya incluido).
+- Usuario administrador: `erika@ecgabogados.com` / contraseña `Cambiar123!` (hash bcrypt ya incluido).
 - 2 casos y 2 citas de ejemplo para poblar el dashboard.
 
 Cadena de conexión por defecto (`ConnectionStrings:Default`):

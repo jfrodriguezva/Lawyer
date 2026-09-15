@@ -28,7 +28,7 @@ basado en Ocelot.
    sqlcmd -S localhost -i database/schema.sql
    ```
 
-   > **Importante**: el script inserta un usuario semilla `erika@ecabogados.mx` con el campo
+   > **Importante**: el script inserta un usuario semilla `erika@ecgabogados.com` con el campo
    > `PasswordHash` en `<BCRYPT_HASH_PLACEHOLDER>`. Debes reemplazar ese valor por un hash
    > bcrypt real antes de poder iniciar sesión (el `BcryptPasswordHasher` de la aplicación,
    > basado en `BCrypt.Net-Next`, genera hashes compatibles). Para desarrollo local puedes
@@ -65,7 +65,7 @@ basado en Ocelot.
 
 ## Login por defecto (una vez reemplazado el hash)
 
-- Email: `erika@ecabogados.mx`
+- Email: `erika@ecgabogados.com`
 - Password: la que hayas usado para generar el hash (sugerida en el script: `Cambiar123!`)
 
 ## Notas

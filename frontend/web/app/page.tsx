@@ -1,3 +1,4 @@
+import Link from "next/link";
 import GuestHeader from "@/components/GuestHeader";
 import LandingExperience from "@/components/LandingExperience";
 import Monogram from "@/components/Monogram";
@@ -47,6 +48,12 @@ export default function GuestLandingPage() {
             <p className="mt-3 text-[11px] uppercase tracking-[0.25em] text-brand-creamSoft/70">
               Profesionalismo · Compromiso · Resultados
             </p>
+            <Link
+              href="/aviso-privacidad"
+              className="mt-6 inline-block text-[11px] uppercase tracking-[0.2em] text-brand-creamSoft/70 underline hover:text-brand-gold"
+            >
+              Aviso de privacidad
+            </Link>
           </footer>
         </Reveal>
       </main>

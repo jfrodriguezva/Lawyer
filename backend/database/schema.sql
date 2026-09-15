@@ -504,10 +504,10 @@ GO
 -- llamar a ese método una vez (por ejemplo desde un pequeño script o REPL de C#) para
 -- obtener el hash de la contraseña elegida. Alternativamente, para desarrollo local puede
 -- usarse un generador de bcrypt en línea para obtener el hash de la contraseña "Cambiar123!".
-IF NOT EXISTS (SELECT 1 FROM dbo.Usuarios WHERE Email = 'erika@ecabogados.mx')
+IF NOT EXISTS (SELECT 1 FROM dbo.Usuarios WHERE Email = 'erika@ecgabogados.com')
 BEGIN
     INSERT INTO dbo.Usuarios (Email, PasswordHash, Nombre, Rol)
-    VALUES ('erika@ecabogados.mx', '$2a$11$Bl1GymEymBs57HgpqaDZ/eGXwiGDXVPhHzaEYZ162epxfuQOw5Tt.', 'Erika Cruz García', 'Administrador');
+    VALUES ('erika@ecgabogados.com', '$2a$11$Bl1GymEymBs57HgpqaDZ/eGXwiGDXVPhHzaEYZ162epxfuQOw5Tt.', 'Erika Cruz García', 'Administrador');
 END
 GO
 
@@ -516,7 +516,7 @@ GO
 -- =========================================================
 IF NOT EXISTS (SELECT 1 FROM dbo.Casos WHERE ClienteNombre = 'María Fernanda López' AND Tipo = 'Divorcio incausado')
 BEGIN
-    DECLARE @AbogadoId INT = (SELECT Id FROM dbo.Usuarios WHERE Email = 'erika@ecabogados.mx');
+    DECLARE @AbogadoId INT = (SELECT Id FROM dbo.Usuarios WHERE Email = 'erika@ecgabogados.com');
 
     INSERT INTO dbo.Casos (ClienteNombre, Tipo, Estatus, FechaApertura, Notas, TokenAcceso, TokenGeneradoEn, AbogadoResponsableId, Prioridad, FolioInterno)
     VALUES

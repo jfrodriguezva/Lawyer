@@ -24,7 +24,7 @@ Documentación completa:
 
 - Base de datos `ECAbogados` creada en SQL Server local (`localhost`, autenticación de Windows) ejecutando `schema.sql`.
 - Usuario admin semilla verificado y funcional:
-  - Email: `erika@ecabogados.mx`
+  - Email: `erika@ecgabogados.com`
   - Password: `Cambiar123!`
 - Se levantaron y probaron con éxito (login end-to-end):
   - API en `http://localhost:5080` (`dotnet run` desde `backend/src/ECAbogados.Api`)

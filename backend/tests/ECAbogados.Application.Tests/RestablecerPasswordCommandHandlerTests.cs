@@ -28,7 +28,7 @@ public class RestablecerPasswordCommandHandlerTests
         var (handler, usuarios) = CrearHandler();
         usuarios.Seed(new Usuario
         {
-            Email = "erika@ecabogados.mx",
+            Email = "erika@ecgabogados.com",
             PasswordHash = "hashed:vieja",
             Nombre = "Erika",
             Rol = "Administrador",
@@ -47,7 +47,7 @@ public class RestablecerPasswordCommandHandlerTests
         var (handler, usuarios) = CrearHandler();
         usuarios.Seed(new Usuario
         {
-            Email = "erika@ecabogados.mx",
+            Email = "erika@ecgabogados.com",
             PasswordHash = "hashed:vieja",
             Nombre = "Erika",
             Rol = "Administrador",
@@ -59,7 +59,7 @@ public class RestablecerPasswordCommandHandlerTests
 
         await handler.Handle(new RestablecerPasswordCommand("token-valido", "NuevaPass123!"), CancellationToken.None);
 
-        var usuario = await usuarios.GetByEmailAsync("erika@ecabogados.mx");
+        var usuario = await usuarios.GetByEmailAsync("erika@ecgabogados.com");
         Assert.Equal("hashed:NuevaPass123!", usuario!.PasswordHash);
         Assert.Null(usuario.ResetToken);
         Assert.Null(usuario.ResetTokenExpira);

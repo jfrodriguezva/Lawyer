@@ -60,7 +60,7 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-brand-ink px-4">
       <div className="w-full max-w-md border border-brand-line bg-brand-ink2 px-10 py-12">
         <div className="flex flex-col items-center text-center">
-          <Monogram size={56} />
+          <Monogram size={96} />
           <h1 className="mt-5 font-display text-2xl font-bold tracking-wide text-brand-cream">
             ECG ABOGADOS
           </h1>
@@ -86,7 +86,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="mt-2 w-full border border-brand-line bg-transparent px-4 py-2.5 text-brand-cream outline-none transition-colors focus:border-brand-gold"
-                  placeholder="nombre@ecabogados.mx"
+                  placeholder="nombre@ecgabogados.com"
                 />
               </div>
 
@@ -157,7 +157,7 @@ export default function LoginPage() {
                     value={olvideEmail}
                     onChange={(e) => setOlvideEmail(e.target.value)}
                     className="mt-2 w-full border border-brand-line bg-transparent px-4 py-2.5 text-brand-cream outline-none transition-colors focus:border-brand-gold"
-                    placeholder="nombre@ecabogados.mx"
+                    placeholder="nombre@ecgabogados.com"
                   />
                 </div>
                 <button

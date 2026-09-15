@@ -148,7 +148,7 @@ export default function Sidebar({
             })}
           </ul>
 
-          {!esModuloJuridico && !esAdministrador && rol && (
+          {!esModuloJuridico && !esAdministrador && !esConsultor && rol && (
             <p className="mt-6 px-4 text-xs text-brand-creamSoft">
               Tu rol ({rol}) todavía no tiene un módulo activo en este panel.
             </p>

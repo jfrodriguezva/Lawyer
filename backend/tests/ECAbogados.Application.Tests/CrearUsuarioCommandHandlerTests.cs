@@ -11,11 +11,11 @@ public class CrearUsuarioCommandHandlerTests
     public async Task Email_duplicado_lanza_ConflictException()
     {
         var usuarios = new FakeUsuarioRepository();
-        usuarios.Seed(new Usuario { Email = "erika@ecabogados.mx", PasswordHash = "x", Nombre = "Erika", Rol = "Administrador" });
+        usuarios.Seed(new Usuario { Email = "erika@ecgabogados.com", PasswordHash = "x", Nombre = "Erika", Rol = "Administrador" });
         var handler = new CrearUsuarioCommandHandler(usuarios, new FakePasswordHasher());
 
         await Assert.ThrowsAsync<ConflictException>(() =>
-            handler.Handle(new CrearUsuarioCommand("erika@ecabogados.mx", "Password123!", "Otra Erika", "Abogado"), CancellationToken.None));
+            handler.Handle(new CrearUsuarioCommand("erika@ecgabogados.com", "Password123!", "Otra Erika", "Abogado"), CancellationToken.None));
     }
 
     [Fact]
@@ -24,9 +24,9 @@ public class CrearUsuarioCommandHandlerTests
         var usuarios = new FakeUsuarioRepository();
         var handler = new CrearUsuarioCommandHandler(usuarios, new FakePasswordHasher());
 
-        var id = await handler.Handle(new CrearUsuarioCommand("nueva@ecabogados.mx", "Password123!", "Asistente Nueva", "Abogado"), CancellationToken.None);
+        var id = await handler.Handle(new CrearUsuarioCommand("nueva@ecgabogados.com", "Password123!", "Asistente Nueva", "Abogado"), CancellationToken.None);
 
-        var creado = await usuarios.GetByEmailAsync("nueva@ecabogados.mx");
+        var creado = await usuarios.GetByEmailAsync("nueva@ecgabogados.com");
         Assert.NotNull(creado);
         Assert.Equal(id, creado!.Id);
         Assert.Equal("hashed:Password123!", creado.PasswordHash);
