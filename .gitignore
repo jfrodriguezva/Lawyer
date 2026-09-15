@@ -16,6 +16,10 @@ npm-debug.log*
 .env.local
 !.env.local.example
 
+# ---- Despliegue (docker-compose) ----
+.env
+!.env.example
+
 # ---- OS / editor ----
 .DS_Store
 Thumbs.db
