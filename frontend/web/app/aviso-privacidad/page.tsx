@@ -14,17 +14,7 @@ export default function AvisoPrivacidadPage() {
       <GuestHeader />
 
       <main className="relative mx-auto max-w-3xl px-6 pb-28 pt-14 lg:pt-20">
-        <section className="border border-brand-goldDeep/60 bg-brand-goldDeep/10 p-5 text-sm text-brand-cream">
-          <p className="font-semibold uppercase tracking-widest text-brand-gold">Borrador — pendiente de revisión</p>
-          <p className="mt-2 text-brand-creamSoft">
-            Este texto es una plantilla estándar conforme a la Ley Federal de Protección de Datos Personales en
-            Posesión de los Particulares (LFPDPPP), pensada para que sirva de punto de partida. La Lic. Erika Cruz
-            García debe revisarlo, completar los datos marcados como <span className="text-brand-gold">[PENDIENTE]</span> y
-            aprobarlo antes de considerarlo el aviso de privacidad definitivo del despacho.
-          </p>
-        </section>
-
-        <p className="mt-10 font-script text-lg italic text-brand-gold">Protección de datos personales</p>
+        <p className="font-script text-lg italic text-brand-gold">Protección de datos personales</p>
         <h1 className="mt-1 text-balance font-display text-4xl font-bold text-brand-cream sm:text-5xl">
           Aviso de privacidad
         </h1>
@@ -171,8 +161,4 @@ function List({ items }: { items: string[] }) {
       ))}
     </ul>
   );
-}
-
-function Pendiente({ texto }: { texto: string }) {
-  return <span className="text-brand-gold">[PENDIENTE: {texto}]</span>;
 }
