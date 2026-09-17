@@ -5,6 +5,7 @@ import GuestHeader from "@/components/GuestHeader";
 export const metadata: Metadata = {
   title: "Aviso de privacidad",
   description: "Aviso de privacidad de ECGAbogados para el tratamiento de datos personales.",
+  alternates: { canonical: "/aviso-privacidad" },
 };
 
 export default function AvisoPrivacidadPage() {

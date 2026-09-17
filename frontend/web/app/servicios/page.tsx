@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "Servicios",
   description:
     "Derecho familiar, trámites fiscales ante el SAT y asesoría legal para empresas — conoce todos los servicios de ECGAbogados.",
+  alternates: { canonical: "/servicios" },
 };
 
 function Grupo({ titulo, slugs }: { titulo: string; slugs: string[] }) {

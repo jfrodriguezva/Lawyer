@@ -11,7 +11,12 @@ const JSON_LD = {
   description: "Despacho jurídico especializado en derecho familiar, trámites fiscales y asesoría empresarial.",
   telephone: "+525512592388",
   email: "contacto@ecgabogados.com",
-  areaServed: "MX",
+  url: "https://ecgabogados.com",
+  areaServed: {
+    "@type": "State",
+    name: "Estado de México",
+  },
+  priceRange: "$$",
 };
 
 export default function GuestLandingPage() {

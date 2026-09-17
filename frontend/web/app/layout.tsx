@@ -26,6 +26,9 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+  alternates: {
+    canonical: "/",
+  },
   title: {
     default: "ECGAbogados | Derecho familiar, fiscal y empresarial",
     template: "%s | ECGAbogados",

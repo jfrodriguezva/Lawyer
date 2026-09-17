@@ -52,6 +52,7 @@ export async function generateMetadata({
   return {
     title: servicio.titulo,
     description: servicio.descripcion,
+    alternates: { canonical: `/servicios/${slug}` },
     openGraph: { title: servicio.titulo, description: servicio.descripcion },
   };
 }
