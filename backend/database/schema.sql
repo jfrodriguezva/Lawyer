@@ -16,6 +16,12 @@ GO
 USE ECAbogados;
 GO
 
+-- sqlcmd conecta con QUOTED_IDENTIFIER apagado por defecto (a diferencia de
+-- SSMS), y los índices filtrados (WHERE ...) de este script lo requieren
+-- encendido para poder crearse.
+SET QUOTED_IDENTIFIER ON;
+GO
+
 -- =========================================================
 -- Usuarios (staff): Abogado, Consultor, Agente, Administrador.
 -- =========================================================
