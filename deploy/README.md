@@ -60,27 +60,47 @@ registros **MX** (para el correo) conviven sin problema en el mismo DNS.
 Es un problema de huevo y gallina: nginx no arranca con la configuración final
 porque pide un certificado que todavía no existe. Se resuelve en dos pasos.
 
-**4.1 — Arranca nginx solo con el bloque HTTP** (edita `deploy/nginx.conf` y
-comenta temporalmente todo el segundo bloque `server { listen 443 ... }`,
-dejando solo el primero):
+**4.1 — Arranca nginx solo con el bloque HTTP.** Guarda aparte la versión
+definitiva de `deploy/nginx.conf` (la que ya tiene los bloques 443) y
+sustitúyela temporalmente por una que solo redirige y sirve el reto de
+Let's Encrypt:
 
 ```bash
+cp deploy/nginx.conf deploy/nginx.conf.full
+cat > deploy/nginx.conf <<'EOF'
+server {
+    listen 80;
+    server_name ecgabogados.com www.ecgabogados.com;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+EOF
 docker compose up -d nginx
 ```
 
-**4.2 — Pide el certificado:**
+**4.2 — Pide el certificado.** El servicio `certbot` en `docker-compose.yml`
+tiene un `entrypoint` fijo (el bucle de renovación automática), así que hay
+que sobreescribirlo explícitamente con `--entrypoint` para poder pasarle
+`certonly`:
 
 ```bash
-docker compose run --rm certbot certonly \
+docker compose run --rm --entrypoint certbot certbot certonly \
   --webroot -w /var/www/certbot \
   -d ecgabogados.com -d www.ecgabogados.com \
   --email TU_CORREO_REAL --agree-tos --no-eff-email
 ```
 
-**4.3 — Descomenta el bloque 443** en `deploy/nginx.conf` (déjalo como está en
-el repo) y recarga:
+**4.3 — Restaura la versión definitiva** de `deploy/nginx.conf` (con los
+bloques 443 ya emitido el certificado) y recarga:
 
 ```bash
+mv deploy/nginx.conf.full deploy/nginx.conf
 docker compose restart nginx
 ```
 
