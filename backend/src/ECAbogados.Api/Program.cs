@@ -152,12 +152,16 @@ try
 
     app.UseSerilogRequestLogging();
 
-    // Swagger UI always enabled (not only Development) for easy testing.
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
+    // Swagger solo en desarrollo: en producción expondría públicamente el mapa
+    // completo de la API (rutas, forma de cada request) a cualquiera en internet.
+    if (app.Environment.IsDevelopment())
     {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "ECGAbogados API v1");
-    });
+        app.UseSwagger();
+        app.UseSwaggerUI(options =>
+        {
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "ECGAbogados API v1");
+        });
+    }
 
     app.UseCors("Frontend");
 

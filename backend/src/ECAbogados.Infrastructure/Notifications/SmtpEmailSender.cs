@@ -40,7 +40,13 @@ public class SmtpEmailSender(IConfiguration configuration, ILogger<SmtpEmailSend
             Credentials = new NetworkCredential(user, password)
         };
 
-        using var message = new MailMessage(from, to, subject, body);
+        using var message = new MailMessage
+        {
+            From = new MailAddress(from, "ECGAbogados"),
+            Subject = subject,
+            Body = body,
+        };
+        message.To.Add(to);
 
         try
         {
