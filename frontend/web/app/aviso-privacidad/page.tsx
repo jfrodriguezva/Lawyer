@@ -37,9 +37,9 @@ export default function AvisoPrivacidadPage() {
               Datos Personales en Posesión de los Particulares (LFPDPPP) y su Reglamento.
             </p>
             <p className="mt-3">
-              El despacho atiende mediante asesorías previa cita, con presencia en{" "}
-              <Pendiente texto="ciudad/zona de atención, p. ej. Ciudad de México" />. La ubicación exacta de tu
-              asesoría se te confirma al momento de agendar. Independientemente de dónde se lleve a cabo, puedes
+              El despacho atiende mediante asesorías previa cita, con presencia en el Estado de México. La
+              ubicación exacta de tu asesoría se te confirma al momento de agendar. Independientemente de dónde
+              se lleve a cabo, puedes
               contactar al despacho en cualquier momento a través de los medios señalados en este aviso (correo y
               teléfono), que son permanentes y no cambian de una cita a otra.
             </p>
@@ -114,7 +114,7 @@ export default function AvisoPrivacidadPage() {
               </a>{" "}
               o al teléfono <a href="tel:+525512592388" className="text-brand-gold hover:underline">55 12 59 23 88</a>,
               indicando: (i) tu nombre completo, (ii) el derecho que deseas ejercer y (iii) una copia de tu
-              identificación oficial. Te responderemos en un plazo máximo de <Pendiente texto="20 días hábiles (plazo legal máximo; puede reducirse)" />.
+              identificación oficial. Te responderemos en un plazo máximo de 20 días hábiles.
             </p>
           </Seccion>
 
