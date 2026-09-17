@@ -32,10 +32,16 @@ export default function AvisoPrivacidadPage() {
         <div className="mt-10 space-y-10 text-brand-creamSoft">
           <Seccion titulo="1. Identidad y domicilio del responsable">
             <p>
-              ECGAbogados, a cargo de la Lic. Erika Cruz García (en adelante, &ldquo;el despacho&rdquo;), con domicilio
-              en <Pendiente texto="calle, número, colonia, alcaldía/municipio, ciudad, estado y código postal" />, es
-              responsable del tratamiento de tus datos personales conforme a lo previsto por la Ley Federal de
-              Protección de Datos Personales en Posesión de los Particulares (LFPDPPP) y su Reglamento.
+              ECGAbogados, a cargo de la Lic. Erika Cruz García (en adelante, &ldquo;el despacho&rdquo;), es responsable
+              del tratamiento de tus datos personales conforme a lo previsto por la Ley Federal de Protección de
+              Datos Personales en Posesión de los Particulares (LFPDPPP) y su Reglamento.
+            </p>
+            <p className="mt-3">
+              El despacho atiende mediante asesorías previa cita, con presencia en{" "}
+              <Pendiente texto="ciudad/zona de atención, p. ej. Ciudad de México" />. La ubicación exacta de tu
+              asesoría se te confirma al momento de agendar. Independientemente de dónde se lleve a cabo, puedes
+              contactar al despacho en cualquier momento a través de los medios señalados en este aviso (correo y
+              teléfono), que son permanentes y no cambian de una cita a otra.
             </p>
           </Seccion>
 
