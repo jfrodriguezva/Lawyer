@@ -12,6 +12,14 @@ const JSON_LD = {
   telephone: "+525512592388",
   email: "contacto@ecgabogados.com",
   url: "https://ecgabogados.com",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "Av. Bosques del Estado de México 4-1 P1 LT",
+    addressLocality: "Tecámac",
+    addressRegion: "Estado de México",
+    postalCode: "55764",
+    addressCountry: "MX",
+  },
   areaServed: {
     "@type": "State",
     name: "Estado de México",

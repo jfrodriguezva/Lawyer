@@ -28,21 +28,21 @@ export default function AvisoPrivacidadPage() {
         <h1 className="mt-1 text-balance font-display text-4xl font-bold text-brand-cream sm:text-5xl">
           Aviso de privacidad
         </h1>
-        <p className="mt-4 text-sm text-brand-creamSoft">Última actualización: [PENDIENTE: fecha de publicación]</p>
+        <p className="mt-4 text-sm text-brand-creamSoft">Última actualización: 17 de septiembre de 2026</p>
 
         <div className="mt-10 space-y-10 text-brand-creamSoft">
           <Seccion titulo="1. Identidad y domicilio del responsable">
             <p>
-              ECGAbogados, a cargo de la Lic. Erika Cruz García (en adelante, &ldquo;el despacho&rdquo;), es responsable
-              del tratamiento de tus datos personales conforme a lo previsto por la Ley Federal de Protección de
-              Datos Personales en Posesión de los Particulares (LFPDPPP) y su Reglamento.
+              ECGAbogados, a cargo de la Lic. Erika Cruz García (en adelante, &ldquo;el despacho&rdquo;), con
+              domicilio en Av. Bosques del Estado de México 4-1 P1 LT, Los Héroes Tecámac, C.P. 55764, Tecámac,
+              Estado de México, es responsable del tratamiento de tus datos personales conforme a lo previsto por
+              la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP) y su
+              Reglamento.
             </p>
             <p className="mt-3">
-              El despacho atiende mediante asesorías previa cita, con presencia en el Estado de México. La
-              ubicación exacta de tu asesoría se te confirma al momento de agendar. Independientemente de dónde
-              se lleve a cabo, puedes
-              contactar al despacho en cualquier momento a través de los medios señalados en este aviso (correo y
-              teléfono), que son permanentes y no cambian de una cita a otra.
+              Las asesorías se llevan a cabo previa cita. Puedes contactar al despacho en cualquier momento a
+              través de los medios señalados en este aviso (domicilio, correo y teléfono), que son permanentes y
+              no cambian de una cita a otra.
             </p>
           </Seccion>
 
