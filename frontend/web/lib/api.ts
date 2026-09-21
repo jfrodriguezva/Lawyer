@@ -1,7 +1,7 @@
 import { getCookie } from "./cookies";
 
 export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5080";
 
 export type EstatusCaso = "Activo" | "Revision" | "Cerrado";
 export type EstatusCita = "Pendiente" | "Confirmada" | "Realizada" | "Cancelada" | "NoAsistio";

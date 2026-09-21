@@ -1,16 +1,14 @@
 # ECGAbogados - Backend
 
 Backend del sistema de gestión de casos para el despacho ECGAbogados, construido en .NET 10
-con arquitectura por capas (Domain / Application / Infrastructure / Api) más un API Gateway
-basado en Ocelot.
+con arquitectura por capas (Domain / Application / Infrastructure / Api).
 
 ## Proyectos
 
 - `src/ECAbogados.Domain` - Entidades del dominio.
 - `src/ECAbogados.Application` - Casos de uso (mediador propio, ver `Application/Mediation`), DTOs, validaciones (FluentValidation) y puertos.
 - `src/ECAbogados.Infrastructure` - Implementaciones con Dapper/SQL Server, JWT y hashing de contraseñas.
-- `src/ECAbogados.Api` - API REST (ASP.NET Core Web API), puerto `5080`.
-- `src/ECAbogados.Gateway` - API Gateway (Ocelot), puerto `5000`. El frontend debe consumir este puerto.
+- `src/ECAbogados.Api` - API REST (ASP.NET Core Web API), puerto `5080`. El frontend consume este puerto directamente.
 
 ## Requisitos
 
@@ -54,14 +52,8 @@ basado en Ocelot.
 
    Swagger UI queda disponible en `http://localhost:5080/swagger`.
 
-5. **Ejecutar el Gateway** (puerto `5000`, en otra terminal)
-
-   ```
-   dotnet run --project backend/src/ECAbogados.Gateway
-   ```
-
    El frontend (`frontend/web`, que corre en `http://localhost:3000`) debe apuntar a
-   `http://localhost:5000/api/...`.
+   `http://localhost:5080/api/...`.
 
 ## Login por defecto (una vez reemplazado el hash)
 

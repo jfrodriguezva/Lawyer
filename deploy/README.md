@@ -149,8 +149,9 @@ docker compose up -d --build
 
 ## Notas
 
-- El Gateway (Ocelot) no se despliega — el frontend habla directo con la API
-  a través de nginx (`/api/*`), y hoy el Gateway solo enruta la mitad de los
+- No hay Gateway: el frontend habla directo con la API a través de nginx
+  (`/api/*`). Existió un Gateway basado en Ocelot que nunca se llegó a
+  desplegar y se eliminó del proyecto porque solo enrutaba una parte de los
   endpoints reales.
 - Los documentos subidos viven en el volumen Docker `documentos`, no en la
   imagen — sobreviven a un `docker compose up --build`. Aun así, agrega el

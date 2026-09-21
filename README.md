@@ -6,7 +6,7 @@ Sistema de gestión para el despacho de la Lic. Erika Cruz García: derecho fami
 
 ```
 Lawyer/
-├── backend/    → API en .NET 10 (Clean Architecture) + Gateway (Ocelot) + esquema SQL Server
+├── backend/    → API en .NET 10 (Clean Architecture) + esquema SQL Server
 ├── frontend/   → Aplicación web en Next.js 16 (App Router) + React 19 + Tailwind 4
 └── docs/       → Documentación funcional y técnica del proyecto
 ```
@@ -32,11 +32,7 @@ sqlcmd -S localhost -i backend/database/schema.sql -f 65001
 cd backend/src/ECAbogados.Api
 dotnet run
 
-# 3. Gateway — opcional (http://localhost:5000)
-cd backend/src/ECAbogados.Gateway
-dotnet run
-
-# 4. Frontend (http://localhost:3000)
+# 3. Frontend (http://localhost:3000)
 cd frontend/web
 npm install
 npm run dev

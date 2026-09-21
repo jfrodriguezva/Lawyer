@@ -3,14 +3,14 @@
 ## 1. Arquitectura general
 
 ```
-Navegador → Frontend Next.js (:3000) → Gateway Ocelot (:5000) → API .NET (:5080) → SQL Server
+Navegador → Frontend Next.js (:3000) → API .NET (:5080) → SQL Server
 ```
 
-El frontend (`lib/api.ts`) apunta por defecto a `http://localhost:5000` (o a `NEXT_PUBLIC_API_URL` si está definida), es decir, normalmente pasa por el **Gateway**, que enruta cada `/api/*` hacia la API real en `localhost:5080`. La API también puede consumirse directamente sin pasar por el Gateway.
+El frontend (`lib/api.ts`) apunta por defecto a `http://localhost:5080` (o a `NEXT_PUBLIC_API_URL` si está definida), es decir, habla directo con la API. En producción, nginx expone un solo dominio y enruta `/api/*` hacia la API y todo lo demás hacia el frontend (ver `deploy/nginx.conf`); no hay Gateway intermedio (hubo uno basado en Ocelot que se retiró por no usarse en producción y no cubrir todos los endpoints).
 
 ## 2. Backend — `ECAbogados` (.NET 10, Clean Architecture)
 
-5 proyectos en `backend/src/`:
+4 proyectos en `backend/src/`:
 
 | Proyecto | Responsabilidad |
 |---|---|
@@ -18,7 +18,6 @@ El frontend (`lib/api.ts`) apunta por defecto a `http://localhost:5000` (o a `NE
 | `ECAbogados.Application` | Lógica de negocio con CQRS vía un **mediador propio** (ver 4.5): Commands/Queries/Handlers/Validators organizados por feature (`Casos`, `Citas`, `Documentos`, `Auth`, `Contacto`, `Clientes`), DTOs e interfaces de repositorio. |
 | `ECAbogados.Infrastructure` | Implementación de repositorios sobre SQL Server (`SqlConnectionFactory`, políticas de resiliencia con Polly), `BcryptPasswordHasher`, `JwtTokenGenerator`. |
 | `ECAbogados.Api` | API REST (ASP.NET Core Web API): Controllers, JWT Bearer auth, Swagger, CORS. Escucha en `http://localhost:5080`. |
-| `ECAbogados.Gateway` | API Gateway con **Ocelot**, enruta `/api/*` hacia la API. Escucha en `http://localhost:5000`. |
 
 Patrón por feature dentro de `Application`, por ejemplo `Casos/Commands/CrearCaso/`: `CrearCasoCommand` + `CrearCasoCommandHandler` + `CrearCasoCommandValidator`.
 
@@ -142,7 +141,7 @@ Flujo:
 
 ## 4.12 CORS configurable
 
-`Cors:AllowedOrigins` (array) en `appsettings.json` de la API y del Gateway, en vez de un origen hardcodeado — para producción basta con agregar el dominio real ahí, sin tocar código. Default: `["http://localhost:3000"]`.
+`Cors:AllowedOrigins` (array) en `appsettings.json` de la API, en vez de un origen hardcodeado — para producción basta con agregar el dominio real ahí, sin tocar código. Default: `["http://localhost:3000"]`.
 
 ## 4.13 Paginación y búsqueda
 
@@ -271,17 +270,13 @@ dotnet user-secrets set "Jwt:Secret" "<genera-un-valor-aleatorio-largo>"
 # 3. Levantar la API
 dotnet run                       # http://localhost:5080
 
-# 4. (Opcional) Levantar el Gateway
-cd backend/src/ECAbogados.Gateway
-dotnet run                       # http://localhost:5000
-
-# 5. Levantar el frontend
+# 4. Levantar el frontend
 cd frontend/web
 npm install
 npm run dev                      # http://localhost:3000
 ```
 
-CORS está configurado vía `Cors:AllowedOrigins` en `appsettings.json` de la API y el Gateway (default `http://localhost:3000` — ver 4.12).
+CORS está configurado vía `Cors:AllowedOrigins` en `appsettings.json` de la API (default `http://localhost:3000` — ver 4.12).
 
 ## 8. Limitaciones técnicas conocidas
 

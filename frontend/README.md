@@ -7,7 +7,7 @@ construido con Next.js (App Router) + TypeScript + Tailwind CSS.
 
 - Node 24+
 - npm 12+
-- El API Gateway (Ocelot) del backend corriendo en `http://localhost:5000`
+- El API del backend corriendo en `http://localhost:5080`
   (o la URL que configures en `.env.local`)
 
 ## Puesta en marcha
@@ -25,12 +25,11 @@ La app queda disponible en `http://localhost:3000`.
 
 Copia `.env.local.example` a `.env.local` y ajusta según tu entorno:
 
-- `NEXT_PUBLIC_API_URL` — URL base del API Gateway (Ocelot), no del backend
-  crudo. Por defecto `http://localhost:5000`.
+- `NEXT_PUBLIC_API_URL` — URL base de la API. Por defecto `http://localhost:5080`.
 
 ## Notas
 
-- La app espera que el gateway exponga los endpoints de `auth`, `casos`,
+- La app espera que la API exponga los endpoints de `auth`, `casos`,
   `citas` y `documentos` descritos en `lib/api.ts`.
 - La autenticación es simple: el token JWT se guarda en la cookie
   `ec_token` y se envía como `Authorization: Bearer <token>` en cada

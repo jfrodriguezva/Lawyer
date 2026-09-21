@@ -131,6 +131,20 @@ Resumen de lo implementado (fases A–F completas):
 
 Esta pasada aún **no se ha comiteado ni pusheado** — pendiente al momento de escribir esta nota.
 
+## Eliminación del Gateway (Ocelot) (2026-09-21)
+
+Durante un diagnóstico general del sistema se encontró que `backend/src/ECAbogados.Gateway` (API Gateway con Ocelot) nunca se usó en producción — `docker-compose.yml` no lo define y `docker ps` en el VPS solo muestra `nginx`, `frontend`, `api` y `sqlserver`— y que además su `ocelot.json` estaba desactualizado: solo enrutaba 10 de los 23 controllers reales de la API (faltaban `ConfiguracionController`, `ClienteAuthController`, `ClientesController`, `ReportesController`, `ProspectosController`, `CatalogoSATController`, `TramitesSATController`, `NotificacionesController`, `PerfilController`, `PlantillasController`, `RegistroTiempoController`, `SolicitudesCitaController`, `TareasController`). Como agravante, `frontend/web/.env.local.example` apuntaba por defecto al puerto del Gateway (5000) y no al de la API (5080), así que un entorno local nuevo configurado siguiendo la documentación al pie de la letra se quedaba sin más de la mitad de las funciones del sistema si alguna vez se llegaba a levantar el Gateway.
+
+Se confirmó con el usuario que el Gateway no se usa y se eliminó por completo:
+- Se quitó `ECAbogados.Gateway` de `backend/ECAbogados.sln` (`dotnet sln remove`) y se borró el directorio del proyecto.
+- Se actualizó `.claude/launch.json` (se quitó la config `gateway`) y `frontend/web/.env.local.example` (`NEXT_PUBLIC_API_URL` ahora apunta a `http://localhost:5080`, el puerto real de la API).
+- Se actualizaron las referencias al Gateway en `README.md`, `backend/README.md`, `frontend/README.md`, `docs/MANUAL_TECNICO.md` y `deploy/README.md` para reflejar que el frontend habla directo con la API (en dev y en producción, vía nginx).
+- Verificado: `dotnet build backend/ECAbogados.sln` compila limpio (0 errores) sin el proyecto Gateway.
+
+Aprovechando el mismo diagnóstico se confirmó que el resto del sistema está sano: backend compila limpio con 42/42 tests en verde, frontend compila limpio (37 rutas, 0 errores de TypeScript, 25 warnings de lint del mismo patrón `react-hooks/set-state-in-effect` repetido en ~10 archivos — no rompen nada hoy pero es deuda técnica pendiente), y los últimos 5 runs de CI en GitHub Actions están en verde.
+
+Este batch aún **no se ha comiteado ni pusheado** — pendiente al momento de escribir esta nota.
+
 ## Próximos pasos sugeridos (pendientes, no iniciados)
 
 Ninguno de estos ha sido solicitado explícitamente todavía:
