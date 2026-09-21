@@ -40,6 +40,58 @@ Documentación completa:
 - **Nota de identidad de commit:** la configuración global de git en esta máquina usa `jfrodriguezv@truper.com` como autor (config previa del usuario, no se modificó). Si el remoto de GitHub requiere que el autor coincida con la cuenta `jfrodriguezva`, puede ser necesario ajustar `user.email` local en este repo.
 - Si se retoma el trabajo y `git remote -v` no muestra `origin`, o `git log` está vacío, significa que el push no llegó a completarse (posible bloqueo de autenticación interactiva del Git Credential Manager) — revisar y reintentar `git push -u origin main`.
 
+## Flujo acordado para cambios y despliegue en producción
+
+El flujo operativo acordado con el usuario es deliberadamente dividido:
+
+1. **Codex trabaja desde la copia local**: implementa el ajuste solicitado, revisa el diff y ejecuta las pruebas/builds proporcionales al cambio.
+2. **Codex publica el código**: crea un commit acotado y lo sube a `main` en GitHub. En esta máquina el push por HTTPS puede fallar por credenciales vencidas; el acceso SSH a GitHub sí está autorizado para la cuenta `jfrodriguezva`, por lo que puede usarse directamente:
+   ```bash
+   git push git@github.com:jfrodriguezva/Lawyer.git main:main
+   ```
+3. **El usuario despliega manualmente en el VPS**: Codex no necesita acceso SSH al servidor. El usuario entra al VPS, ejecuta `git pull` y reconstruye/recrea únicamente los servicios necesarios con Docker Compose.
+4. **Codex entrega siempre**: hash y mensaje del commit, resultado de las verificaciones y comandos exactos que el usuario debe correr en producción.
+
+Comando general de despliegue en el VPS:
+
+```bash
+cd ~/Lawyer
+git pull origin main
+docker compose up -d --build
+```
+
+Si solo cambió el frontend:
+
+```bash
+cd ~/Lawyer
+git pull origin main
+docker compose build frontend
+docker compose up -d --force-recreate frontend
+docker compose restart nginx
+```
+
+Si solo cambió la API:
+
+```bash
+cd ~/Lawyer
+git pull origin main
+docker compose build api
+docker compose up -d --force-recreate api
+```
+
+Si cambió `docker-compose.yml` o configuración compartida:
+
+```bash
+cd ~/Lawyer
+git pull origin main
+docker compose config --quiet
+docker compose up -d --build --force-recreate
+```
+
+Si el cambio incluye `backend/database/schema.sql`, no asumir que basta con reconstruir contenedores: Codex debe indicar expresamente si hay que ejecutar SQL y proporcionar un procedimiento seguro que preserve los datos existentes.
+
+**Seguridad operativa:** nunca guardar en `RECOVERY.md`, Git o el chat contraseñas, tokens, el contenido de `.env` ni claves SSH privadas. La conexión SSH del VPS y el despliegue productivo permanecen bajo control manual del usuario.
+
 ## Decisiones y hallazgos importantes (para no repetir la investigación)
 
 - El secreto JWT **ya no está en el repo** (ver sección de hardening abajo) — se configura vía `dotnet user-secrets` en desarrollo o `Jwt__Secret` como variable de entorno en cualquier otro ambiente.
