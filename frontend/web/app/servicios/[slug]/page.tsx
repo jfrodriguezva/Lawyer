@@ -95,7 +95,7 @@ export default async function ServicioPage({
                 Agenda tu asesoría
               </a>
               <a
-                href="https://wa.me/522205801140"
+                href="https://wa.me/525574334694"
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center justify-center gap-2 border border-brand-line px-6 py-3.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-cream transition-colors hover:border-brand-gold hover:text-brand-gold"
@@ -172,18 +172,18 @@ export default async function ServicioPage({
 
                 <div className="mt-8 space-y-3 border border-brand-line bg-brand-ink2 p-6">
                   <a
-                    href="https://wa.me/522205801140"
+                    href="https://wa.me/525574334694"
                     target="_blank"
                     rel="noreferrer"
                     className="flex items-center gap-3 text-sm text-brand-cream transition-all duration-200 hover:translate-x-1 hover:text-brand-gold"
                   >
-                    <IconWhatsapp className="h-4 w-4 text-brand-gold" /> WhatsApp · 220 580 1140
+                    <IconWhatsapp className="h-4 w-4 text-brand-gold" /> WhatsApp · 55 7433 4694
                   </a>
                   <a
-                    href="tel:+525512592388"
+                    href="tel:+525574334694"
                     className="flex items-center gap-3 text-sm text-brand-cream transition-all duration-200 hover:translate-x-1 hover:text-brand-gold"
                   >
-                    <IconPhone className="h-4 w-4 text-brand-gold" /> Tel · 55 12 59 23 88
+                    <IconPhone className="h-4 w-4 text-brand-gold" /> Tel · 55 7433 4694
                   </a>
                   <a
                     href="mailto:contacto@ecgabogados.com"

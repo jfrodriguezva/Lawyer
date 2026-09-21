@@ -103,7 +103,7 @@ export default function AvisoPrivacidadPage() {
               <a href="mailto:contacto@ecgabogados.com" className="text-brand-gold hover:underline">
                 contacto@ecgabogados.com
               </a>{" "}
-              o al teléfono <a href="tel:+525512592388" className="text-brand-gold hover:underline">55 12 59 23 88</a>,
+              o al teléfono <a href="tel:+525574334694" className="text-brand-gold hover:underline">55 7433 4694</a>,
               indicando: (i) tu nombre completo, (ii) el derecho que deseas ejercer y (iii) una copia de tu
               identificación oficial. Te responderemos en un plazo máximo de 20 días hábiles.
             </p>

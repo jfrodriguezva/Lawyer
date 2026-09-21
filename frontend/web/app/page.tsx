@@ -9,7 +9,7 @@ const JSON_LD = {
   "@type": "Attorney",
   name: "ECGAbogados - Lic. Erika Cruz García",
   description: "Despacho jurídico especializado en derecho familiar, trámites fiscales y asesoría empresarial.",
-  telephone: "+525512592388",
+  telephone: "+525574334694",
   email: "contacto@ecgabogados.com",
   url: "https://ecgabogados.com",
   address: {
