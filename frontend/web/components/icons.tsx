@@ -329,3 +329,17 @@ export function IconBell({ className }: IconProps) {
     </svg>
   );
 }
+
+export function IconMegaphone({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M2.5 8.2v3.6c0 .6.5 1 1 1h1.4l.7 3.2c.1.5.5.8 1 .8h.6c.6 0 1.1-.6.9-1.2l-.7-2.8 8.6 2.9V5.3l-8.6 2.9H3.5c-.5 0-1 .4-1 1z"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+      <path d="M16 8.6a2.1 2.1 0 0 1 0 2.8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}

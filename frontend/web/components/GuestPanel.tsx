@@ -8,8 +8,39 @@ import Stepper from "@/components/Stepper";
 
 type Tab = "cita" | "mensaje";
 
-export default function GuestPanel({ servicioInteres }: { servicioInteres?: string } = {}) {
-  const [tab, setTab] = useState<Tab>("cita");
+// aceptaCitas=false: el servicio pertenece a un Módulo con RolResponsable
+// "Agente" (Comercializadora, o cualquier módulo nuevo asignado a ese rol),
+// que todavía no tiene flujo de agenda -- solo se ofrece el formulario de
+// contacto simple (mismo criterio ya usado hoy para Comercializadora).
+export default function GuestPanel({
+  servicioInteres,
+  aceptaCitas = true,
+}: {
+  servicioInteres?: string;
+  aceptaCitas?: boolean;
+} = {}) {
+  const [tab, setTab] = useState<Tab>(aceptaCitas ? "cita" : "mensaje");
+
+  useEffect(() => {
+    if (!aceptaCitas) setTab("mensaje");
+  }, [aceptaCitas]);
+
+  if (!aceptaCitas) {
+    return (
+      <div className="border border-brand-line bg-brand-ink2 p-8 shadow-[0_30px_80px_-40px_rgba(201,162,74,0.25)]">
+        <div className="flex items-center gap-2 border-b border-brand-line pb-4">
+          <IconChat className="h-4 w-4 text-brand-gold" />
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-gold">Enviar mensaje</p>
+        </div>
+        <p className="pt-3 text-xs text-brand-creamSoft">
+          Este módulo todavía no tiene agenda propia: escríbenos y te contactamos directamente.
+        </p>
+        <div className="pt-6">
+          <ContactForm servicioInteres={servicioInteres} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="border border-brand-line bg-brand-ink2 p-8 shadow-[0_30px_80px_-40px_rgba(201,162,74,0.25)]">

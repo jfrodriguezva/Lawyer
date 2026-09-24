@@ -20,7 +20,19 @@ import {
   IconScale,
   IconWhatsapp,
 } from "@/components/icons";
-import { getServicioPorSlug, SERVICIOS, type IconoBeneficio } from "@/lib/servicios";
+import {
+  getModulosPublicos,
+  getServiciosActivos,
+  getPromocionesActivasPublic,
+  promocionImagenUrl,
+  type IconoBeneficio,
+  type Servicio,
+} from "@/lib/api";
+import { getServicioPorSlug } from "@/lib/servicios";
+
+// El catálogo ahora vive en BD: sin esto, `next build` intenta prerenderizar
+// esta página en build time y falla si la API no está corriendo en ese momento.
+export const dynamic = "force-dynamic";
 
 const ICONOS_BENEFICIO: Record<IconoBeneficio, typeof IconScale> = {
   scale: IconScale,
@@ -36,17 +48,14 @@ const ICONOS_BENEFICIO: Record<IconoBeneficio, typeof IconScale> = {
   calculator: IconCalculator,
 };
 
-export function generateStaticParams() {
-  return SERVICIOS.map((s) => ({ slug: s.slug }));
-}
-
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const servicio = getServicioPorSlug(slug);
+  const servicios = await getServiciosActivos();
+  const servicio = getServicioPorSlug(servicios, slug);
   if (!servicio) return {};
 
   return {
@@ -57,17 +66,54 @@ export async function generateMetadata({
   };
 }
 
+function PromocionesDelServicio({ servicio, promociones }: { servicio: Servicio; promociones: Awaited<ReturnType<typeof getPromocionesActivasPublic>> }) {
+  const propias = promociones.filter((p) => p.servicioIds.includes(servicio.id));
+  if (propias.length === 0) return null;
+
+  return (
+    <section className="mt-10 space-y-5">
+      {propias.map((promo) => (
+        <Reveal key={promo.id}>
+          <div className="flex flex-col gap-6 border border-brand-gold/50 bg-brand-gold/5 p-6 sm:flex-row sm:items-center">
+            <div className="h-40 w-full shrink-0 overflow-hidden sm:h-32 sm:w-48">
+              {/* Imagen dinámica servida por la API (no /public): next/image exige
+                  configurar remotePatterns y, en local, choca con la protección
+                  SSRF de Next contra IPs privadas (localhost). Un <img> normal
+                  evita ambos problemas sin perder nada visualmente aquí. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={promocionImagenUrl(promo.id)} alt="Promoción" className="h-full w-full object-cover" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-gold">Promoción vigente</p>
+              <p className="mt-2 text-base leading-relaxed text-brand-cream">{promo.texto}</p>
+            </div>
+          </div>
+        </Reveal>
+      ))}
+    </section>
+  );
+}
+
 export default async function ServicioPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const servicio = getServicioPorSlug(slug);
+  const [servicios, promociones, modulos] = await Promise.all([
+    getServiciosActivos(),
+    getPromocionesActivasPublic(),
+    getModulosPublicos(),
+  ]);
+  const servicio = getServicioPorSlug(servicios, slug);
 
   if (!servicio) {
     notFound();
   }
+
+  // Agente = módulo sin agenda propia todavía (Comercializadora, o cualquier
+  // módulo nuevo asignado a ese rol): solo se ofrece el formulario de contacto.
+  const aceptaCitas = modulos.find((m) => m.id === servicio.moduloId)?.rolResponsable !== "Agente";
 
   return (
     <div className="relative min-h-screen overflow-x-clip bg-brand-ink">
@@ -105,6 +151,8 @@ export default async function ServicioPage({
               </a>
             </div>
           </Reveal>
+
+          <PromocionesDelServicio servicio={servicio} promociones={promociones} />
         </section>
 
         <section className="mt-24 lg:mt-32">
@@ -196,7 +244,7 @@ export default async function ServicioPage({
             </Reveal>
 
             <Reveal delay={150}>
-              <GuestPanel servicioInteres={servicio.tipo} />
+              <GuestPanel servicioInteres={servicio.tipo ?? undefined} aceptaCitas={aceptaCitas} />
             </Reveal>
           </div>
         </section>
@@ -204,7 +252,8 @@ export default async function ServicioPage({
         <section className="mt-24 border-t border-brand-line pt-10 lg:mt-32">
           <p className="text-xs uppercase tracking-[0.2em] text-brand-creamSoft">Otros servicios</p>
           <div className="mt-4 flex flex-wrap gap-3">
-            {SERVICIOS.filter((s) => s.slug !== servicio.slug)
+            {servicios
+              .filter((s) => s.slug !== servicio.slug)
               .slice(0, 6)
               .map((s) => (
                 <Link

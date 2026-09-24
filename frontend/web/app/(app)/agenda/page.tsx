@@ -10,9 +10,10 @@ import {
   cambiarEstatusCita,
   createCita,
   getCitas,
+  getServiciosActivos,
   type Cita,
+  type Servicio,
 } from "@/lib/api";
-import { SERVICIOS } from "@/lib/servicios";
 import { buildWhatsAppLink } from "@/lib/whatsapp";
 
 const locales = { es };
@@ -62,6 +63,7 @@ export default function AgendaPage() {
   const [view, setView] = useState<View>("week");
   const [busqueda, setBusqueda] = useState("");
   const [servicioFiltro, setServicioFiltro] = useState("");
+  const [servicios, setServicios] = useState<Servicio[]>([]);
 
   const [nombreCliente, setNombreCliente] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -77,6 +79,9 @@ export default function AgendaPage() {
   }
 
   useEffect(load, []);
+  useEffect(() => {
+    getServiciosActivos().then(setServicios).catch(() => undefined);
+  }, []);
 
   const citasFiltradas = useMemo(() => {
     const termino = busqueda.trim().toLowerCase();
@@ -287,11 +292,13 @@ export default function AgendaPage() {
                 className="border border-brand-line bg-brand-ink px-4 py-2.5 text-sm text-brand-cream outline-none focus:border-brand-gold"
               >
                 <option value="">Todos los servicios</option>
-                {SERVICIOS.map((s) => (
-                  <option key={s.slug} value={s.tipo}>
-                    {s.tipo}
-                  </option>
-                ))}
+                {servicios
+                  .filter((s) => s.tipo)
+                  .map((s) => (
+                    <option key={s.slug} value={s.tipo!}>
+                      {s.tipo}
+                    </option>
+                  ))}
               </select>
             </div>
           </div>

@@ -3,7 +3,8 @@ import Link from "next/link";
 import GuestHeader from "@/components/GuestHeader";
 import Reveal from "@/components/Reveal";
 import { IconArrowRight } from "@/components/icons";
-import { AREA_EMPRESARIAL, AREA_FAMILIAR, AREA_SAT, serviciosPorArea } from "@/lib/servicios";
+import { getModulosPublicos, getServiciosActivos, type Servicio } from "@/lib/api";
+import { agruparPorModulo } from "@/lib/servicios";
 
 export const metadata: Metadata = {
   title: "Servicios",
@@ -12,8 +13,12 @@ export const metadata: Metadata = {
   alternates: { canonical: "/servicios" },
 };
 
-function Grupo({ titulo, slugs }: { titulo: string; slugs: string[] }) {
-  const servicios = serviciosPorArea(slugs);
+// El catálogo ahora vive en BD: sin esto, `next build` intenta prerenderizar
+// esta página en build time y falla si la API no está corriendo en ese momento.
+export const dynamic = "force-dynamic";
+
+function Grupo({ titulo, servicios }: { titulo: string; servicios: Servicio[] }) {
+  if (servicios.length === 0) return null;
 
   return (
     <section className="mt-16 first:mt-0">
@@ -41,7 +46,12 @@ function Grupo({ titulo, slugs }: { titulo: string; slugs: string[] }) {
   );
 }
 
-export default function ServiciosIndexPage() {
+export default async function ServiciosIndexPage() {
+  const [modulos, servicios] = await Promise.all([getModulosPublicos(), getServiciosActivos()]);
+  // Solo módulos activos: los "Próximamente" (SAT/Comercializadora deshabilitados,
+  // o cualquier módulo nuevo aún sin publicar) se anuncian en el NavBar, no aquí.
+  const grupos = agruparPorModulo(modulos.filter((m) => m.activo), servicios);
+
   return (
     <div className="relative min-h-screen bg-brand-ink">
       <GuestHeader />
@@ -61,9 +71,9 @@ export default function ServiciosIndexPage() {
           </p>
         </Reveal>
 
-        <Grupo titulo="Derecho familiar" slugs={AREA_FAMILIAR} />
-        <Grupo titulo="Asesoría fiscal y empresarial" slugs={AREA_EMPRESARIAL} />
-        <Grupo titulo="Trámites SAT" slugs={AREA_SAT} />
+        {grupos.map((grupo) => (
+          <Grupo key={grupo.modulo.id} titulo={grupo.modulo.nombre} servicios={grupo.servicios} />
+        ))}
       </main>
     </div>
   );

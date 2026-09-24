@@ -147,6 +147,22 @@ git pull
 docker compose up -d --build
 ```
 
+**Si el cambio agrega tablas o columnas nuevas** (revisa si `backend/database/schema.sql`
+aparece en el `git pull`), vuelve a aplicarlo contra la base de datos ya
+existente — es idempotente (`IF NOT EXISTS`/`IF OBJECT_ID ... IS NULL`), no
+borra ni duplica nada de lo que ya había:
+
+```bash
+docker compose cp backend/database/schema.sql sqlserver:/tmp/schema.sql
+docker compose exec sqlserver /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U sa -P "$(grep SQL_SA_PASSWORD .env | cut -d= -f2)" \
+  -C -f 65001 -i /tmp/schema.sql
+```
+
+Hazlo **antes** de `docker compose up -d --build` si el cambio de código nuevo
+ya asume que las tablas existen (por ejemplo, el catálogo de Módulos/Servicios/
+Promociones — ver `docs/MANUAL_TECNICO.md`, sección de Catálogo).
+
 ## Notas
 
 - No hay Gateway: el frontend habla directo con la API a través de nginx

@@ -16,9 +16,10 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 COPY --from=build /app .
 
-# Los documentos subidos (App_Data/documentos) viven en un volumen aparte,
-# montado por docker-compose, para que sobrevivan a reconstrucciones de la imagen.
-RUN mkdir -p /app/App_Data/documentos
+# Los documentos subidos (App_Data/documentos) y las imágenes de promociones
+# (App_Data/promociones) viven en volúmenes aparte, montados por docker-compose,
+# para que sobrevivan a reconstrucciones de la imagen.
+RUN mkdir -p /app/App_Data/documentos /app/App_Data/promociones
 
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV ASPNETCORE_URLS=http://+:5080

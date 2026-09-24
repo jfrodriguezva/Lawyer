@@ -26,7 +26,8 @@ import {
   IconUser,
   IconWhatsapp,
 } from "@/components/icons";
-import { getServicioPorSlug, type IconoBeneficio } from "@/lib/servicios";
+import { getModulosPublicos, getServiciosActivos, type IconoBeneficio, type Modulo, type Servicio } from "@/lib/api";
+import { getServicioPorSlug } from "@/lib/servicios";
 
 const ICONOS_BENEFICIO: Record<IconoBeneficio, typeof IconScale> = {
   scale: IconScale,
@@ -74,20 +75,28 @@ function LandingExperienceInner() {
   const tabParam = searchParams.get("tab");
   const servicioParam = searchParams.get("servicio");
 
+  const [servicios, setServicios] = useState<Servicio[]>([]);
+  const [modulos, setModulos] = useState<Modulo[]>([]);
   const [panel, setPanel] = useState<Panel>(
     PANELES_VALIDOS.includes(tabParam as Panel) ? (tabParam as Panel) : "servicios"
   );
-  const [servicioSlug, setServicioSlug] = useState(
-    servicioParam && getServicioPorSlug(servicioParam) ? servicioParam : "divorcio-incausado"
-  );
+  const [servicioSlug, setServicioSlug] = useState(servicioParam ?? "divorcio-incausado");
   const primerRender = useRef(true);
+
+  useEffect(() => {
+    getServiciosActivos().then(setServicios).catch(() => undefined);
+    getModulosPublicos().then(setModulos).catch(() => undefined);
+  }, []);
 
   // El menú del encabezado es la única navegación: Servicios (con ?servicio=) y
   // Quiénes somos/Misión (con ?tab=) llegan por la URL y se reflejan aquí. "Inicio"
   // limpia ambos parámetros, así que ese caso también restablece el servicio por
   // defecto — si no, "Inicio" subía al tope pero dejaba el último servicio elegido.
+  // Depende también de `servicios`: hasta que termine de cargar no se puede saber
+  // si servicioParam corresponde a un servicio real.
   useEffect(() => {
-    if (servicioParam && getServicioPorSlug(servicioParam)) {
+    if (servicios.length === 0) return;
+    if (servicioParam && getServicioPorSlug(servicios, servicioParam)) {
       setServicioSlug(servicioParam);
       setPanel("servicios");
     } else if (PANELES_VALIDOS.includes(tabParam as Panel)) {
@@ -96,7 +105,7 @@ function LandingExperienceInner() {
       setPanel("servicios");
       setServicioSlug("divorcio-incausado");
     }
-  }, [tabParam, servicioParam]);
+  }, [tabParam, servicioParam, servicios]);
 
   // Al cambiar de panel llevamos la vista a su inicio: si el usuario estaba
   // desplazado hacia la agenda y elige otro panel arriba, debe verlo de inmediato.
@@ -108,7 +117,10 @@ function LandingExperienceInner() {
     document.getElementById("panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [panel, servicioSlug]);
 
-  const servicio = getServicioPorSlug(servicioSlug) ?? getServicioPorSlug("divorcio-incausado")!;
+  const servicio = getServicioPorSlug(servicios, servicioSlug) ?? getServicioPorSlug(servicios, "divorcio-incausado");
+  // Agente = módulo sin agenda propia todavía (Comercializadora, o cualquier
+  // módulo nuevo asignado a ese rol): solo se ofrece el formulario de contacto.
+  const aceptaCitas = servicio ? modulos.find((m) => m.id === servicio.moduloId)?.rolResponsable !== "Agente" : true;
 
   return (
     <div>
@@ -119,12 +131,12 @@ function LandingExperienceInner() {
         {panel === "comercializadora" && <PanelComercializadora />}
       </div>
 
-      <SeccionAgenda servicio={servicio} />
+      <SeccionAgenda servicio={servicio} aceptaCitas={aceptaCitas} />
     </div>
   );
 }
 
-function PanelServicios({ servicio }: { servicio: ReturnType<typeof getServicioPorSlug> }) {
+function PanelServicios({ servicio }: { servicio: Servicio | undefined }) {
   if (!servicio) return null;
 
   return (
@@ -419,7 +431,7 @@ function PanelComercializadora() {
 
 // Sección de contacto/agenda: siempre presente, a todo lo ancho, al final de la
 // página — no cambia con el panel activo, es lo único que nunca se oculta.
-function SeccionAgenda({ servicio }: { servicio: ReturnType<typeof getServicioPorSlug> }) {
+function SeccionAgenda({ servicio, aceptaCitas }: { servicio: Servicio | undefined; aceptaCitas: boolean }) {
   return (
     <section id="agenda" className="mt-20 scroll-mt-24 border-t border-brand-line pt-14 lg:mt-28">
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
@@ -465,7 +477,7 @@ function SeccionAgenda({ servicio }: { servicio: ReturnType<typeof getServicioPo
         </Reveal>
 
         <Reveal delay={150}>
-          <GuestPanel servicioInteres={servicio?.tipo} />
+          <GuestPanel servicioInteres={servicio?.tipo ?? undefined} aceptaCitas={aceptaCitas} />
         </Reveal>
       </div>
     </section>

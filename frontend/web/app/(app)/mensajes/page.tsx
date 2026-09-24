@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getMensajesContactoPaginado, marcarMensajeAtendido, type MensajeContacto } from "@/lib/api";
-import { SERVICIOS } from "@/lib/servicios";
+import { getMensajesContactoPaginado, getServiciosActivos, marcarMensajeAtendido, type MensajeContacto, type Servicio } from "@/lib/api";
 import { buildWhatsAppLink } from "@/lib/whatsapp";
 
 const PAGE_SIZE = 20;
@@ -14,6 +13,11 @@ export default function MensajesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [servicioFiltro, setServicioFiltro] = useState("");
+  const [servicios, setServicios] = useState<Servicio[]>([]);
+
+  useEffect(() => {
+    getServiciosActivos().then(setServicios).catch(() => undefined);
+  }, []);
 
   function load() {
     setLoading(true);
@@ -63,11 +67,13 @@ export default function MensajesPage() {
           className="border border-brand-line bg-brand-ink px-4 py-2.5 text-sm text-brand-cream outline-none focus:border-brand-gold"
         >
           <option value="">Todos los servicios</option>
-          {SERVICIOS.map((s) => (
-            <option key={s.slug} value={s.tipo}>
-              {s.tipo}
-            </option>
-          ))}
+          {servicios
+            .filter((s) => s.tipo)
+            .map((s) => (
+              <option key={s.slug} value={s.tipo!}>
+                {s.tipo}
+              </option>
+            ))}
         </select>
       </div>
 

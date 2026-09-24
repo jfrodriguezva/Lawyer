@@ -67,6 +67,26 @@ Base: `/api`
 | | `PATCH /clientes/{id}/estatus` | JWT (**Administrador**) | Activar/desactivar una cuenta de cliente |
 | Casos | `POST /casos/{id}/vincular-cliente` | JWT (**Administrador**) | Vincula el expediente a una cuenta de Cliente existente |
 
+| Módulos | `GET /modulos/activos` | Anónimo | Todos los módulos (activos e inactivos: el sitio público necesita conocer los inactivos para mostrarlos como "Próximamente") |
+| | `GET /modulos` | JWT (**Administrador**) | Listar (idéntico al anterior, pensado para el panel) |
+| | `POST /modulos` | JWT (**Administrador**) | Crear |
+| | `PUT /modulos/{id}` | JWT (**Administrador**) | Actualizar |
+| | `PATCH /modulos/{id}/activo` | JWT (**Administrador**) | Activar/desactivar |
+| | `DELETE /modulos/{id}` | JWT (**Administrador**) | Eliminar (en cascada: borra sus Servicios y los vínculos de esos servicios en Promociones) |
+| Servicios | `GET /servicios/activos` | Anónimo | Solo servicios activos de módulos activos (consumido por `/servicios`, `/servicios/[slug]`, el NavBar, el sitemap y los filtros de Agenda/Mensajes) |
+| | `GET /servicios?moduloId=` | JWT (**Administrador**) | Listar, con filtro opcional por módulo |
+| | `POST /servicios` | JWT (**Administrador**) | Crear |
+| | `PUT /servicios/{id}` | JWT (**Administrador**) | Actualizar |
+| | `PATCH /servicios/{id}/activo` | JWT (**Administrador**) | Mostrar/ocultar |
+| | `DELETE /servicios/{id}` | JWT (**Administrador**) | Eliminar (limpia también sus vínculos en Promociones) |
+| Promociones | `GET /promociones/activas` | Anónimo | Promociones activas (Id, Texto, ServicioIds — nunca expone la ruta del archivo) |
+| | `GET /promociones/{id}/imagen` | Anónimo | Sirve la imagen (contenido de mercadeo, no un documento sensible) |
+| | `GET /promociones` | JWT (**Administrador**) | Listar todas |
+| | `POST /promociones` (multipart, máx. 5 MB) | JWT (**Administrador**) | Crear (imagen + texto + `Servicios[]`) |
+| | `PUT /promociones/{id}` (multipart) | JWT (**Administrador**) | Actualizar (imagen opcional: si no se manda archivo nuevo, conserva el actual) |
+| | `PATCH /promociones/{id}/activo` | JWT (**Administrador**) | Activar/desactivar |
+| | `DELETE /promociones/{id}` | JWT (**Administrador**) | Eliminar (borra también el archivo físico) |
+
 Swagger UI disponible en `http://localhost:5080/swagger`.
 
 ## 4.1 Roles y autorización
@@ -175,11 +195,33 @@ Distinto del portal anónimo por enlace mágico (4.4), que **sigue existiendo si
 
 El aviso de un lead nuevo sigue siendo 100% gratuito: el correo inmediato a `IStaffNotifier` ya existía (ver 4.2), y se sumó un botón "Abrir WhatsApp" en cada cita/mensaje del panel que arma un enlace `wa.me` (`lib/whatsapp.ts`, código de país `52` + 10 dígitos) con texto prellenado — abre una conversación de WhatsApp normal que la abogada contesta desde su propio teléfono, sin ninguna API de pago de WhatsApp Business.
 
-## 4.18 Rebrand y expansión de servicios (ECGAbogados)
+## 4.18 Rebrand y expansión de servicios (ECGAbogados) — catálogo original, ver 4.19
 
 El despacho pasó de "EC Abogados" a **ECGAbogados** (rebrand de texto/marca visible únicamente — namespaces `.NET`, nombre de la base de datos, `Jwt:Issuer`/`Audience` y el repo se mantuvieron igual a propósito, es un cambio cosmético/de marketing, no técnico). El logo es un SVG dibujado a mano en `components/Monogram.tsx` (igual que antes, sin assets rasterizados) con un motivo de balanza de la justicia agregado.
 
-`frontend/web/lib/servicios.ts` creció de 4 a 11 entradas (`ServicioContenido[]`), cada una generando su propia página estática en `/servicios/{slug}` vía `generateStaticParams`. El campo `tipo` de cada entrada debe coincidir exactamente con: (a) el arreglo `TIPOS` en `app/(app)/casos/page.tsx` (dropdown al crear un expediente) y (b) las llaves del catálogo `RequisitosPorTipo.cs` (checklist automático) — los tres se mantienen sincronizados a mano; agregar un servicio nuevo requiere tocar los tres lugares para que genere un checklist real al crear un caso de ese tipo. `/servicios` es un índice nuevo que agrupa los 11 en "Derecho familiar" y "Asesoría fiscal y empresarial". La página de inicio agrega una franja de navegación rápida (`components/QuickNav.tsx`) para saltar entre secciones sin depender solo de scroll.
+> **Nota:** lo descrito a continuación sobre `lib/servicios.ts` como arreglo hardcodeado con 11 entradas estáticas **ya no aplica** — el catálogo se migró a BD (ver 4.19). Se deja este párrafo por su valor histórico (por qué el campo `tipo` importa) y porque el criterio de sincronización con `RequisitosPorTipo.cs` sigue vigente, solo que ahora se captura desde el panel en vez de en código.
+
+El campo `tipo` de cada servicio debe coincidir exactamente con: (a) el arreglo `TIPOS` en `app/(app)/casos/page.tsx` (dropdown al crear un expediente) y (b) las llaves del catálogo `RequisitosPorTipo.cs` (checklist automático) — no hay integridad referencial que lo obligue, así que si no coinciden, simplemente no se dispara el checklist automático al abrir un caso de ese tipo (no rompe nada, solo no genera la lista de requisitos).
+
+## 4.19 Catálogo de Módulos, Servicios y Promociones (administrable desde el panel)
+
+Reemplaza el arreglo hardcodeado de 4.18: el catálogo del sitio público vive en BD y es 100% editable por el rol **Administrador** desde `/catalogo-servicios` (Módulos y Servicios, una sola vista) y `/promociones`.
+
+**Jerarquía (dos niveles):**
+- **Módulo** (`dbo.Modulos`) = "categoría padre" del sitio (Abogado, SAT, Comercializadora, y las que se agreguen). Campos: `Nombre`, `Slug`, `RolResponsable` (`Abogado`/`Consultor`/`Agente`), `Activo`, `Orden`.
+- **Servicio** (`dbo.Servicios`) = la ficha publicada en `/servicios/{slug}` (antes una entrada de `servicios.ts`). Pertenece a un Módulo. `Beneficios` y `Proceso` se guardan como **JSON** (`NVARCHAR(MAX)`, claves camelCase) en vez de tablas hijas — el repositorio (`ServicioRepository.cs`) serializa/deserializa con `JsonSerializerOptions(JsonSerializerDefaults.Web)` (case-insensitive; sin esta opción el JSON camelCase no calza con los records PascalCase y todo deserializa en `null` — bug real que se dio y se corrigió). `Tipo` es el mismo campo de 4.18 (debe coincidir a mano con `RequisitosPorTipo.cs`, sin FK).
+
+**No se tocó el motor de citas.** `dbo.SolicitudesCita.Modulo` sigue siendo el `CHECK IN ('Abogado','SAT')`/enum `ModuloSolicitud` de siempre. `RolResponsable` del Módulo decide qué le ofrece el sitio al visitante:
+- `Abogado`/`Consultor` → el servicio usa el flujo de citas de siempre (`GuestPanel` con pestañas "Agendar cita"/"Enviar mensaje").
+- `Agente` (Comercializadora, o cualquier módulo nuevo asignado a ese rol) → **no hay agenda todavía**: `GuestPanel` recibe un prop `aceptaCitas={false}` (calculado en `app/servicios/[slug]/page.tsx` y `LandingExperience.tsx` comparando `RolResponsable` del módulo del servicio) y solo muestra el formulario de contacto simple (`MensajesContacto`).
+
+**Promociones** (`dbo.Promociones` + `dbo.PromocionServicios`, N:M): imagen + texto + `Activo`, asignable a uno o varios Servicios (FK real a `dbo.Servicios`, a diferencia de Módulos/Servicios que no tienen FK hacia el tipo de expediente). La imagen se guarda en disco bajo `App_Data/promociones/{guid}_{nombre}` (mismo patrón que Documentos — ver 4.15) y se sirve **siempre** vía `GET /api/promociones/{id}/imagen` (público, sin auth: es contenido de mercadeo, no un documento sensible), nunca como archivo estático — el frontend consume esa imagen con un `<img>` normal, **no** `next/image`: usar `next/image` contra un host `localhost` dispara la protección SSRF de Next.js 16 contra IPs privadas y la imagen no carga en desarrollo (bug real encontrado y corregido; en producción tampoco habría hecho falta configurar `remotePatterns`).
+
+**Frontend:** `lib/servicios.ts` dejó de tener el arreglo `SERVICIOS` y ahora son solo dos helpers puros (`getServicioPorSlug`, `agruparPorModulo`) que operan sobre datos ya obtenidos con `getModulosPublicos()`/`getServiciosActivos()`/`getPromocionesActivasPublic()` (`lib/api.ts`) — estas tres son las únicas funciones que **no** pasan por el wrapper `request()` (que depende de `getCookie`/`document.cookie`, inválido en Server Components); hacen `fetch` directo para poder llamarse tanto desde componentes de servidor (`/servicios`, `/servicios/[slug]`) como de cliente (`GuestHeader`, `LandingExperience`). `/servicios` y `/servicios/[slug]` dejaron de ser estáticos (`generateStaticParams`) y ahora son `export const dynamic = "force-dynamic"`: sin esto, `next build` intenta prerenderizarlos contra la API en build time y falla si la API no está corriendo en ese momento (por ejemplo, al construir la imagen Docker del frontend antes de levantar el backend).
+
+**NavBar:** el desplegable "Servicios" (`GuestHeader.tsx`) agrupa dinámicamente por Módulo (ya no por las "áreas" fijas Derecho familiar/Fiscal y empresarial/SAT de 4.18); un módulo inactivo, o activo pero sin servicios todavía, se muestra atenuado como "Próximamente". Si hay alguna promoción activa, aparece un punto rojo pulsante sobre "Servicios" con un tooltip al pasar el mouse listando los servicios en promoción.
+
+**Verificado en vivo:** creación de un Módulo nuevo, un Servicio con beneficios/proceso, una Promoción con imagen real asignada a un servicio (banner visible en `/servicios/{slug}` y punto rojo + tooltip en el NavBar), y borrado en cascada de un Módulo con servicios (limpia también sus vínculos en `PromocionServicios`).
 
 ## 4.8 Historial de cambios (auditoría)
 
@@ -205,11 +247,12 @@ Handlers que registran auditoría sobre el caso: crear/actualizar caso, cambiar 
 
 SQL Server. Esquema completo en `backend/database/schema.sql`.
 
-**Tablas:** `Usuarios`, `Clientes`, `Casos`, `Citas`, `Documentos`, `MensajesContacto`, `ChecklistItems`, `Plazos`, `Pagos`.
+**Tablas (no exhaustivo, ver `schema.sql` para el listado completo):** `Usuarios`, `Clientes`, `Casos`, `Citas`, `Documentos`, `MensajesContacto`, `ChecklistItems`, `Plazos`, `Pagos`, `Prospectos`, `SolicitudesCita`, `Configuracion`, `CatalogoTramitesSAT`, `TramitesSAT`, y el catálogo administrable (ver 4.19): `Modulos`, `Servicios`, `Promociones`, `PromocionServicios`.
 
-El script es idempotente (usa `IF NOT EXISTS`) e incluye datos semilla:
+El script es idempotente (usa `IF NOT EXISTS`/`IF OBJECT_ID ... IS NULL`, seguro de volver a correr sobre una BD que ya tiene datos) e incluye datos semilla:
 - Usuario administrador: `erika@ecgabogados.com` / contraseña `Cambiar123!` (hash bcrypt ya incluido).
 - 2 casos y 2 citas de ejemplo para poblar el dashboard.
+- 3 Módulos (Abogado, SAT, Comercializadora) y 11 Servicios, migrados desde lo que antes era el arreglo estático `servicios.ts` (ver 4.19), para que el sitio no pierda contenido al pasar a ser administrable.
 
 Cadena de conexión por defecto (`ConnectionStrings:Default`):
 ```
@@ -231,9 +274,9 @@ frontend/web/app/
 ├── portal/[token]/page.tsx → portal del cliente por enlace mágico (sin login)
 ├── cliente/login/page.tsx  → login del Cliente (cuenta real, portal autenticado)
 ├── cliente/portal/         → layout.tsx (guard) + page.tsx (solo lectura de "mis casos")
-├── servicios/page.tsx      → índice de los 11 servicios, agrupados
-├── servicios/[slug]/page.tsx → landing de cada servicio (divorcio, pensión, SAT, etc.)
-├── sitemap.ts / robots.ts  → SEO nativo de Next.js
+├── servicios/page.tsx      → índice de servicios activos, agrupados por Módulo (dinámico, ver 4.19)
+├── servicios/[slug]/page.tsx → landing de cada servicio + banner de promoción si aplica (dinámico)
+├── sitemap.ts / robots.ts  → SEO nativo de Next.js (sitemap ahora dinámico, itera servicios de la API)
 └── (app)/                  → grupo de rutas protegidas (staff)
     ├── layout.tsx           → guard: redirige a /login si no hay cookie ec_token
     ├── dashboard/page.tsx
@@ -242,6 +285,8 @@ frontend/web/app/
     ├── agenda/page.tsx
     ├── mensajes/page.tsx
     ├── clientes/page.tsx    → solo Administrador (alta de cuentas de Cliente)
+    ├── catalogo-servicios/page.tsx → solo Administrador (CRUD de Módulos y Servicios, ver 4.19)
+    ├── promociones/page.tsx → solo Administrador (CRUD de Promociones, ver 4.19)
     └── usuarios/page.tsx    → solo Administrador
 ```
 
@@ -278,8 +323,10 @@ npm run dev                      # http://localhost:3000
 
 CORS está configurado vía `Cors:AllowedOrigins` en `appsettings.json` de la API (default `http://localhost:3000` — ver 4.12).
 
+**`npm run dev` usa `next dev --webpack`, no Turbopack.** Next.js 16 por defecto arranca `next dev` con Turbopack, pero en este proyecto eso rompe la carga de las fuentes de Google (`next/font/google` en `app/layout.tsx`): cualquier página responde 500 con `Module not found: Can't resolve '@vercel/turbopack-next/internal/font/google/font'`, siempre, no solo en páginas nuevas — se confirmó reproduciéndolo incluso en la home sin ningún cambio de código. `npm run build`/`npm run start` (producción) **no** tienen este problema, solo el servidor de desarrollo con Turbopack. Mientras no se resuelva ese bug/versión de Next-Turbopack, `package.json` fuerza el motor clásico de webpack para `dev` (`"dev": "next dev --webpack"`), que funciona igual de bien salvo por ser algo más lento para recompilar.
+
 ## 8. Limitaciones técnicas conocidas
 
-- Almacenamiento de documentos en disco local del servidor de la API — no apto para múltiples instancias sin un volumen persistente compartido (relevante al planear el despliegue a Azure: considerar Blob Storage).
+- Almacenamiento de documentos **y de imágenes de promociones** en disco local del servidor de la API (`App_Data/documentos` y `App_Data/promociones`, cada uno con su propio volumen Docker — ver `docker-compose.yml`) — no apto para múltiples instancias sin un volumen persistente compartido (relevante al planear el despliegue a Azure: considerar Blob Storage).
 - Cobertura de pruebas automatizadas es representativa, no exhaustiva (ver 4.7).
 - El historial de auditoría cubre el ciclo de vida del caso (creación, estatus, checklist, citas ligadas, documentos, pagos, portal) — no absolutamente todas las mutaciones del sistema (ej. marcar un mensaje de contacto como atendido no se audita).

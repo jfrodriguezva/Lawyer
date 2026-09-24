@@ -19,6 +19,7 @@ import {
   IconLock,
   IconCalculator,
   IconDocumentLegal,
+  IconMegaphone,
 } from "./icons";
 import { deleteCookie, getCookie } from "@/lib/cookies";
 import { getFlags } from "@/lib/api";
@@ -45,6 +46,8 @@ const NAV_SAT_CONSULTOR = [
 
 // Solo Administrador: configuración global, no expedientes de casos.
 const NAV_ADMIN = [
+  { href: "/catalogo-servicios", label: "Servicios", icon: IconBriefcase },
+  { href: "/promociones", label: "Promociones", icon: IconMegaphone },
   { href: "/usuarios", label: "Usuarios", icon: IconUser },
   { href: "/tramites-sat", label: "Trámites SAT", icon: IconCalculator },
   { href: "/catalogo-sat", label: "Catálogo SAT", icon: IconDocumentLegal },

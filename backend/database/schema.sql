@@ -502,6 +502,142 @@ END
 GO
 
 -- =========================================================
+-- Módulo = "categoría padre" del catálogo público de servicios (Abogado, SAT,
+-- Comercializadora, y las que el Administrador agregue). RolResponsable indica
+-- qué rol de Usuario atiende sus solicitudes: Abogado/Consultor siguen usando
+-- el flujo de citas existente (SolicitudesCita.Modulo, sin cambios); Agente
+-- todavía no tiene agenda formal, así que sus servicios solo ofrecen el
+-- formulario de contacto simple (MensajesContacto). Activo=0 -> el sitio
+-- muestra ese módulo como "Próximamente".
+-- =========================================================
+IF OBJECT_ID(N'dbo.Modulos', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Modulos (
+        Id INT IDENTITY PRIMARY KEY,
+        Nombre NVARCHAR(100) NOT NULL,
+        Slug NVARCHAR(100) NOT NULL,
+        RolResponsable NVARCHAR(50) NOT NULL,
+        Activo BIT NOT NULL DEFAULT 1,
+        Orden INT NOT NULL DEFAULT 0,
+        FechaCreacion DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT CK_Modulos_RolResponsable CHECK (RolResponsable IN ('Abogado', 'Consultor', 'Agente'))
+    );
+
+    CREATE UNIQUE INDEX UX_Modulos_Slug ON dbo.Modulos(Slug);
+END
+GO
+
+-- =========================================================
+-- Servicio publicado en el sitio (antes hardcodeado en el frontend, en
+-- lib/servicios.ts). Pertenece a un Modulo. Beneficios/Proceso se guardan
+-- como JSON ([{ "icono"/"numero", "titulo", "texto" }, ...]) -- la app los
+-- serializa/deserializa, evitando tablas hijas solo para listas cortas.
+-- Tipo enlaza opcionalmente con el tipo de expediente en Casos (checklist
+-- automático, ver Application/Casos/RequisitosPorTipo.cs); no es una FK, si
+-- no coincide simplemente no dispara el checklist.
+-- =========================================================
+IF OBJECT_ID(N'dbo.Servicios', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Servicios (
+        Id INT IDENTITY PRIMARY KEY,
+        ModuloId INT NOT NULL REFERENCES dbo.Modulos(Id),
+        Slug NVARCHAR(150) NOT NULL,
+        Titulo NVARCHAR(200) NOT NULL,
+        Frase NVARCHAR(300) NULL,
+        Descripcion NVARCHAR(1000) NOT NULL,
+        Tipo NVARCHAR(150) NULL,
+        Beneficios NVARCHAR(MAX) NOT NULL,
+        Proceso NVARCHAR(MAX) NOT NULL,
+        Activo BIT NOT NULL DEFAULT 1,
+        Orden INT NOT NULL DEFAULT 0,
+        FechaCreacion DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+    );
+
+    CREATE UNIQUE INDEX UX_Servicios_Slug ON dbo.Servicios(Slug);
+    CREATE INDEX IX_Servicios_ModuloId ON dbo.Servicios(ModuloId);
+END
+GO
+
+-- =========================================================
+-- Promociones: imagen + texto, asignable a uno o varios Servicios. Activo
+-- controla si se muestra en el sitio público (banner del servicio + aviso en
+-- el NavBar). RutaAlmacenamiento apunta a App_Data/promociones -- se sirve
+-- solo a través de PromocionesController (igual que Documentos), nunca como
+-- archivo estático.
+-- =========================================================
+IF OBJECT_ID(N'dbo.Promociones', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Promociones (
+        Id INT IDENTITY PRIMARY KEY,
+        Texto NVARCHAR(1000) NOT NULL,
+        NombreArchivo NVARCHAR(300) NOT NULL,
+        TipoContenido NVARCHAR(150) NOT NULL,
+        RutaAlmacenamiento NVARCHAR(500) NOT NULL,
+        Activo BIT NOT NULL DEFAULT 1,
+        FechaCreacion DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+    );
+END
+GO
+
+IF OBJECT_ID(N'dbo.PromocionServicios', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.PromocionServicios (
+        Id INT IDENTITY PRIMARY KEY,
+        PromocionId INT NOT NULL REFERENCES dbo.Promociones(Id),
+        ServicioId INT NOT NULL REFERENCES dbo.Servicios(Id)
+    );
+
+    CREATE INDEX IX_PromocionServicios_PromocionId ON dbo.PromocionServicios(PromocionId);
+    CREATE UNIQUE INDEX UX_PromocionServicios_PromocionId_ServicioId ON dbo.PromocionServicios(PromocionId, ServicioId);
+END
+GO
+
+-- =========================================================
+-- Seed: Módulos y Servicios -- migra el catálogo que antes vivía hardcodeado
+-- en frontend/web/lib/servicios.ts, para que el sitio no pierda contenido al
+-- pasar a ser administrable desde el panel. Activo de SAT/Comercializadora
+-- toma el valor que ya tenían los flags de dbo.Configuracion.
+-- =========================================================
+IF NOT EXISTS (SELECT 1 FROM dbo.Modulos)
+BEGIN
+    INSERT INTO dbo.Modulos (Nombre, Slug, RolResponsable, Activo, Orden)
+    VALUES
+        ('Abogado', 'abogado', 'Abogado', 1, 10),
+        ('SAT', 'sat', 'Consultor',
+            (SELECT CASE WHEN Valor = 'true' THEN 1 ELSE 0 END FROM dbo.Configuracion WHERE Clave = 'sat_habilitado'), 20),
+        ('Comercializadora', 'comercializadora', 'Agente',
+            (SELECT CASE WHEN Valor = 'true' THEN 1 ELSE 0 END FROM dbo.Configuracion WHERE Clave = 'comercializadora_habilitada'), 30);
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Servicios)
+BEGIN
+    INSERT INTO dbo.Servicios (Orden, ModuloId, Slug, Titulo, Frase, Descripcion, Tipo, Beneficios, Proceso)
+    SELECT 10, m.Id, N'divorcio-incausado', N'Divorcio incausado', N'Tu libertad también es un derecho', N'¿Quieres divorciarte y tu pareja no está de acuerdo? En el divorcio incausado no necesitas su consentimiento, ni expresar una causa para solicitarlo. Te acompañamos en cada paso, de principio a fin.', N'Divorcio incausado', N'[{"icono":"gavel","titulo":"Sin consentimiento del otro","texto":"No necesitas que tu pareja esté de acuerdo ni firme nada para iniciar el proceso."},{"icono":"scale","titulo":"Asesoría personalizada","texto":"Analizamos tu situación particular antes de trazar la estrategia legal."},{"icono":"handHeart","titulo":"Acompañamiento total","texto":"Damos seguimiento a tu expediente desde el primer trámite hasta la sentencia."},{"icono":"family","titulo":"Protección familiar","texto":"Cuidamos tus derechos patrimoniales y los de tus hijas e hijos en todo momento."}]', N'[{"numero":"01","titulo":"Asesoría inicial","texto":"Revisamos tu situación, resolvemos tus dudas y evaluamos la viabilidad de tu caso sin compromiso."},{"numero":"02","titulo":"Presentación de la demanda","texto":"Preparamos el expediente y lo presentamos ante el juzgado familiar, sin requerir la firma de la otra parte."},{"numero":"03","titulo":"Resolución y sentencia","texto":"Te acompañamos en cada audiencia hasta obtener tu sentencia de divorcio y regularizar tu situación legal."}]' FROM dbo.Modulos m WHERE m.Slug = N'abogado'
+    UNION ALL
+    SELECT 20, m.Id, N'divorcio-mutuo-consentimiento', N'Divorcio por mutuo consentimiento', N'Cuando ambos están de acuerdo, todo es más rápido', N'Si tú y tu pareja están de acuerdo en divorciarse, te ayudamos a integrar el convenio (bienes, custodia, pensión) y a llevar el trámite de la forma más ágil posible.', N'Divorcio por mutuo consentimiento', N'[{"icono":"clock","titulo":"Proceso más ágil","texto":"Al no haber controversia, el trámite suele resolverse en menos tiempo."},{"icono":"document","titulo":"Convenio a tu medida","texto":"Redactamos un convenio claro sobre bienes, custodia y pensión, evitando conflictos futuros."},{"icono":"scale","titulo":"Equilibrio para ambas partes","texto":"Buscamos un acuerdo justo que proteja los intereses de los dos."},{"icono":"handHeart","titulo":"Acompañamiento sin desgaste","texto":"Te guiamos en un proceso pensado para cerrar esta etapa en paz."}]', N'[{"numero":"01","titulo":"Asesoría inicial","texto":"Revisamos su situación patrimonial y familiar para definir el contenido del convenio."},{"numero":"02","titulo":"Convenio y demanda","texto":"Redactamos el convenio y presentamos la solicitud conjunta ante el juzgado familiar."},{"numero":"03","titulo":"Resolución","texto":"Te acompañamos hasta obtener la sentencia que da por concluido el matrimonio."}]' FROM dbo.Modulos m WHERE m.Slug = N'abogado'
+    UNION ALL
+    SELECT 30, m.Id, N'pension-alimenticia', N'Pensión alimenticia', N'El derecho de tus hijos no espera', N'Te ayudamos con la solicitud, aumento, reducción o cancelación de la pensión alimenticia, así como con pensiones atrasadas y su cumplimiento, con un procedimiento claro y acompañamiento en cada audiencia.', N'Pensión alimenticia', N'[{"icono":"scale","titulo":"Cálculo justo","texto":"Analizamos ingresos y necesidades reales para proponer un monto justo."},{"icono":"document","titulo":"Seguimiento del pago","texto":"Te orientamos si el pago se incumple y sobre las medidas legales disponibles para cobrar atrasos."},{"icono":"family","titulo":"Protección de menores","texto":"Priorizamos siempre el bienestar de las hijas e hijos involucrados."},{"icono":"pin","titulo":"Presencial o en línea","texto":"Agenda tu asesoría como prefieras, sin necesidad de trasladarte si no puedes."}]', N'[{"numero":"01","titulo":"Asesoría inicial","texto":"Revisamos tu situación económica y familiar para definir la estrategia."},{"numero":"02","titulo":"Presentación de la demanda","texto":"Integramos el expediente y lo presentamos ante el juzgado familiar."},{"numero":"03","titulo":"Resolución","texto":"Te acompañamos hasta obtener la fijación, el aumento, la reducción o el cumplimiento de la pensión."}]' FROM dbo.Modulos m WHERE m.Slug = N'abogado'
+    UNION ALL
+    SELECT 40, m.Id, N'custodia', N'Guarda y custodia', N'El bienestar de tus hijos, tu prioridad', N'Te representamos en procesos de guarda y custodia, asesorándote para determinar con quién vivirán los menores y proteger sus derechos, buscando siempre su mejor interés.', N'Custodia', N'[{"icono":"family","titulo":"Enfoque en el menor","texto":"La estrategia siempre se centra en el bienestar de las hijas e hijos."},{"icono":"scale","titulo":"Evaluación de tu caso","texto":"Analizamos tu situación de convivencia antes de trazar el camino legal."},{"icono":"handHeart","titulo":"Acompañamiento total","texto":"Te asesoramos desde la demanda hasta la resolución final."},{"icono":"lock","titulo":"Confidencialidad","texto":"Manejamos tu caso con total discreción y respeto."}]', N'[{"numero":"01","titulo":"Asesoría inicial","texto":"Evaluamos la situación actual de convivencia y viabilidad del caso."},{"numero":"02","titulo":"Presentación de la demanda","texto":"Reunimos la documentación necesaria y presentamos la demanda ante el juzgado familiar."},{"numero":"03","titulo":"Resolución","texto":"Te acompañamos en cada audiencia hasta la sentencia."}]' FROM dbo.Modulos m WHERE m.Slug = N'abogado'
+    UNION ALL
+    SELECT 50, m.Id, N'regimen-de-visitas', N'Régimen de convivencias', N'Tiempo de calidad, garantizado por ley', N'Establecemos o modificamos el régimen de convivencias para garantizar tiempo de calidad con tus hijas e hijos, dentro de un marco legal claro.', N'Régimen de visitas', N'[{"icono":"document","titulo":"Acuerdos claros","texto":"Proponemos calendarios de convivencia realistas y respetuosos."},{"icono":"gavel","titulo":"Resolución de conflictos","texto":"Te apoyamos si el régimen actual no se está respetando."},{"icono":"clock","titulo":"Rapidez","texto":"Buscamos la vía más ágil posible para resolver tu situación."},{"icono":"handHeart","titulo":"Seguimiento cercano","texto":"Te acompañamos desde la solicitud hasta que el acuerdo quede vigente."}]', N'[{"numero":"01","titulo":"Asesoría inicial","texto":"Revisamos tu situación actual de convivencia con tus hijas e hijos."},{"numero":"02","titulo":"Presentación de la solicitud","texto":"Integramos y presentamos la propuesta de régimen ante el juzgado."},{"numero":"03","titulo":"Resolución","texto":"Te acompañamos hasta que el régimen quede formalmente establecido."}]' FROM dbo.Modulos m WHERE m.Slug = N'abogado'
+    UNION ALL
+    SELECT 60, m.Id, N'sucesiones-herencias', N'Sucesiones y herencias', N'El legado de tu familia, en orden', N'Te acompañamos en juicios testamentarios e intestamentarios, para que la herencia se reparta conforme a la ley y sin conflictos innecesarios entre la familia.', N'Sucesiones y herencias', N'[{"icono":"document","titulo":"Trámite completo","texto":"Te guiamos desde la apertura de la sucesión hasta la adjudicación de bienes."},{"icono":"scale","titulo":"Con o sin testamento","texto":"Te asesoramos tanto en sucesiones testamentarias como intestamentarias."},{"icono":"family","titulo":"Cuidamos a la familia","texto":"Buscamos acuerdos que preserven la relación entre herederos."},{"icono":"handHeart","titulo":"Acompañamiento sensible","texto":"Entendemos que es un momento difícil y te asesoramos con cercanía."}]', N'[{"numero":"01","titulo":"Asesoría inicial","texto":"Revisamos si existe testamento y la situación de los bienes y herederos."},{"numero":"02","titulo":"Integración del juicio","texto":"Reunimos la documentación necesaria e iniciamos el juicio sucesorio correspondiente."},{"numero":"03","titulo":"Adjudicación","texto":"Te acompañamos hasta la resolución que formaliza el reparto de la herencia."}]' FROM dbo.Modulos m WHERE m.Slug = N'abogado'
+    UNION ALL
+    SELECT 70, m.Id, N'cobranza-pagares', N'Cobranza y pagarés', N'Recupera lo que es tuyo', N'Te ayudamos a recuperar adeudos vencidos y a hacer valer pagarés mediante juicios mercantiles, con una estrategia clara para cobrar lo que se te debe.', N'Cobranza y pagarés', N'[{"icono":"money","titulo":"Recuperación de adeudos","texto":"Evaluamos la vía más efectiva para cobrar tu adeudo."},{"icono":"gavel","titulo":"Juicios mercantiles","texto":"Te representamos ante el juzgado si el deudor no paga voluntariamente."},{"icono":"document","titulo":"Revisión de tu título","texto":"Verificamos que tu pagaré o contrato sea exigible legalmente."},{"icono":"clock","titulo":"Estrategia ágil","texto":"Buscamos la vía más rápida posible según el monto y el deudor."}]', N'[{"numero":"01","titulo":"Asesoría inicial","texto":"Revisamos el pagaré o contrato y la situación del deudor."},{"numero":"02","titulo":"Requerimiento o demanda","texto":"Iniciamos el cobro extrajudicial o presentamos la demanda mercantil."},{"numero":"03","titulo":"Cobro","texto":"Te acompañamos hasta lograr el pago o la ejecución de la sentencia."}]' FROM dbo.Modulos m WHERE m.Slug = N'abogado'
+    UNION ALL
+    SELECT 80, m.Id, N'contratos', N'Contratos', N'Que cada acuerdo te proteja', N'Elaboramos, revisamos y modificamos contratos para personas y empresas, cuidando que cada cláusula te proteja antes de que firmes.', N'Contratos', N'[{"icono":"document","titulo":"Elaboración a tu medida","texto":"Redactamos contratos claros, adaptados a tu operación o situación particular."},{"icono":"scale","titulo":"Revisión antes de firmar","texto":"Detectamos cláusulas riesgosas antes de que sea tarde."},{"icono":"gavel","titulo":"Modificación de contratos","texto":"Actualizamos acuerdos vigentes cuando las condiciones cambian."},{"icono":"clock","titulo":"Respuesta ágil","texto":"Entendemos que muchas veces necesitas el contrato listo con urgencia."}]', N'[{"numero":"01","titulo":"Diagnóstico","texto":"Entendemos qué necesitas proteger o formalizar."},{"numero":"02","titulo":"Elaboración o revisión","texto":"Redactamos o revisamos el contrato y te explicamos cada cláusula relevante."},{"numero":"03","titulo":"Firma","texto":"Te acompañamos hasta la firma, con las modificaciones ya incorporadas."}]' FROM dbo.Modulos m WHERE m.Slug = N'abogado'
+    UNION ALL
+    SELECT 90, m.Id, N'tramites-sat', N'Trámites ante el SAT', N'Tu situación fiscal, en manos expertas', N'¿Te llegó una carta del SAT o necesitas poner en orden tu situación fiscal? Te orientamos en declaraciones, devoluciones, constancias y regularización fiscal, para personas y negocios.', N'Trámites SAT', N'[{"icono":"calculator","titulo":"Declaraciones y devoluciones","texto":"Te apoyamos a presentar o corregir declaraciones y a gestionar devoluciones."},{"icono":"document","titulo":"Constancias y trámites","texto":"Te ayudamos a obtener constancias de situación fiscal y otros documentos ante el SAT."},{"icono":"briefcase","titulo":"Regularización fiscal","texto":"Diseñamos un plan para poner al día tu situación ante el fisco."},{"icono":"clock","titulo":"Atención oportuna","texto":"Respondemos con prioridad cuando hay plazos del SAT de por medio."}]', N'[{"numero":"01","titulo":"Revisión gratuita","texto":"Analizamos tu situación fiscal actual y el requerimiento o carta recibida, si aplica."},{"numero":"02","titulo":"Plan de acción","texto":"Te proponemos los trámites necesarios y los plazos a cumplir."},{"numero":"03","titulo":"Gestión y cierre","texto":"Damos seguimiento ante el SAT hasta resolver tu situación."}]' FROM dbo.Modulos m WHERE m.Slug = N'sat'
+    UNION ALL
+    SELECT 100, m.Id, N'asesoria-empresas', N'Asesoría legal para empresas y emprendedores', N'Blinda legalmente tu negocio', N'Acompañamos a empresas y emprendedores en contratos, prevención de riesgos y asuntos corporativos, para que tomes decisiones de negocio con respaldo legal.', N'Asesoría legal para empresas', N'[{"icono":"briefcase","titulo":"Asuntos corporativos","texto":"Te asesoramos en la constitución, gobierno y operación legal de tu empresa."},{"icono":"document","titulo":"Contratos comerciales","texto":"Elaboramos y revisamos los contratos que tu operación necesita."},{"icono":"scale","titulo":"Prevención de riesgos","texto":"Identificamos riesgos legales antes de que se conviertan en un problema."},{"icono":"clock","titulo":"Acompañamiento continuo","texto":"Te asesoramos de forma puntual o de manera continua, según lo que tu negocio necesite."}]', N'[{"numero":"01","titulo":"Diagnóstico legal","texto":"Revisamos la situación actual de tu empresa o proyecto."},{"numero":"02","titulo":"Plan de acción","texto":"Definimos qué contratos, políticas o trámites necesitas resolver primero."},{"numero":"03","titulo":"Implementación","texto":"Te acompañamos hasta dejar tu operación legalmente en orden."}]' FROM dbo.Modulos m WHERE m.Slug = N'abogado'
+    UNION ALL
+    SELECT 110, m.Id, N'violencia-familiar', N'Violencia familiar', N'No estás sola, no estás solo', N'Te acompañamos con seriedad y confidencialidad en procesos por violencia familiar, incluyendo medidas de protección para ti y tu familia.', N'Violencia familiar', N'[{"icono":"clock","titulo":"Atención inmediata","texto":"Respondemos con prioridad ante situaciones de riesgo."},{"icono":"gavel","titulo":"Medidas de protección","texto":"Te orientamos sobre las órdenes de protección disponibles."},{"icono":"lock","titulo":"Confidencialidad total","texto":"Tu caso se maneja con la máxima discreción."},{"icono":"handHeart","titulo":"Acompañamiento humano","texto":"Te escuchamos y te guiamos en cada paso, sin juicios."}]', N'[{"numero":"01","titulo":"Asesoría inicial","texto":"Escuchamos tu situación y evaluamos las medidas urgentes necesarias."},{"numero":"02","titulo":"Medidas y denuncia","texto":"Te apoyamos a solicitar medidas de protección y, si procede, a denunciar."},{"numero":"03","titulo":"Resolución","texto":"Te acompañamos en el proceso legal hasta su conclusión."}]' FROM dbo.Modulos m WHERE m.Slug = N'abogado';
+END
+GO
+
+-- =========================================================
 -- Seed: Usuario administrador
 -- =========================================================
 -- NOTE: '<BCRYPT_HASH_PLACEHOLDER>' debe reemplazarse por un hash bcrypt real antes de

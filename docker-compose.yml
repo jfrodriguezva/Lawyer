@@ -29,6 +29,7 @@ services:
       Sitio__BaseUrl: https://ecgabogados.com
     volumes:
       - documentos:/app/App_Data/documentos
+      - promociones:/app/App_Data/promociones
       - logs:/app/Logs
     depends_on:
       - sqlserver
@@ -70,6 +71,7 @@ services:
 volumes:
   sqldata:
   documentos:
+  promociones:
   logs:
   certbot-etc:
   certbot-webroot:

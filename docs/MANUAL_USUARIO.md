@@ -10,10 +10,11 @@
 
 Accesible en la raíz del sitio (`/`), sin necesidad de iniciar sesión. Cualquier visitante puede:
 
-- Conocer los 11 servicios del despacho, agrupados en **Derecho familiar** (divorcio incausado, divorcio por mutuo consentimiento, pensión alimenticia, guarda y custodia, régimen de convivencias, violencia familiar) y **Asesoría fiscal y empresarial** (trámites ante el SAT, contratos, cobranza y pagarés, sucesiones y herencias, asesoría para empresas y emprendedores) — ver el índice completo en `/servicios`.
-- **Agendar una asesoría** desde la pestaña "Agendar cita": nombre, teléfono y fecha/hora preferida.
+- Conocer los servicios del despacho, agrupados por área (Derecho familiar, Fiscal y empresarial, Trámites SAT, y cualquier otra que el Administrador agregue) — ver el índice completo en `/servicios`. El contenido de esta sección lo administra el propio despacho desde el panel (ver 3.2 "Servicios"), no requiere tocar código para agregar, editar u ocultar un servicio.
+- **Agendar una asesoría** desde la pestaña "Agendar cita": nombre, teléfono y fecha/hora preferida. Esta pestaña solo aparece para servicios que ya tienen agenda habilitada (por ejemplo Comercializadora todavía no la tiene mientras esté en construcción); en esos casos solo se ofrece enviar un mensaje.
 - **Enviar un mensaje de contacto** desde la pestaña "Enviar mensaje": nombre, teléfono, correo (opcional) y mensaje.
 - Contactar directamente por WhatsApp, teléfono o correo mediante los enlaces del sitio.
+- Ver **promociones vigentes**: si un servicio tiene una promoción activa, se muestra un banner con imagen y texto en su página, y el menú "Servicios" del sitio marca un punto rojo (con un mensaje al pasar el mouse) para llamar la atención sobre qué servicios están en promoción.
 
 Cuando se agenda una cita o se envía un mensaje desde la página de un servicio específico (por ejemplo, desde `/servicios/tramites-sat`), el lead queda etiquetado con ese servicio para que el personal pueda identificarlo y filtrarlo en el panel.
 
@@ -39,6 +40,8 @@ En `/login`, el enlace "¿Olvidaste tu contraseña?" abre un formulario donde es
 | **Agenda** | `/agenda` | Calendario visual (mes/semana/día/lista) de todas las citas, coloreadas por estatus, con buscador por cliente/teléfono y filtro por servicio de interés. Agendar una nueva (opcionalmente ligada a un caso) y confirmar o cancelar al hacer clic en una cita. Cada cita tiene un botón **"Abrir WhatsApp"** que abre una conversación ya redactada con ese contacto. |
 | **Mensajes** | `/mensajes` | Mensajes recibidos desde el formulario público, separados en "Pendientes" y "Atendidos", con paginación y filtro por servicio de interés. También con botón **"Abrir WhatsApp"** por mensaje. |
 | **Clientes** | `/clientes` | Solo **Administrador**: dar de alta una cuenta de cliente (nombre, correo, contraseña temporal) para el portal autenticado, y activar/desactivar cuentas. La cuenta se vincula a un expediente concreto desde el detalle de ese caso. |
+| **Servicios** | `/catalogo-servicios` | Solo **Administrador**: administra el catálogo que se muestra en el sitio público (ver 3.2). |
+| **Promociones** | `/promociones` | Solo **Administrador**: crea y administra las promociones que se anuncian en el sitio público (ver 3.3). |
 | **Usuarios** | `/usuarios` | Solo visible para el rol **Administrador**: dar de alta personal, editar nombre/rol/contraseña, y activar/desactivar cuentas. No puedes cambiar tu propio rol ni desactivarte a ti mismo. |
 
 ### Roles
@@ -68,6 +71,29 @@ Cuando un expediente avanza y la abogada decide darle seguimiento formal al clie
 4. Puede cerrar sesión con el botón "Salir".
 
 Este portal es de **solo lectura** para el cliente — la carga de documentos y la actualización del checklist las hace el personal desde el panel interno.
+
+## 3.2 Administrar el catálogo de Servicios (`/catalogo-servicios`)
+
+Solo el rol **Administrador** ve esta sección. Aquí se controla todo lo que el sitio público muestra en "Servicios": qué categorías existen, qué servicio hay en cada una, y su contenido (título, frase, descripción, beneficios y pasos del proceso).
+
+- **Módulos** son las categorías (Abogado, SAT, Comercializadora, o cualquiera nueva). Con **"+ Nuevo módulo"** se crea una, eligiendo qué rol del despacho la atiende (Abogado, Consultor, o Agente — si eliges Agente, el sitio no ofrecerá agenda de citas para sus servicios todavía, solo el formulario de contacto).
+- Cada módulo se puede **desactivar** con el botón correspondiente: al hacerlo, esa categoría deja de mostrarse con sus servicios y aparece en el sitio como **"Próximamente"**. Volver a activarla la restaura tal cual estaba.
+- Haz clic en el nombre de un módulo para desplegar sus **servicios**. Desde ahí:
+  - **"+ Nuevo servicio en este módulo"** abre el formulario: título, frase (la que aparece grande en el encabezado del servicio), descripción, beneficios (cada uno con un ícono, un título y un texto — se pueden agregar o quitar filas) y los pasos del proceso (numerados, también agregables/quitables). Se necesita al menos un beneficio y un paso para poder guardar.
+  - **"Ocultar"/"Mostrar"** quita o regresa un servicio del sitio público sin borrar su contenido — útil para servicios que todavía no están listos para publicarse.
+  - **"Editar"** abre el mismo formulario con los datos ya cargados.
+  - **"Eliminar"** lo borra por completo (pide confirmación).
+- **Eliminar un módulo** borra también todos sus servicios — el sistema avisa cuántos se van a eliminar antes de confirmar.
+
+## 3.3 Administrar Promociones (`/promociones`)
+
+Solo el rol **Administrador**. Una promoción es una imagen + un texto que se muestra en la página pública de uno o varios servicios, y que además enciende un aviso (punto rojo) en el menú "Servicios" del sitio.
+
+1. Escribe el **texto** de la promoción (lo que va a leer el visitante).
+2. Elige una **imagen** (jpg, png o webp).
+3. Marca en la lista de checkboxes **a qué servicios aplica** la promoción — puede ser uno o varios, de cualquier módulo.
+4. **"Crear promoción"**. Aparece de inmediato en el sitio público, en la página de cada servicio seleccionado, y el punto rojo del menú "Servicios" se enciende.
+5. Desde el listado puedes **Activar/Desactivar** (la quita o regresa del sitio sin borrarla), **Editar** (puedes reemplazar la imagen o dejar la actual, cambiar el texto o los servicios) o **Eliminar** (la borra por completo, junto con su imagen).
 
 ## 4. Estatus del negocio
 

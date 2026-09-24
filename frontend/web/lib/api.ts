@@ -1014,3 +1014,204 @@ export function actualizarTramiteSAT(id: number | string, data: { estatus: Estat
 export function getMisTramitesSAT() {
   return request<TramiteSAT[]>("/api/cliente/mis-tramites-sat", {}, "ecg_cliente_token");
 }
+
+// ---- Módulos (Administrador) ----
+// "Categoría padre" del catálogo público (Abogado, SAT, Comercializadora y las
+// que se agreguen). getModulosActivos/getServiciosActivos/getPromocionesActivasPublic
+// NO pasan por request(): éste depende de getCookie (document.cookie), que no
+// existe en Server Components — estas funciones deben poder llamarse desde
+// componentes de servidor (app/servicios/[slug]/page.tsx) y desde el cliente
+// (GuestHeader) por igual.
+
+export const RolesResponsablesModulo = ["Abogado", "Consultor", "Agente"] as const;
+export type RolResponsableModulo = (typeof RolesResponsablesModulo)[number];
+
+export interface Modulo {
+  id: number;
+  nombre: string;
+  slug: string;
+  rolResponsable: RolResponsableModulo;
+  activo: boolean;
+  orden: number;
+}
+
+async function publicFetch<T>(path: string, revalidateSeconds = 60): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, { next: { revalidate: revalidateSeconds } });
+  if (!res.ok) {
+    throw new ApiError(`Error ${res.status}`, res.status);
+  }
+  return res.json() as Promise<T>;
+}
+
+// Devuelve TODOS los módulos (no solo activos): el sitio público necesita
+// conocer también los inactivos para mostrarlos como "Próximamente".
+export function getModulosPublicos() {
+  return publicFetch<Modulo[]>("/api/modulos/activos");
+}
+
+export function getModulos() {
+  return request<Modulo[]>("/api/modulos");
+}
+
+export function crearModulo(data: { nombre: string; slug: string; rolResponsable: RolResponsableModulo; orden: number }) {
+  return request<{ id: number }>("/api/modulos", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function actualizarModulo(id: number | string, data: { nombre: string; slug: string; rolResponsable: RolResponsableModulo; orden: number }) {
+  return request<void>(`/api/modulos/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function cambiarActivoModulo(id: number | string, activo: boolean) {
+  return request<void>(`/api/modulos/${id}/activo`, {
+    method: "PATCH",
+    body: JSON.stringify({ activo }),
+  });
+}
+
+export function eliminarModulo(id: number | string) {
+  return request<void>(`/api/modulos/${id}`, { method: "DELETE" });
+}
+
+// ---- Servicios (Administrador) ----
+// Reemplaza el catálogo que antes vivía hardcodeado en lib/servicios.ts.
+
+export type IconoBeneficio =
+  | "scale" | "gavel" | "document" | "family" | "clock" | "lock" | "handHeart" | "pin" | "money" | "briefcase" | "calculator";
+
+export interface BeneficioServicio {
+  icono: IconoBeneficio;
+  titulo: string;
+  texto: string;
+}
+
+export interface PasoProcesoServicio {
+  numero: string;
+  titulo: string;
+  texto: string;
+}
+
+export interface Servicio {
+  id: number;
+  moduloId: number;
+  slug: string;
+  titulo: string;
+  frase: string | null;
+  descripcion: string;
+  tipo: string | null;
+  beneficios: BeneficioServicio[];
+  proceso: PasoProcesoServicio[];
+  activo: boolean;
+  orden: number;
+}
+
+export interface ServicioInput {
+  moduloId: number;
+  slug: string;
+  titulo: string;
+  frase?: string | null;
+  descripcion: string;
+  tipo?: string | null;
+  beneficios: BeneficioServicio[];
+  proceso: PasoProcesoServicio[];
+  orden: number;
+}
+
+export function getServiciosActivos() {
+  return publicFetch<Servicio[]>("/api/servicios/activos");
+}
+
+export function getServicios(moduloId?: number | string) {
+  const query = moduloId ? `?moduloId=${moduloId}` : "";
+  return request<Servicio[]>(`/api/servicios${query}`);
+}
+
+export function crearServicio(data: ServicioInput) {
+  return request<{ id: number }>("/api/servicios", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function actualizarServicio(id: number | string, data: ServicioInput) {
+  return request<void>(`/api/servicios/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function cambiarActivoServicio(id: number | string, activo: boolean) {
+  return request<void>(`/api/servicios/${id}/activo`, {
+    method: "PATCH",
+    body: JSON.stringify({ activo }),
+  });
+}
+
+export function eliminarServicio(id: number | string) {
+  return request<void>(`/api/servicios/${id}`, { method: "DELETE" });
+}
+
+// ---- Promociones (Administrador) ----
+
+export interface Promocion {
+  id: number;
+  texto: string;
+  activo: boolean;
+  servicioIds: number[];
+}
+
+export interface PromocionPublica {
+  id: number;
+  texto: string;
+  servicioIds: number[];
+}
+
+export function promocionImagenUrl(id: number) {
+  return `${API_URL}/api/promociones/${id}/imagen`;
+}
+
+export function getPromocionesActivasPublic() {
+  return publicFetch<PromocionPublica[]>("/api/promociones/activas", 30);
+}
+
+export function getPromociones() {
+  return request<Promocion[]>("/api/promociones");
+}
+
+export function crearPromocion(data: { texto: string; imagen: File; servicioIds: number[] }) {
+  const formData = new FormData();
+  formData.append("Texto", data.texto);
+  formData.append("Imagen", data.imagen);
+  data.servicioIds.forEach((id) => formData.append("Servicios", String(id)));
+  return request<{ id: number }>("/api/promociones", {
+    method: "POST",
+    body: formData,
+  });
+}
+
+export function actualizarPromocion(id: number | string, data: { texto: string; imagen?: File | null; servicioIds: number[] }) {
+  const formData = new FormData();
+  formData.append("Texto", data.texto);
+  if (data.imagen) formData.append("Imagen", data.imagen);
+  data.servicioIds.forEach((servicioId) => formData.append("Servicios", String(servicioId)));
+  return request<void>(`/api/promociones/${id}`, {
+    method: "PUT",
+    body: formData,
+  });
+}
+
+export function cambiarActivoPromocion(id: number | string, activo: boolean) {
+  return request<void>(`/api/promociones/${id}/activo`, {
+    method: "PATCH",
+    body: JSON.stringify({ activo }),
+  });
+}
+
+export function eliminarPromocion(id: number | string) {
+  return request<void>(`/api/promociones/${id}`, { method: "DELETE" });
+}

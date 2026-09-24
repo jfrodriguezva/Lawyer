@@ -1,18 +1,29 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState, type ReactNode } from "react";
 import Monogram from "@/components/Monogram";
 import { IconChevronDown, IconClose, IconMenu } from "@/components/icons";
-import { getFlags } from "@/lib/api";
-import { AREA_EMPRESARIAL, AREA_FAMILIAR, AREA_SAT, serviciosPorArea } from "@/lib/servicios";
+import {
+  getModulosPublicos,
+  getPromocionesActivasPublic,
+  getServiciosActivos,
+  type Modulo,
+  type PromocionPublica,
+  type Servicio,
+} from "@/lib/api";
+import { agruparPorModulo, type GrupoModuloServicios } from "@/lib/servicios";
 
 const TABS = [
   { href: "/?tab=quienes-somos", label: "Quiénes somos", tab: "quienes-somos" },
   { href: "/?tab=mision", label: "Misión y valores", tab: "mision" },
 ];
+
+// La página "comercializadora" (LandingExperience) sigue existiendo como
+// contenido fijo mientras ese módulo no tenga servicios propios -- es el único
+// módulo con una landing dedicada, el resto solo muestra "Próximamente".
+const SLUG_COMERCIALIZADORA = "comercializadora";
 
 export default function GuestHeader() {
   return (
@@ -29,12 +40,15 @@ function GuestHeaderInner() {
   const [serviciosOpen, setServiciosOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileServiciosOpen, setMobileServiciosOpen] = useState(false);
-  const [satHabilitado, setSatHabilitado] = useState(false);
+  const [modulos, setModulos] = useState<Modulo[]>([]);
+  const [servicios, setServicios] = useState<Servicio[]>([]);
+  const [promociones, setPromociones] = useState<PromocionPublica[]>([]);
+  const [promoTooltipOpen, setPromoTooltipOpen] = useState(false);
 
   useEffect(() => {
-    getFlags()
-      .then((flags) => setSatHabilitado(flags.satHabilitado))
-      .catch(() => undefined);
+    getModulosPublicos().then(setModulos).catch(() => undefined);
+    getServiciosActivos().then(setServicios).catch(() => undefined);
+    getPromocionesActivasPublic().then(setPromociones).catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -61,6 +75,11 @@ function GuestHeaderInner() {
   const servicioActual = enHome ? searchParams.get("servicio") : null;
   const enServicios = pathname?.startsWith("/servicios") || (enHome && !!servicioActual);
   const enInicio = enHome && !tabActual && !servicioActual;
+
+  const grupos = agruparPorModulo(modulos, servicios);
+  const serviciosIdsEnPromocion = new Set(promociones.flatMap((p) => p.servicioIds));
+  const serviciosEnPromocion = servicios.filter((s) => serviciosIdsEnPromocion.has(s.id));
+  const hayPromocion = serviciosEnPromocion.length > 0;
 
   // "Inicio" siempre sube al principio de la página; si ya estábamos en "/" el
   // cambio de query no mueve el scroll por sí solo (el pathname no cambia).
@@ -112,7 +131,9 @@ function GuestHeaderInner() {
             <button
               type="button"
               onClick={() => setServiciosOpen((v) => !v)}
-              className={`flex items-center gap-1 px-3 py-2 text-xs uppercase tracking-[0.2em] transition-colors ${
+              onMouseEnter={() => hayPromocion && setPromoTooltipOpen(true)}
+              onMouseLeave={() => setPromoTooltipOpen(false)}
+              className={`relative flex items-center gap-1 px-3 py-2 text-xs uppercase tracking-[0.2em] transition-colors ${
                 enServicios || serviciosOpen
                   ? "text-brand-gold"
                   : "text-brand-creamSoft hover:text-brand-cream"
@@ -121,7 +142,23 @@ function GuestHeaderInner() {
             >
               Servicios
               <IconChevronDown className={`h-3 w-3 transition-transform ${serviciosOpen ? "rotate-180" : ""}`} />
+              {hayPromocion && (
+                <span className="absolute -right-1 top-1 h-2 w-2 animate-pulse rounded-full bg-red-500" />
+              )}
             </button>
+
+            {hayPromocion && promoTooltipOpen && !serviciosOpen && (
+              <div className="absolute left-1/2 z-50 mt-2 w-64 -translate-x-1/2 border border-brand-line bg-brand-ink2 p-4 text-left shadow-[0_20px_45px_-15px_rgba(0,0,0,0.65)]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-red-500">En promoción</p>
+                <ul className="mt-2 space-y-1">
+                  {serviciosEnPromocion.map((s) => (
+                    <li key={s.id} className="text-sm text-brand-creamSoft">
+                      {s.titulo}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {serviciosOpen && (
               <>
@@ -130,7 +167,7 @@ function GuestHeaderInner() {
                   className="fixed inset-0 z-40 cursor-default"
                   onClick={() => setServiciosOpen(false)}
                 />
-                <ServiciosMenu satHabilitado={satHabilitado} onNavigate={() => setServiciosOpen(false)} />
+                <ServiciosMenu grupos={grupos} onNavigate={() => setServiciosOpen(false)} />
               </>
             )}
           </div>
@@ -185,14 +222,19 @@ function GuestHeaderInner() {
             <button
               type="button"
               onClick={() => setMobileServiciosOpen((v) => !v)}
-              className={`flex items-center justify-between py-3 text-sm uppercase tracking-widest ${
+              className={`relative flex items-center justify-between py-3 text-sm uppercase tracking-widest ${
                 enServicios ? "text-brand-gold" : "text-brand-cream"
               }`}
             >
-              Servicios
+              <span className="relative inline-flex items-center">
+                Servicios
+                {hayPromocion && (
+                  <span className="ml-2 h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                )}
+              </span>
               <IconChevronDown className={`h-3.5 w-3.5 transition-transform ${mobileServiciosOpen ? "rotate-180" : ""}`} />
             </button>
-            {mobileServiciosOpen && <ServiciosMenuMovil satHabilitado={satHabilitado} />}
+            {mobileServiciosOpen && <ServiciosMenuMovil grupos={grupos} />}
 
             {TABS.map((tab) => (
               <Link key={tab.href} href={tab.href} className="py-3 text-sm uppercase tracking-widest text-brand-cream">
@@ -249,41 +291,20 @@ function NavTab({
   );
 }
 
-// Grupos del menú de Servicios: separados por módulo del sistema (Abogado / SAT /
-// Comercializadora), nunca mezclados, porque cada uno corresponde a un rol y a un
-// flujo de agenda distinto. SAT y Comercializadora se muestran atenuados como
-// "Próximamente" cuando el módulo respectivo aún no está habilitado.
-function ServiciosMenu({ satHabilitado, onNavigate }: { satHabilitado: boolean; onNavigate: () => void }) {
-  const familiares = serviciosPorArea(AREA_FAMILIAR);
-  const empresarial = serviciosPorArea(AREA_EMPRESARIAL);
-  const sat = serviciosPorArea(AREA_SAT);
-
+// Un grupo por Módulo (Abogado, SAT, Comercializadora, y los que se agreguen
+// desde el panel admin). Un módulo inactivo, o activo pero sin servicios
+// todavía, se muestra atenuado como "Próximamente".
+function ServiciosMenu({ grupos, onNavigate }: { grupos: GrupoModuloServicios[]; onNavigate: () => void }) {
   return (
     <div className="absolute left-1/2 z-50 mt-2 w-[620px] -translate-x-1/2 border border-brand-line bg-brand-ink2 p-6 shadow-[0_30px_70px_-25px_rgba(0,0,0,0.65)]">
       <div className="grid grid-cols-2 gap-x-8 gap-y-6">
-        <GrupoServicios titulo="Derecho familiar" servicios={familiares} onNavigate={onNavigate} />
-        <GrupoServicios titulo="Fiscal y empresarial" servicios={empresarial} onNavigate={onNavigate} />
-        {satHabilitado ? (
-          <GrupoServicios
-            titulo="Trámites SAT"
-            icono={<ChipImagen src="/images/sat-gold.png" />}
-            servicios={sat}
-            onNavigate={onNavigate}
-          />
-        ) : (
-          <GrupoProximamente titulo="Trámites SAT" icono={<ChipImagen src="/images/sat-gold.png" />} />
+        {grupos.map(({ modulo, servicios }) =>
+          modulo.activo && servicios.length > 0 ? (
+            <GrupoServicios key={modulo.id} titulo={modulo.nombre} servicios={servicios} onNavigate={onNavigate} />
+          ) : (
+            <GrupoProximamente key={modulo.id} titulo={modulo.nombre} slug={modulo.slug} />
+          )
         )}
-        <div>
-          <Link
-            href="/?tab=comercializadora"
-            onClick={onNavigate}
-            className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-creamSoft transition-colors hover:text-brand-gold"
-          >
-            <ChipImagen src="/images/comercializadora-gold.png" />
-            Comercializadora
-          </Link>
-          <p className="mt-3 text-sm italic text-brand-creamSoft">Próximamente</p>
-        </div>
       </div>
       <Link
         href="/servicios"
@@ -304,7 +325,7 @@ function GrupoServicios({
 }: {
   titulo: string;
   icono?: ReactNode;
-  servicios: ReturnType<typeof serviciosPorArea>;
+  servicios: Servicio[];
   onNavigate: () => void;
 }) {
   return (
@@ -330,76 +351,44 @@ function GrupoServicios({
   );
 }
 
-function GrupoProximamente({ titulo, icono }: { titulo: string; icono?: ReactNode }) {
-  return (
-    <div className="opacity-50">
-      <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-creamSoft">
-        {icono}
-        {titulo}
-      </p>
+function GrupoProximamente({ titulo, slug }: { titulo: string; slug: string }) {
+  const contenido = (
+    <>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-creamSoft">{titulo}</p>
       <p className="mt-3 text-sm italic text-brand-creamSoft">Próximamente</p>
-    </div>
+    </>
   );
+
+  // Único caso con una landing propia ya construida (LandingExperience) mientras
+  // no tenga servicios reales -- el resto de los módulos "Próximamente" no enlazan a nada.
+  if (slug === SLUG_COMERCIALIZADORA) {
+    return (
+      <Link href="/?tab=comercializadora" className="block opacity-50 transition-opacity hover:opacity-80">
+        {contenido}
+      </Link>
+    );
+  }
+
+  return <div className="opacity-50">{contenido}</div>;
 }
 
-// Versiones doradas y sin fondo de las imágenes reales (public/images/*-gold.png),
-// pensadas para verse directamente sobre el fondo oscuro del menú.
-function ChipImagen({ src }: { src: string }) {
-  return (
-    <span className="flex h-4 w-4 shrink-0 items-center justify-center">
-      <Image src={src} alt="" width={32} height={32} unoptimized className="h-full w-full object-contain" />
-    </span>
-  );
-}
-
-function ServiciosMenuMovil({ satHabilitado }: { satHabilitado: boolean }) {
-  const familiares = serviciosPorArea(AREA_FAMILIAR);
-  const empresarial = serviciosPorArea(AREA_EMPRESARIAL);
-  const sat = serviciosPorArea(AREA_SAT);
-
+function ServiciosMenuMovil({ grupos }: { grupos: GrupoModuloServicios[] }) {
   return (
     <div className="mb-2 flex flex-col gap-4 border-l border-brand-line pl-4">
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gold">Derecho familiar</p>
-        {familiares.map((s) => (
-          <Link key={s.slug} href={`/?servicio=${s.slug}`} className="block py-1.5 text-sm text-brand-creamSoft">
-            {s.titulo}
-          </Link>
-        ))}
-      </div>
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gold">Fiscal y empresarial</p>
-        {empresarial.map((s) => (
-          <Link key={s.slug} href={`/?servicio=${s.slug}`} className="block py-1.5 text-sm text-brand-creamSoft">
-            {s.titulo}
-          </Link>
-        ))}
-      </div>
-      <div>
-        <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gold">
-          <ChipImagen src="/images/sat-gold.png" />
-          Trámites SAT
-        </p>
-        {satHabilitado ? (
-          sat.map((s) => (
-            <Link key={s.slug} href={`/?servicio=${s.slug}`} className="block py-1.5 text-sm text-brand-creamSoft">
-              {s.titulo}
-            </Link>
-          ))
-        ) : (
-          <p className="py-1.5 text-sm italic text-brand-creamSoft/70">Próximamente</p>
-        )}
-      </div>
-      <div>
-        <Link
-          href="/?tab=comercializadora"
-          className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gold"
-        >
-          <ChipImagen src="/images/comercializadora-gold.png" />
-          Comercializadora
-        </Link>
-        <p className="py-1.5 text-sm italic text-brand-creamSoft/70">Próximamente</p>
-      </div>
+      {grupos.map(({ modulo, servicios }) => (
+        <div key={modulo.id}>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gold">{modulo.nombre}</p>
+          {modulo.activo && servicios.length > 0 ? (
+            servicios.map((s) => (
+              <Link key={s.slug} href={`/?servicio=${s.slug}`} className="block py-1.5 text-sm text-brand-creamSoft">
+                {s.titulo}
+              </Link>
+            ))
+          ) : (
+            <p className="py-1.5 text-sm italic text-brand-creamSoft/70">Próximamente</p>
+          )}
+        </div>
+      ))}
       <Link href="/servicios" className="py-1.5 text-sm font-semibold text-brand-gold">
         Ver todos →
       </Link>
