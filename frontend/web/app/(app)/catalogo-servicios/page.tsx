@@ -405,20 +405,9 @@ export default function ServiciosAdminPage() {
 
               {expandido && (
                 <div className="space-y-3 border-t border-brand-line p-5">
-                  {susServicios.map((s) => (
-                    <ServicioRow
-                      key={s.id}
-                      servicio={s}
-                      onEditar={() => abrirEditarServicio(s)}
-                      onToggle={() => handleToggleServicio(s)}
-                      onEliminar={() => handleEliminarServicio(s)}
-                    />
-                  ))}
-
-                  {susServicios.length === 0 && (
-                    <p className="text-sm text-brand-creamSoft">Este módulo todavía no tiene servicios.</p>
-                  )}
-
+                  {/* Arriba de la lista a propósito: con varios servicios ya
+                      cargados (ej. Abogado con 10), el botón quedaba enterrado
+                      al fondo del scroll y era fácil no encontrarlo. */}
                   {servicioForm && servicioForm.moduloId === m.id ? (
                     <ServicioForm
                       form={servicioForm}
@@ -434,6 +423,20 @@ export default function ServiciosAdminPage() {
                     >
                       + Nuevo servicio en este módulo
                     </button>
+                  )}
+
+                  {susServicios.map((s) => (
+                    <ServicioRow
+                      key={s.id}
+                      servicio={s}
+                      onEditar={() => abrirEditarServicio(s)}
+                      onToggle={() => handleToggleServicio(s)}
+                      onEliminar={() => handleEliminarServicio(s)}
+                    />
+                  ))}
+
+                  {susServicios.length === 0 && (
+                    <p className="text-sm text-brand-creamSoft">Este módulo todavía no tiene servicios.</p>
                   )}
                 </div>
               )}

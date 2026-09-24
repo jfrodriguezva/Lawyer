@@ -93,8 +93,8 @@ export default function PromocionesPage() {
       }
       limpiarFormulario();
       load();
-    } catch {
-      setError("No se pudo guardar la promoción.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo guardar la promoción.");
     } finally {
       setSaving(false);
     }
@@ -122,6 +122,12 @@ export default function PromocionesPage() {
   function tituloServicio(id: number) {
     return servicios.find((s) => s.id === id)?.titulo ?? `Servicio #${id}`;
   }
+
+  // Un servicio solo puede tener una promoción: se deshabilita en el checklist
+  // si ya pertenece a OTRA promoción (no a la que se está editando ahora mismo).
+  const serviciosOcupados = new Set(
+    promociones.filter((p) => p.id !== editandoId).flatMap((p) => p.servicioIds)
+  );
 
   return (
     <div>
@@ -171,6 +177,9 @@ export default function PromocionesPage() {
           <label className="block text-[11px] font-medium uppercase tracking-[0.2em] text-brand-creamSoft">
             Servicios en promoción
           </label>
+          <p className="mt-1 text-xs text-brand-creamSoft">
+            Un servicio solo puede tener una promoción a la vez — los que ya tienen una aparecen atenuados.
+          </p>
           <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {modulos.map((m) => {
               const susServicios = servicios.filter((s) => s.moduloId === m.id);
@@ -179,12 +188,24 @@ export default function PromocionesPage() {
                 <div key={m.id} className="border border-brand-line p-3">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-gold">{m.nombre}</p>
                   <div className="mt-2 space-y-1.5">
-                    {susServicios.map((s) => (
-                      <label key={s.id} className="flex items-center gap-2 text-xs text-brand-creamSoft">
-                        <input type="checkbox" checked={servicioIds.includes(s.id)} onChange={() => toggleServicio(s.id)} />
-                        {s.titulo}
-                      </label>
-                    ))}
+                    {susServicios.map((s) => {
+                      const ocupado = serviciosOcupados.has(s.id);
+                      return (
+                        <label
+                          key={s.id}
+                          className={`flex items-center gap-2 text-xs ${ocupado ? "text-brand-creamSoft/40" : "text-brand-creamSoft"}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={servicioIds.includes(s.id)}
+                            disabled={ocupado}
+                            onChange={() => toggleServicio(s.id)}
+                          />
+                          {s.titulo}
+                          {ocupado && <span className="italic">(ya tiene promoción)</span>}
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
               );

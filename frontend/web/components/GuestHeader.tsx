@@ -95,13 +95,29 @@ function GuestHeaderInner() {
   }
 
   return (
-    <header
-      className={`sticky top-0 z-40 transition-all duration-300 ${
-        scrolled
-          ? "border-b border-brand-line bg-brand-ink/90 backdrop-blur-md"
-          : "border-b border-transparent bg-transparent"
-      }`}
-    >
+    <div className="sticky top-0 z-40">
+      {/* Franja de aviso: cambio visible en TODO el portal (no solo al abrir el
+          menú Servicios) cuando hay una promoción vigente en cualquier página. */}
+      {hayPromocion && (
+        <Link
+          href={serviciosEnPromocion.length === 1 ? `/servicios/${serviciosEnPromocion[0].slug}` : "/servicios"}
+          className="block bg-gradient-to-r from-red-700 via-red-600 to-red-700 px-6 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.15em] text-white transition-opacity hover:opacity-90"
+        >
+          🔥 Promoción vigente
+          {serviciosEnPromocion.length === 1
+            ? ` en ${serviciosEnPromocion[0].titulo}`
+            : ` en ${serviciosEnPromocion.length} servicios`}{" "}
+          — Conócela aquí →
+        </Link>
+      )}
+
+      <header
+        className={`transition-all duration-300 ${
+          scrolled
+            ? "border-b border-brand-line bg-brand-ink/90 backdrop-blur-md"
+            : "border-b border-transparent bg-transparent"
+        }`}
+      >
       <div
         className={`mx-auto flex max-w-6xl items-center justify-between px-6 transition-all duration-300 ${
           scrolled ? "py-3" : "py-6"
@@ -147,7 +163,9 @@ function GuestHeaderInner() {
               Servicios
               <IconChevronDown className={`h-3 w-3 transition-transform ${serviciosOpen ? "rotate-180" : ""}`} />
               {hayPromocion && (
-                <span className="absolute -right-1 top-1 h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                <span className="ml-0.5 rounded-sm bg-red-600 px-1.5 py-0.5 text-[9px] font-bold not-italic tracking-normal text-white">
+                  PROMO
+                </span>
               )}
             </button>
 
@@ -230,10 +248,12 @@ function GuestHeaderInner() {
                 enServicios ? "text-brand-gold" : "text-brand-cream"
               }`}
             >
-              <span className="relative inline-flex items-center">
+              <span className="relative inline-flex items-center gap-2">
                 Servicios
                 {hayPromocion && (
-                  <span className="ml-2 h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                  <span className="rounded-sm bg-red-600 px-1.5 py-0.5 text-[9px] font-bold normal-case tracking-normal text-white">
+                    Promo
+                  </span>
                 )}
               </span>
               <IconChevronDown className={`h-3.5 w-3.5 transition-transform ${mobileServiciosOpen ? "rotate-180" : ""}`} />
@@ -267,7 +287,8 @@ function GuestHeaderInner() {
           </nav>
         </div>
       )}
-    </header>
+      </header>
+    </div>
   );
 }
 

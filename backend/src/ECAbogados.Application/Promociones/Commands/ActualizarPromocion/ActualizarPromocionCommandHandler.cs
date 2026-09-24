@@ -10,6 +10,8 @@ public class ActualizarPromocionCommandHandler(IPromocionRepository promocionRep
         var promocion = await promocionRepository.GetByIdAsync(request.Id)
             ?? throw new KeyNotFoundException($"No se encontró la promoción con Id {request.Id}");
 
+        await PromocionServicioUnico.ValidarAsync(promocionRepository, request.ServicioIds, promocionIdActual: request.Id);
+
         promocion.Texto = request.Texto;
         if (request.RutaAlmacenamiento is not null)
         {

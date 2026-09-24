@@ -26,7 +26,16 @@ import {
   IconUser,
   IconWhatsapp,
 } from "@/components/icons";
-import { getModulosPublicos, getServiciosActivos, type IconoBeneficio, type Modulo, type Servicio } from "@/lib/api";
+import {
+  getModulosPublicos,
+  getPromocionesActivasPublic,
+  getServiciosActivos,
+  promocionImagenUrl,
+  type IconoBeneficio,
+  type Modulo,
+  type PromocionPublica,
+  type Servicio,
+} from "@/lib/api";
 import { getServicioPorSlug } from "@/lib/servicios";
 
 const ICONOS_BENEFICIO: Record<IconoBeneficio, typeof IconScale> = {
@@ -77,6 +86,7 @@ function LandingExperienceInner() {
 
   const [servicios, setServicios] = useState<Servicio[]>([]);
   const [modulos, setModulos] = useState<Modulo[]>([]);
+  const [promociones, setPromociones] = useState<PromocionPublica[]>([]);
   const [panel, setPanel] = useState<Panel>(
     PANELES_VALIDOS.includes(tabParam as Panel) ? (tabParam as Panel) : "servicios"
   );
@@ -86,6 +96,7 @@ function LandingExperienceInner() {
   useEffect(() => {
     getServiciosActivos().then(setServicios).catch(() => undefined);
     getModulosPublicos().then(setModulos).catch(() => undefined);
+    getPromocionesActivasPublic().then(setPromociones).catch(() => undefined);
   }, []);
 
   // El menú del encabezado es la única navegación: Servicios (con ?servicio=) y
@@ -121,11 +132,13 @@ function LandingExperienceInner() {
   // Agente = módulo sin agenda propia todavía (Comercializadora, o cualquier
   // módulo nuevo asignado a ese rol): solo se ofrece el formulario de contacto.
   const aceptaCitas = servicio ? modulos.find((m) => m.id === servicio.moduloId)?.rolResponsable !== "Agente" : true;
+  // Un servicio solo puede tener una promoción activa (garantizado por el backend).
+  const promocion = servicio ? promociones.find((p) => p.servicioIds.includes(servicio.id)) : undefined;
 
   return (
     <div>
       <div id="panel" className="scroll-mt-24">
-        {panel === "servicios" && <PanelServicios servicio={servicio} />}
+        {panel === "servicios" && <PanelServicios servicio={servicio} promocion={promocion} />}
         {panel === "quienes-somos" && <PanelQuienesSomos />}
         {panel === "mision" && <PanelMision />}
         {panel === "comercializadora" && <PanelComercializadora />}
@@ -136,7 +149,7 @@ function LandingExperienceInner() {
   );
 }
 
-function PanelServicios({ servicio }: { servicio: Servicio | undefined }) {
+function PanelServicios({ servicio, promocion }: { servicio: Servicio | undefined; promocion: PromocionPublica | undefined }) {
   if (!servicio) return null;
 
   return (
@@ -179,7 +192,9 @@ function PanelServicios({ servicio }: { servicio: Servicio | undefined }) {
             </ul>
           </div>
 
-          {servicio.slug === SLUG_SAT ? (
+          {promocion ? (
+            <ImagenPromocion promocion={promocion} />
+          ) : servicio.slug === SLUG_SAT ? (
             <ImagenEmblema src="/images/sat-gold.png" width={348} height={402} alt="Símbolo de trámites ante el SAT" />
           ) : (
             <ImagenEmblema
@@ -270,6 +285,26 @@ function ImagenEmblema({
         unoptimized
         className="relative h-auto w-full drop-shadow-[0_20px_35px_rgba(201,162,74,0.35)]"
         priority
+      />
+    </div>
+  );
+}
+
+// Cuando el servicio elegido tiene una promoción activa, su imagen sustituye
+// al emblema genérico (justicia/SAT) en el hero -- así se ve de inmediato,
+// sin tener que bajar hasta el banner de "Paso a paso". <img> normal, no
+// next/image: la imagen la sirve la API (App_Data/promociones), no /public.
+function ImagenPromocion({ promocion }: { promocion: PromocionPublica }) {
+  return (
+    <div className="relative mx-auto w-full max-w-[380px]">
+      <span className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 rounded-sm bg-red-600 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-white shadow-lg">
+        Promoción vigente
+      </span>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={promocionImagenUrl(promocion.id)}
+        alt="Promoción vigente"
+        className="w-full border-2 border-red-600 object-cover shadow-[0_20px_45px_-15px_rgba(220,38,38,0.5)]"
       />
     </div>
   );
