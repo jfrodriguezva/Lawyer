@@ -19,7 +19,7 @@ public class PromocionesController(ISender sender, IWebHostEnvironment environme
 {
     // Pública: el banner del servicio y el aviso del NavBar la consumen sin sesión.
     [AllowAnonymous]
-    [EnableRateLimiting("public")]
+    [EnableRateLimiting("catalogo-publico")]
     [HttpGet("activas")]
     public async Task<IActionResult> ListarActivas()
     {
@@ -29,7 +29,7 @@ public class PromocionesController(ISender sender, IWebHostEnvironment environme
 
     // Pública: la imagen es contenido de mercadeo, no un documento sensible.
     [AllowAnonymous]
-    [EnableRateLimiting("public")]
+    [EnableRateLimiting("catalogo-publico")]
     [HttpGet("{id:int}/imagen")]
     public async Task<IActionResult> Imagen(int id)
     {

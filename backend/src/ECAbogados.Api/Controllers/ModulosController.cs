@@ -18,7 +18,7 @@ public class ModulosController(ISender sender) : ControllerBase
     // Pública: el NavBar y las páginas de servicios necesitan saber qué módulos
     // mostrar (y cuáles están "Próximamente") antes de cualquier sesión.
     [AllowAnonymous]
-    [EnableRateLimiting("public")]
+    [EnableRateLimiting("catalogo-publico")]
     [HttpGet("activos")]
     public async Task<IActionResult> ListarActivos()
     {

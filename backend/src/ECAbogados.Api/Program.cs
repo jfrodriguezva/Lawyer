@@ -86,6 +86,21 @@ try
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             }));
+
+        // Catálogo público (Módulos/Servicios/Promociones "activos"): son GET de
+        // solo lectura sin riesgo de spam, a diferencia de "public" (formularios).
+        // El NavBar y la home los piden por triplicado en cada carga (GuestHeader +
+        // LandingExperience piden cada uno los tres), así que 20/min por IP se
+        // agotaba con solo un par de visitas seguidas -- se vio en vivo al probar
+        // el despliegue: la home quedaba en blanco porque el fetch fallaba callado.
+        options.AddPolicy("catalogo-publico", context => RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "sin-ip",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
     });
 
     // JWT Authentication

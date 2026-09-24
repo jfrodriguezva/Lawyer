@@ -19,7 +19,7 @@ public class ServiciosController(ISender sender) : ControllerBase
     // Pública: /servicios, /servicios/[slug], el sitemap y el NavBar la consumen
     // sin sesión.
     [AllowAnonymous]
-    [EnableRateLimiting("public")]
+    [EnableRateLimiting("catalogo-publico")]
     [HttpGet("activos")]
     public async Task<IActionResult> ListarActivos()
     {
