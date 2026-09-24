@@ -114,8 +114,12 @@ function GuestHeaderInner() {
               ECG ABOGADOS
             </p>
             {!scrolled && (
+              // El nombre de la abogada en el encabezado de TODAS las páginas
+              // públicas (se renderiza en el primer HTML, no solo tras hidratar):
+              // es la búsqueda más común ("Erika Cruz García abogada"), y la marca
+              // "ECGAbogados" por sí sola no la incluye.
               <p className="text-[10px] uppercase tracking-[0.25em] text-brand-creamSoft">
-                Despacho Jurídico
+                Lic. Erika Cruz García
               </p>
             )}
           </div>

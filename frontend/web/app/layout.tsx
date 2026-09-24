@@ -29,14 +29,26 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  // El <title> es la señal más fuerte que usa Google para decidir si una página
+  // responde a una búsqueda. Quien busca a la abogada la busca por su nombre
+  // ("Erika Cruz García abogada", "Erika abogados"...), no por la marca
+  // "ECGAbogados" -- así que el nombre completo va primero, la marca queda
+  // como contexto secundario.
   title: {
-    default: "ECGAbogados | Derecho familiar, fiscal y empresarial",
-    template: "%s | ECGAbogados",
+    default: "Lic. Erika Cruz García | Abogada de derecho familiar — ECGAbogados",
+    template: "%s | Lic. Erika Cruz García — ECGAbogados",
   },
   description:
-    "Despacho jurídico de la Lic. Erika Cruz García. Divorcio incausado, pensión alimenticia, custodia, sucesiones, trámites ante el SAT y asesoría para empresas, con acompañamiento personalizado.",
+    "Lic. Erika Cruz García, abogada especializada en derecho familiar (divorcio incausado, pensión alimenticia, custodia), trámites fiscales ante el SAT y asesoría empresarial en Tecámac, Estado de México.",
+  keywords: [
+    "Erika Cruz García",
+    "Erika Cruz García abogada",
+    "abogada Tecámac",
+    "abogado divorcio Estado de México",
+    "ECGAbogados",
+  ],
   openGraph: {
-    title: "ECGAbogados | Derecho familiar, fiscal y empresarial",
+    title: "Lic. Erika Cruz García | Abogada de derecho familiar — ECGAbogados",
     description:
       "Acompañamiento legal personalizado en trámites familiares, fiscales y empresariales: divorcio incausado, pensión alimenticia, custodia, SAT y más.",
     siteName: "ECGAbogados",
