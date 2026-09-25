@@ -29,6 +29,17 @@ public class FakeCasoRepository : ICasoRepository
         return Task.FromResult<(IReadOnlyList<Caso>, int)>((items, filtrados.Count));
     }
 
+    public Task<IReadOnlyDictionary<string, int>> GetConteoPorEstatusAsync() =>
+        Task.FromResult<IReadOnlyDictionary<string, int>>(
+            _casos.GroupBy(c => c.Estatus.ToString()).ToDictionary(g => g.Key, g => g.Count()));
+
+    public Task<IReadOnlyList<Caso>> GetRecientesPorEstatusAsync(string estatus, int top) =>
+        Task.FromResult<IReadOnlyList<Caso>>(
+            _casos.Where(c => c.Estatus.ToString() == estatus)
+                .OrderByDescending(c => c.FechaApertura)
+                .Take(top)
+                .ToList());
+
     public Task<Caso?> GetByIdAsync(int id) =>
         Task.FromResult(_casos.FirstOrDefault(c => c.Id == id));
 

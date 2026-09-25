@@ -422,6 +422,20 @@ export function getCasosPaginado(page: number, pageSize: number, search?: string
   return request<PagedResult<Caso>>(`/api/casos/pagina?${params.toString()}`);
 }
 
+export interface ResumenCasos {
+  activos: number;
+  enRevision: number;
+  cerrados: number;
+  activosRecientes: Caso[];
+}
+
+// Para el dashboard: reemplaza a getCasos() (traía TODOS los casos solo para
+// contar por estatus y mostrar los 5 más recientes) por conteos calculados en
+// el backend + los 5 casos activos más recientes.
+export function getResumenCasos() {
+  return request<ResumenCasos>("/api/casos/resumen");
+}
+
 export function getCaso(id: number | string) {
   return request<CasoDetalle>(`/api/casos/${id}`);
 }
@@ -1177,6 +1191,21 @@ export function promocionImagenUrl(id: number) {
 
 export function getPromocionesActivasPublic() {
   return publicFetch<PromocionPublica[]>("/api/promociones/activas", 30);
+}
+
+// ---- Catálogo público consolidado (Módulos + Servicios + Promociones activos) ----
+// Un solo GET en vez de los tres anteriores: lo consumen GuestHeader y
+// LandingExperience a través de useCatalogoPublico (lib/useCatalogoPublico.ts),
+// que además deduplica llamadas simultáneas entre ambos componentes.
+
+export interface CatalogoPublico {
+  modulos: Modulo[];
+  servicios: Servicio[];
+  promociones: PromocionPublica[];
+}
+
+export function getCatalogoPublico() {
+  return publicFetch<CatalogoPublico>("/api/catalogo-publico", 30);
 }
 
 export function getPromociones() {

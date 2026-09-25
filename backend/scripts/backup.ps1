@@ -1,8 +1,9 @@
 <#
 .SYNOPSIS
-    Respalda la base de datos ECAbogados y los documentos subidos (App_Data/documentos)
-    a la carpeta backend/backups, cada uno con timestamp. Gratis, sin servicios externos:
-    pensado para programarse con el Programador de tareas de Windows.
+    Respalda la base de datos ECAbogados y los archivos subidos en disco
+    (App_Data/documentos y App_Data/promociones) a la carpeta backend/backups,
+    cada uno con timestamp. Gratis, sin servicios externos: pensado para
+    programarse con el Programador de tareas de Windows.
 
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File backend\scripts\backup.ps1
@@ -20,6 +21,7 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $backendDir = Split-Path -Parent $scriptDir
 $backupsDir = Join-Path $backendDir "backups"
 $documentosDir = Join-Path $backendDir "src\ECAbogados.Api\App_Data\documentos"
+$promocionesDir = Join-Path $backendDir "src\ECAbogados.Api\App_Data\promociones"
 
 if (-not (Test-Path $backupsDir)) {
     New-Item -ItemType Directory -Path $backupsDir -Force | Out-Null
@@ -47,6 +49,15 @@ if (Test-Path $documentosDir) {
     Write-Host "Documentos respaldados en: $zipPath"
 } else {
     Write-Host "No existe $documentosDir todavía (sin documentos subidos aún); se omite."
+}
+
+Write-Host "== Respaldo de imagenes de promociones =="
+if (Test-Path $promocionesDir) {
+    $zipPromoPath = Join-Path $backupsDir "promociones_$timestamp.zip"
+    Compress-Archive -Path (Join-Path $promocionesDir "*") -DestinationPath $zipPromoPath -Force
+    Write-Host "Imagenes de promociones respaldadas en: $zipPromoPath"
+} else {
+    Write-Host "No existe $promocionesDir todavia (sin promociones subidas aun); se omite."
 }
 
 Write-Host "== Limpieza de respaldos antiguos (> $DiasRetencion días) =="

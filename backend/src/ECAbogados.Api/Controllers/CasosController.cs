@@ -7,6 +7,7 @@ using ECAbogados.Application.Casos.Commands.RegenerarTokenCaso;
 using ECAbogados.Application.Casos.Queries.ListarActualizacionesPorCaso;
 using ECAbogados.Application.Casos.Queries.ListarCasos;
 using ECAbogados.Application.Casos.Queries.ListarCasosPaginado;
+using ECAbogados.Application.Casos.Queries.ObtenerResumenCasos;
 using ECAbogados.Application.Casos.Commands.VincularClienteACaso;
 using ECAbogados.Application.Casos.Queries.ObtenerCasoPorId;
 using ECAbogados.Domain.Entities;
@@ -28,8 +29,17 @@ public class CasosController(ISender sender) : ControllerBase
         return Ok(casos);
     }
 
-    // Endpoint paginado para la lista de expedientes (el `Listar()` de arriba sigue
-    // devolviendo todo sin paginar: lo usa el dashboard para calcular sus KPIs).
+    // Reemplaza el uso que el dashboard le daba a Listar() (traer TODOS los casos
+    // solo para contar por estatus y mostrar los 5 más recientes): los conteos se
+    // calculan en SQL (GROUP BY) y solo se transfieren 5 filas, no toda la tabla.
+    [HttpGet("resumen")]
+    public async Task<IActionResult> ObtenerResumen()
+    {
+        var resumen = await sender.Send(new ObtenerResumenCasosQuery());
+        return Ok(resumen);
+    }
+
+    // Endpoint paginado para la lista de expedientes.
     [HttpGet("pagina")]
     public async Task<IActionResult> ListarPaginado([FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] string? search = null)
     {

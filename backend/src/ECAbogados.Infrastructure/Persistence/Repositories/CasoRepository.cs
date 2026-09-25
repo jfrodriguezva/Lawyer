@@ -56,6 +56,40 @@ public class CasoRepository(SqlConnectionFactory connectionFactory) : ICasoRepos
         });
     }
 
+    // El dashboard solo necesita conteos por estatus + los 5 casos activos más
+    // recientes -- antes traía TODOS los casos con GetAllAsync() nada más para
+    // calcular esto en el cliente, lo que no escala conforme crece el despacho.
+    public async Task<IReadOnlyDictionary<string, int>> GetConteoPorEstatusAsync()
+    {
+        return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            const string sql = "SELECT Estatus, COUNT(*) AS Total FROM dbo.Casos GROUP BY Estatus";
+
+            var filas = await connection.QueryAsync<ConteoEstatusRow>(sql);
+            return (IReadOnlyDictionary<string, int>)filas.ToDictionary(f => f.Estatus, f => f.Total);
+        });
+    }
+
+    public async Task<IReadOnlyList<Caso>> GetRecientesPorEstatusAsync(string estatus, int top)
+    {
+        return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            var sql = $"""
+                SELECT TOP (@Top) {Columnas}
+                FROM dbo.Casos
+                WHERE Estatus = @Estatus
+                ORDER BY FechaApertura DESC
+                """;
+
+            var rows = await connection.QueryAsync<CasoRow>(sql, new { Estatus = estatus, Top = top });
+            return rows.Select(MapToEntity).ToList();
+        });
+    }
+
     public async Task<Caso?> GetByIdAsync(int id)
     {
         return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
@@ -235,6 +269,12 @@ public class CasoRepository(SqlConnectionFactory connectionFactory) : ICasoRepos
         Archivado = row.Archivado,
         MontoAcordado = row.MontoAcordado
     };
+
+    private sealed class ConteoEstatusRow
+    {
+        public string Estatus { get; init; } = string.Empty;
+        public int Total { get; init; }
+    }
 
     private sealed class CasoRow
     {

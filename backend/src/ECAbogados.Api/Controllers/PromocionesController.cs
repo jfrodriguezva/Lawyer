@@ -95,6 +95,7 @@ public class PromocionesController(ISender sender, IWebHostEnvironment environme
         string? rutaRelativa = null;
         string? nombreArchivo = null;
         string? tipoContenido = null;
+        string? rutaAnterior = null;
 
         if (request.Imagen is not null && request.Imagen.Length > 0)
         {
@@ -108,12 +109,27 @@ public class PromocionesController(ISender sender, IWebHostEnvironment environme
                 return BadRequest(new { message = "La imagen excede el tamaño máximo permitido (5 MB)." });
             }
 
+            // Se guarda la ruta vieja para borrar el archivo físico después de
+            // actualizar: si no, cada cambio de imagen deja un huérfano en
+            // App_Data/promociones (RutaAlmacenamiento solo se sobreescribe en BD).
+            rutaAnterior = (await promocionRepository.GetByIdAsync(id))?.RutaAlmacenamiento;
+
             rutaRelativa = await GuardarImagenAsync(request.Imagen);
             nombreArchivo = request.Imagen.FileName;
             tipoContenido = request.Imagen.ContentType;
         }
 
         await sender.Send(new ActualizarPromocionCommand(id, request.Texto, nombreArchivo, tipoContenido, rutaRelativa, request.Servicios.ToList()));
+
+        if (rutaAnterior is not null)
+        {
+            var rutaCompleta = Path.Combine(environment.ContentRootPath, rutaAnterior);
+            if (System.IO.File.Exists(rutaCompleta))
+            {
+                System.IO.File.Delete(rutaCompleta);
+            }
+        }
+
         return NoContent();
     }
 

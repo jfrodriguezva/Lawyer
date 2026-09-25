@@ -6,6 +6,8 @@ public interface ICasoRepository
 {
     Task<IReadOnlyList<Caso>> GetAllAsync();
     Task<(IReadOnlyList<Caso> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, string? search);
+    Task<IReadOnlyDictionary<string, int>> GetConteoPorEstatusAsync();
+    Task<IReadOnlyList<Caso>> GetRecientesPorEstatusAsync(string estatus, int top);
     Task<Caso?> GetByIdAsync(int id);
     Task<Caso?> GetByTokenAsync(string token);
     Task<IReadOnlyList<Caso>> GetByClienteIdAsync(int clienteId);

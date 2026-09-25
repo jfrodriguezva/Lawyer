@@ -14,7 +14,6 @@ export default function Monogram({ size = 48 }: { size?: number }) {
         alt="ECG Abogados"
         width={size}
         height={size}
-        unoptimized
         priority
         className="h-full w-full rounded-full"
       />

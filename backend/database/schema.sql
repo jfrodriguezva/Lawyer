@@ -592,6 +592,17 @@ BEGIN
 END
 GO
 
+-- Fuera del bloque de creación de la tabla (que solo corre la primera vez) para
+-- que también se aplique en despliegues donde PromocionServicios ya existía:
+-- ServicioRepository.DeleteAsync borra por ServicioId (DELETE FROM
+-- PromocionServicios WHERE ServicioId = @Id) y hasta ahora solo había índice
+-- por PromocionId.
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_PromocionServicios_ServicioId')
+BEGIN
+    CREATE INDEX IX_PromocionServicios_ServicioId ON dbo.PromocionServicios(ServicioId);
+END
+GO
+
 -- =========================================================
 -- Seed: Módulos y Servicios -- migra el catálogo que antes vivía hardcodeado
 -- en frontend/web/lib/servicios.ts, para que el sitio no pierda contenido al

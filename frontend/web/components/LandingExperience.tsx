@@ -27,16 +27,13 @@ import {
   IconWhatsapp,
 } from "@/components/icons";
 import {
-  getModulosPublicos,
-  getPromocionesActivasPublic,
-  getServiciosActivos,
   promocionImagenUrl,
   type IconoBeneficio,
-  type Modulo,
   type PromocionPublica,
   type Servicio,
 } from "@/lib/api";
 import { getServicioPorSlug } from "@/lib/servicios";
+import { useCatalogoPublico } from "@/lib/useCatalogoPublico";
 
 const ICONOS_BENEFICIO: Record<IconoBeneficio, typeof IconScale> = {
   scale: IconScale,
@@ -84,20 +81,12 @@ function LandingExperienceInner() {
   const tabParam = searchParams.get("tab");
   const servicioParam = searchParams.get("servicio");
 
-  const [servicios, setServicios] = useState<Servicio[]>([]);
-  const [modulos, setModulos] = useState<Modulo[]>([]);
-  const [promociones, setPromociones] = useState<PromocionPublica[]>([]);
+  const { modulos, servicios, promociones } = useCatalogoPublico();
   const [panel, setPanel] = useState<Panel>(
     PANELES_VALIDOS.includes(tabParam as Panel) ? (tabParam as Panel) : "servicios"
   );
   const [servicioSlug, setServicioSlug] = useState(servicioParam ?? "divorcio-incausado");
   const primerRender = useRef(true);
-
-  useEffect(() => {
-    getServiciosActivos().then(setServicios).catch(() => undefined);
-    getModulosPublicos().then(setModulos).catch(() => undefined);
-    getPromocionesActivasPublic().then(setPromociones).catch(() => undefined);
-  }, []);
 
   // El menú del encabezado es la única navegación: Servicios (con ?servicio=) y
   // Quiénes somos/Misión (con ?tab=) llegan por la URL y se reflejan aquí. "Inicio"
@@ -282,7 +271,6 @@ function ImagenEmblema({
         alt={alt}
         width={width}
         height={height}
-        unoptimized
         className="relative h-auto w-full drop-shadow-[0_20px_35px_rgba(201,162,74,0.35)]"
         priority
       />
@@ -342,7 +330,6 @@ function PanelQuienesSomos() {
               alt="Sello ECG Abogados — Erika Cruz García"
               width={280}
               height={280}
-              unoptimized
               className="h-40 w-40 rounded-full ring-1 ring-brand-gold/70 drop-shadow-[0_10px_30px_rgba(201,162,74,0.3)] sm:h-52 sm:w-52"
             />
           </div>
@@ -444,7 +431,6 @@ function PanelComercializadora() {
             alt="Comercializadora"
             width={554}
             height={554}
-            unoptimized
             className="h-16 w-16"
           />
           <div>

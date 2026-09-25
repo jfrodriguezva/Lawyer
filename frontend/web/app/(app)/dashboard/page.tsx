@@ -5,15 +5,15 @@ import Link from "next/link";
 import StatTile from "@/components/StatTile";
 import StatusPill from "@/components/StatusPill";
 import {
-  getCasos,
   getCitas,
   getMensajesContacto,
+  getResumenCasos,
   getSolicitudesCita,
   getTareasPendientes,
   getTramitesSAT,
-  type Caso,
   type Cita,
   type MensajeContacto,
+  type ResumenCasos,
   type SolicitudCita,
   type TareaCaso,
   type TramiteSAT,
@@ -77,7 +77,7 @@ export default function DashboardPage() {
 // Panel del equipo jurídico: Abogado y Administrador ven el mismo tablero de casos,
 // citas, solicitudes y tareas. El rol Administrador es superusuario, no un panel distinto.
 function PanelJuridico({ nombre }: { nombre: string }) {
-  const [casos, setCasos] = useState<Caso[]>([]);
+  const [resumenCasos, setResumenCasos] = useState<ResumenCasos | null>(null);
   const [citas, setCitas] = useState<Cita[]>([]);
   const [mensajes, setMensajes] = useState<MensajeContacto[]>([]);
   const [solicitudes, setSolicitudes] = useState<SolicitudCita[]>([]);
@@ -86,9 +86,9 @@ function PanelJuridico({ nombre }: { nombre: string }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([getCasos(), getCitas(), getMensajesContacto(), getSolicitudesCita(), getTareasPendientes()])
-      .then(([casosData, citasData, mensajesData, solicitudesData, tareasData]) => {
-        setCasos(casosData);
+    Promise.all([getResumenCasos(), getCitas(), getMensajesContacto(), getSolicitudesCita(), getTareasPendientes()])
+      .then(([resumenData, citasData, mensajesData, solicitudesData, tareasData]) => {
+        setResumenCasos(resumenData);
         setCitas(citasData);
         setMensajes(mensajesData);
         setSolicitudes(solicitudesData);
@@ -98,9 +98,10 @@ function PanelJuridico({ nombre }: { nombre: string }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const activos = casos.filter((c) => c.estatus === "Activo");
-  const revision = casos.filter((c) => c.estatus === "Revision");
-  const cerrados = casos.filter((c) => c.estatus === "Cerrado");
+  const activosCount = resumenCasos?.activos ?? 0;
+  const revisionCount = resumenCasos?.enRevision ?? 0;
+  const cerradosCount = resumenCasos?.cerrados ?? 0;
+  const activosRecientes = resumenCasos?.activosRecientes ?? [];
   const proximasCitas = citas
     .filter((c) => c.estatus !== "Cancelada")
     .sort((a, b) => new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime())
@@ -134,14 +135,14 @@ function PanelJuridico({ nombre }: { nombre: string }) {
       )}
 
       <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatTile label="Casos activos" value={loading ? "—" : activos.length} />
-        <StatTile label="En revisión" value={loading ? "—" : revision.length} />
+        <StatTile label="Casos activos" value={loading ? "—" : activosCount} />
+        <StatTile label="En revisión" value={loading ? "—" : revisionCount} />
         <StatTile label="Solicitudes pendientes" value={loading ? "—" : solicitudesPendientes.length} />
         <StatTile label="Tareas vencidas" value={loading ? "—" : tareasVencidas.length} />
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatTile label="Casos cerrados" value={loading ? "—" : cerrados.length} />
+        <StatTile label="Casos cerrados" value={loading ? "—" : cerradosCount} />
         <StatTile label="Tasa de confirmación de citas" value={loading ? "—" : `${tasaConfirmacion}%`} />
         <StatTile label="Mensajes atendidos" value={loading ? "—" : `${tasaAtencionMensajes}%`} />
       </div>
@@ -157,10 +158,10 @@ function PanelJuridico({ nombre }: { nombre: string }) {
             </Link>
           </div>
           <ul className="mt-4 space-y-3">
-            {!loading && activos.length === 0 && (
+            {!loading && activosCount === 0 && (
               <li className="text-sm text-brand-creamSoft">Sin casos activos.</li>
             )}
-            {activos.slice(0, 5).map((c) => (
+            {activosRecientes.map((c) => (
               <li key={c.id}>
                 <Link
                   href={`/casos/${c.id}`}

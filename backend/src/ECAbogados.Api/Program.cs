@@ -29,6 +29,10 @@ try
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
 
+    // Cache en memoria del proceso -- usada por CatalogoPublicoController para no
+    // golpear la BD en cada visita a la home (catálogo público de solo lectura).
+    builder.Services.AddMemoryCache();
+
     // Controllers
     builder.Services.AddControllers()
         .AddJsonOptions(options =>

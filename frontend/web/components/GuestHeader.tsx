@@ -5,14 +5,8 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState, type ReactNode } from "react";
 import Monogram from "@/components/Monogram";
 import { IconChevronDown, IconClose, IconMenu } from "@/components/icons";
-import {
-  getModulosPublicos,
-  getPromocionesActivasPublic,
-  getServiciosActivos,
-  type Modulo,
-  type PromocionPublica,
-  type Servicio,
-} from "@/lib/api";
+import { useCatalogoPublico } from "@/lib/useCatalogoPublico";
+import type { Servicio } from "@/lib/api";
 import { agruparPorModulo, type GrupoModuloServicios } from "@/lib/servicios";
 
 const TABS = [
@@ -40,16 +34,8 @@ function GuestHeaderInner() {
   const [serviciosOpen, setServiciosOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileServiciosOpen, setMobileServiciosOpen] = useState(false);
-  const [modulos, setModulos] = useState<Modulo[]>([]);
-  const [servicios, setServicios] = useState<Servicio[]>([]);
-  const [promociones, setPromociones] = useState<PromocionPublica[]>([]);
+  const { modulos, servicios, promociones } = useCatalogoPublico();
   const [promoTooltipOpen, setPromoTooltipOpen] = useState(false);
-
-  useEffect(() => {
-    getModulosPublicos().then(setModulos).catch(() => undefined);
-    getServiciosActivos().then(setServicios).catch(() => undefined);
-    getPromocionesActivasPublic().then(setPromociones).catch(() => undefined);
-  }, []);
 
   useEffect(() => {
     function onScroll() {
@@ -321,7 +307,7 @@ function NavTab({
 // todavía, se muestra atenuado como "Próximamente".
 function ServiciosMenu({ grupos, onNavigate }: { grupos: GrupoModuloServicios[]; onNavigate: () => void }) {
   return (
-    <div className="absolute left-1/2 z-50 mt-2 w-[620px] -translate-x-1/2 border border-brand-line bg-brand-ink2 p-6 shadow-[0_30px_70px_-25px_rgba(0,0,0,0.65)]">
+    <div className="absolute left-1/2 z-50 mt-2 max-h-[calc(100vh-6rem)] w-[620px] -translate-x-1/2 overflow-y-auto border border-brand-line bg-brand-ink2 p-6 shadow-[0_30px_70px_-25px_rgba(0,0,0,0.65)]">
       <div className="grid grid-cols-2 gap-x-8 gap-y-6">
         {grupos.map(({ modulo, servicios }) =>
           modulo.activo && servicios.length > 0 ? (

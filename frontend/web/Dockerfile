@@ -24,6 +24,14 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
+# La optimización de imágenes de next/image usa sharp, que carga su binario nativo
+# con un require dinámico según la plataforma -- el tracer de "output: standalone"
+# no lo sigue y lo deja fuera. Sin esto, /_next/image responde 200 pero devuelve
+# la imagen original sin comprimir/redimensionar, sin ningún error visible
+# (verificado localmente: falla en silencio, no con un error que se note).
+COPY --from=builder /app/node_modules/sharp ./node_modules/sharp
+COPY --from=builder /app/node_modules/@img ./node_modules/@img
+
 EXPOSE 3000
 ENV PORT=3000 HOSTNAME=0.0.0.0
 CMD ["node", "server.js"]

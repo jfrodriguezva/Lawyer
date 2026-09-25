@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import Monogram from "./Monogram";
 import {
   IconPanel,
   IconFolder,
@@ -117,7 +117,13 @@ export default function Sidebar({
         }`}
       >
         <div className="flex items-center gap-3 border-b border-brand-line px-6 py-6">
-          <Monogram size={36} />
+          <Image
+            src="/images/erika-cruz-garcia.jpg"
+            alt="Lic. Erika Cruz García"
+            width={72}
+            height={72}
+            className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-brand-gold/70"
+          />
           <div>
             <p className="font-display text-sm font-semibold tracking-wide text-brand-cream">
               ECGABOGADOS
