@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getServiciosActivos } from "@/lib/api";
+import { getCatalogoPublico } from "@/lib/api";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
@@ -13,7 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: siteUrl, lastModified: new Date(), priority: 1 },
   ];
 
-  const servicios = await getServiciosActivos();
+  const { servicios } = await getCatalogoPublico();
   const paginasServicios: MetadataRoute.Sitemap = servicios.map((s) => ({
     url: `${siteUrl}/servicios/${s.slug}`,
     lastModified: new Date(),

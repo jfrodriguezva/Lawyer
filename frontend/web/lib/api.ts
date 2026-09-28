@@ -1031,8 +1031,7 @@ export function getMisTramitesSAT() {
 
 // ---- Módulos (Administrador) ----
 // "Categoría padre" del catálogo público (Abogado, SAT, Comercializadora y las
-// que se agreguen). getModulosActivos/getServiciosActivos/getPromocionesActivasPublic
-// NO pasan por request(): éste depende de getCookie (document.cookie), que no
+// que se agreguen). getCatalogoPublico/getServiciosActivos NO pasan por request(): éste depende de getCookie (document.cookie), que no
 // existe en Server Components — estas funciones deben poder llamarse desde
 // componentes de servidor (app/servicios/[slug]/page.tsx) y desde el cliente
 // (GuestHeader) por igual.
@@ -1055,12 +1054,6 @@ async function publicFetch<T>(path: string, revalidateSeconds = 60): Promise<T> 
     throw new ApiError(`Error ${res.status}`, res.status);
   }
   return res.json() as Promise<T>;
-}
-
-// Devuelve TODOS los módulos (no solo activos): el sitio público necesita
-// conocer también los inactivos para mostrarlos como "Próximamente".
-export function getModulosPublicos() {
-  return publicFetch<Modulo[]>("/api/modulos/activos");
 }
 
 export function getModulos() {
@@ -1189,14 +1182,13 @@ export function promocionImagenUrl(id: number) {
   return `${API_URL}/api/promociones/${id}/imagen`;
 }
 
-export function getPromocionesActivasPublic() {
-  return publicFetch<PromocionPublica[]>("/api/promociones/activas", 30);
-}
-
 // ---- Catálogo público consolidado (Módulos + Servicios + Promociones activos) ----
-// Un solo GET en vez de los tres anteriores: lo consumen GuestHeader y
-// LandingExperience a través de useCatalogoPublico (lib/useCatalogoPublico.ts),
-// que además deduplica llamadas simultáneas entre ambos componentes.
+// Un solo GET (con cache de 30s en el backend) en vez de los tres anteriores: lo
+// consumen GuestHeader y LandingExperience a través de useCatalogoPublico
+// (lib/useCatalogoPublico.ts, que deduplica llamadas simultáneas), y del lado del
+// servidor /servicios, /servicios/[slug] y el sitemap. Los módulos vienen TODOS
+// (no solo activos): el sitio necesita los inactivos para mostrarlos como
+// "Próximamente".
 
 export interface CatalogoPublico {
   modulos: Modulo[];

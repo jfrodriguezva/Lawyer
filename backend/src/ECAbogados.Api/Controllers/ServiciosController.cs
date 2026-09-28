@@ -1,3 +1,4 @@
+using ECAbogados.Api.Filters;
 using ECAbogados.Application.Mediation;
 using ECAbogados.Application.Servicios.Commands.ActualizarServicio;
 using ECAbogados.Application.Servicios.Commands.CambiarActivoServicio;
@@ -14,6 +15,7 @@ namespace ECAbogados.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[InvalidaCatalogoPublico]
 public class ServiciosController(ISender sender) : ControllerBase
 {
     // Pública: /servicios, /servicios/[slug], el sitemap y el NavBar la consumen

@@ -1,3 +1,4 @@
+using ECAbogados.Api.Filters;
 using ECAbogados.Application.Mediation;
 using ECAbogados.Application.Modulos.Commands.ActualizarModulo;
 using ECAbogados.Application.Modulos.Commands.CambiarActivoModulo;
@@ -13,6 +14,7 @@ namespace ECAbogados.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[InvalidaCatalogoPublico]
 public class ModulosController(ISender sender) : ControllerBase
 {
     // Pública: el NavBar y las páginas de servicios necesitan saber qué módulos

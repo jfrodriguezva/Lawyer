@@ -3,7 +3,7 @@ import Link from "next/link";
 import GuestHeader from "@/components/GuestHeader";
 import Reveal from "@/components/Reveal";
 import { IconArrowRight } from "@/components/icons";
-import { getModulosPublicos, getServiciosActivos, type Servicio } from "@/lib/api";
+import { getCatalogoPublico, type Servicio } from "@/lib/api";
 import { agruparPorModulo } from "@/lib/servicios";
 
 export const metadata: Metadata = {
@@ -47,7 +47,7 @@ function Grupo({ titulo, servicios }: { titulo: string; servicios: Servicio[] })
 }
 
 export default async function ServiciosIndexPage() {
-  const [modulos, servicios] = await Promise.all([getModulosPublicos(), getServiciosActivos()]);
+  const { modulos, servicios } = await getCatalogoPublico();
   // Solo módulos activos: los "Próximamente" (SAT/Comercializadora deshabilitados,
   // o cualquier módulo nuevo aún sin publicar) se anuncian en el NavBar, no aquí.
   const grupos = agruparPorModulo(modulos.filter((m) => m.activo), servicios);

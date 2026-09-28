@@ -1,6 +1,6 @@
 // Helpers puros sobre el catálogo de Módulos/Servicios, que ahora vive en BD
 // (antes era el arreglo hardcodeado SERVICIOS de este mismo archivo). Los datos
-// se obtienen con getModulosActivos()/getServiciosActivos() (lib/api.ts) desde
+// se obtienen con getCatalogoPublico() (lib/api.ts) desde
 // cada página/componente (servidor o cliente, según corresponda) y se les
 // aplican estos helpers para agrupar/buscar.
 

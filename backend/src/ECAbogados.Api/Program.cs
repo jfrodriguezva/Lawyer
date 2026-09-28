@@ -4,6 +4,7 @@ using ECAbogados.Api.Middleware;
 using ECAbogados.Application;
 using ECAbogados.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -54,6 +55,26 @@ try
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         });
+    });
+
+    // En producción la API solo se alcanza a través de nginx (docker-compose no
+    // publica el puerto 5080), así que Connection.RemoteIpAddress siempre era la IP
+    // del contenedor de nginx: todos los visitantes caían en la MISMA partición del
+    // rate limiter (5 logins fallidos de cualquiera bloqueaban el login de todos).
+    // Con esto se toma la IP real del X-Forwarded-For que agrega nginx. Solo se
+    // confía en proxies de redes privadas (la red interna de Docker); ForwardLimit=1
+    // (default) usa únicamente la última entrada, la que escribe nginx, así que un
+    // X-Forwarded-For falsificado por el cliente no sirve para evadir el límite.
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+        options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse("10.0.0.0/8"));
+        options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse("172.16.0.0/12"));
+        options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse("192.168.0.0/16"));
+        options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse("127.0.0.0/8"));
+        options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse("::1/128"));
     });
 
     // Rate limiting (built-in de .NET, sin paquetes de terceros):
@@ -168,6 +189,9 @@ try
     });
 
     var app = builder.Build();
+
+    // Primero que todo: el logging y el rate limiter deben ver ya la IP real.
+    app.UseForwardedHeaders();
 
     app.UseSerilogRequestLogging();
 
