@@ -436,6 +436,26 @@ export function getResumenCasos() {
   return request<ResumenCasos>("/api/casos/resumen");
 }
 
+export interface ResumenPanel {
+  proximasCitas: Cita[];
+  tasaConfirmacionCitas: number;
+  tasaAtencionMensajes: number;
+  solicitudesPendientes: number;
+  solicitudesPendientesRecientes: {
+    id: number;
+    nombreSolicitante: string;
+    fechaHoraPropuesta: string;
+    estatus: EstatusSolicitudCita;
+  }[];
+}
+
+// Para el dashboard del panel jurídico: reemplaza a getCitas()/getMensajesContacto()/
+// getSolicitudesCita() (traían las tablas completas) por las 5 próximas citas,
+// las 5 solicitudes pendientes más recientes y los conteos, calculados en SQL.
+export function getResumenPanel() {
+  return request<ResumenPanel>("/api/dashboard/resumen");
+}
+
 export function getCaso(id: number | string) {
   return request<CasoDetalle>(`/api/casos/${id}`);
 }
