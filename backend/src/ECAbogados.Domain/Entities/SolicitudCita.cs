@@ -3,7 +3,7 @@ namespace ECAbogados.Domain.Entities;
 /// <summary>
 /// A qué módulo pertenece la solicitud. SAT existe en el modelo desde ahora
 /// para no romper el esquema después, pero el flujo/rol Consultor que la
-/// atiende se activa en una fase posterior (ver Configuracion "sat_habilitado").
+/// atiende se activa con el módulo SAT (Modulos.Activo del módulo con RolResponsable Consultor).
 /// </summary>
 public enum ModuloSolicitud
 {

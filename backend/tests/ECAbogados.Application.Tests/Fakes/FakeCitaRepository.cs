@@ -36,11 +36,11 @@ public class FakeCitaRepository : ICitaRepository
 
     public Task<IReadOnlyList<Cita>> GetProximasAsync(DateTime desde, int top) =>
         Task.FromResult<IReadOnlyList<Cita>>(_citas
-            .Where(c => c.FechaHora >= desde && c.Estatus != EstatusCita.Cancelada)
+            .Where(c => c.FechaHora >= desde && c.Estatus is EstatusCita.Pendiente or EstatusCita.Confirmada)
             .OrderBy(c => c.FechaHora)
             .Take(top)
             .ToList());
 
     public Task<(int Total, int Confirmadas)> GetConteoConfirmadasAsync() =>
-        Task.FromResult((_citas.Count, _citas.Count(c => c.Estatus == EstatusCita.Confirmada)));
+        Task.FromResult((_citas.Count, _citas.Count(c => c.Estatus is EstatusCita.Confirmada or EstatusCita.Realizada or EstatusCita.NoAsistio)));
 }

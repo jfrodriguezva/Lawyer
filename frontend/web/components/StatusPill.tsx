@@ -9,6 +9,8 @@ const STYLES: Record<string, string> = {
   Confirmada: "border-brand-gold text-brand-gold bg-brand-gold/10",
   Cerrado: "border-brand-line text-brand-creamSoft bg-transparent",
   Cancelada: "border-brand-line text-brand-creamSoft/60 bg-transparent",
+  Realizada: "border-emerald-600/60 text-emerald-400 bg-emerald-600/10",
+  NoAsistio: "border-red-500/50 text-red-400 bg-red-500/10",
 };
 
 const LABELS: Record<string, string> = {
@@ -18,6 +20,8 @@ const LABELS: Record<string, string> = {
   Pendiente: "Pendiente",
   Confirmada: "Confirmada",
   Cancelada: "Cancelada",
+  Realizada: "Realizada",
+  NoAsistio: "No asistió",
 };
 
 export default function StatusPill({ estatus }: { estatus: Estatus }) {

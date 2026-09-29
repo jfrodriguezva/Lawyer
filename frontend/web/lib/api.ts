@@ -31,11 +31,6 @@ export type TipoPago = "Anticipo" | "Pago" | "Ajuste";
 export type DestinatarioTipo = "Usuario" | "Cliente";
 export type EstatusTramiteSAT = "Pendiente" | "EnProceso" | "EsperandoCliente" | "Completado" | "Cancelado";
 
-export interface Flags {
-  satHabilitado: boolean;
-  comercializadoraHabilitada: boolean;
-}
-
 export interface CatalogoTramiteSAT {
   id: number;
   nombre: string;
@@ -981,18 +976,6 @@ export function actualizarMiPerfil(data: { nombre: string; passwordActual?: stri
   });
 }
 
-// ---- Configuración / feature flags (SAT, Comercializadora) ----
-
-export function getFlags() {
-  return request<Flags>("/api/configuracion/flags");
-}
-
-export function actualizarFlag(clave: string, valor: boolean) {
-  return request<void>(`/api/configuracion/flags/${clave}`, {
-    method: "PATCH",
-    body: JSON.stringify({ valor }),
-  });
-}
 
 // ---- Catálogo de trámites SAT (Administrador) ----
 

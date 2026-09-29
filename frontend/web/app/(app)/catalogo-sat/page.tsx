@@ -2,19 +2,22 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import {
-  actualizarFlag,
   actualizarTramiteCatalogo,
+  cambiarActivoModulo,
   cambiarEstatusTramiteCatalogo,
   crearTramiteCatalogo,
   getCatalogoSAT,
-  getFlags,
+  getModulos,
   type CatalogoTramiteSAT,
-  type Flags,
+  type Modulo,
 } from "@/lib/api";
+import { getModuloSat } from "@/lib/servicios";
 
 export default function CatalogoSATPage() {
   const [catalogo, setCatalogo] = useState<CatalogoTramiteSAT[]>([]);
-  const [flags, setFlags] = useState<Flags | null>(null);
+  // Mismo interruptor que "Activar/Desactivar" del módulo en Catálogo de
+  // servicios: ya no existe un flag SAT aparte que pudiera contradecirlo.
+  const [moduloSat, setModuloSat] = useState<Modulo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -36,16 +39,16 @@ export default function CatalogoSATPage() {
 
   useEffect(load, []);
   useEffect(() => {
-    getFlags().then(setFlags).catch(() => undefined);
+    getModulos().then((modulos) => setModuloSat(getModuloSat(modulos) ?? null)).catch(() => undefined);
   }, []);
 
   async function handleToggleSat() {
-    if (!flags) return;
+    if (!moduloSat) return;
     setTogglingFlag(true);
     try {
-      const nuevoValor = !flags.satHabilitado;
-      await actualizarFlag("sat_habilitado", nuevoValor);
-      setFlags({ ...flags, satHabilitado: nuevoValor });
+      const nuevoValor = !moduloSat.activo;
+      await cambiarActivoModulo(moduloSat.id, nuevoValor);
+      setModuloSat({ ...moduloSat, activo: nuevoValor });
     } catch {
       setError("No se pudo actualizar el interruptor del módulo SAT.");
     } finally {
@@ -107,22 +110,22 @@ export default function CatalogoSATPage() {
         se presenta como un servicio oficial del SAT.
       </p>
 
-      {flags && (
+      {moduloSat && (
         <div className="mt-6 flex items-center justify-between border border-brand-line bg-brand-ink2 px-5 py-4">
           <div>
             <p className="text-sm text-brand-cream">Módulo SAT visible para clientes y rol Consultor</p>
             <p className="text-xs text-brand-creamSoft">
-              {flags.satHabilitado ? "Activado" : "Desactivado"} — actívalo cuando el catálogo esté listo.
+              {moduloSat.activo ? "Activado" : "Desactivado"} — actívalo cuando el catálogo esté listo.
             </p>
           </div>
           <button
             onClick={handleToggleSat}
             disabled={togglingFlag}
             className={`border px-4 py-2 text-[11px] font-semibold uppercase tracking-widest transition-colors ${
-              flags.satHabilitado ? "border-brand-gold text-brand-gold hover:bg-brand-gold hover:text-brand-ink" : "border-brand-line text-brand-creamSoft hover:border-brand-gold hover:text-brand-gold"
+              moduloSat.activo ? "border-brand-gold text-brand-gold hover:bg-brand-gold hover:text-brand-ink" : "border-brand-line text-brand-creamSoft hover:border-brand-gold hover:text-brand-gold"
             }`}
           >
-            {flags.satHabilitado ? "Desactivar" : "Activar"}
+            {moduloSat.activo ? "Desactivar" : "Activar"}
           </button>
         </div>
       )}

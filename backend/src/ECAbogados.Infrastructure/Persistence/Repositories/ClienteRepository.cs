@@ -8,7 +8,7 @@ public class ClienteRepository(SqlConnectionFactory connectionFactory) : IClient
 {
     private const string Columnas = """
         Id, Email, PasswordHash, Nombre, Activo, IntentosFallidos, BloqueadoHasta, ResetToken, ResetTokenExpira,
-        TipoPersona, Rfc, DatosFiscalesPendientes, Telefono, FechaCreacion, InvitacionPendiente
+        TipoPersona, Rfc, Telefono, FechaCreacion, InvitacionPendiente
         """;
 
     public async Task<Cliente?> GetByEmailAsync(string email)
@@ -49,9 +49,9 @@ public class ClienteRepository(SqlConnectionFactory connectionFactory) : IClient
             using var connection = await connectionFactory.CreateOpenConnectionAsync();
 
             const string sql = """
-                INSERT INTO dbo.Clientes (Email, PasswordHash, Nombre, TipoPersona, Rfc, DatosFiscalesPendientes, Telefono, FechaCreacion, InvitacionPendiente)
+                INSERT INTO dbo.Clientes (Email, PasswordHash, Nombre, TipoPersona, Rfc, Telefono, FechaCreacion, InvitacionPendiente)
                 OUTPUT INSERTED.Id
-                VALUES (@Email, @PasswordHash, @Nombre, @TipoPersona, @Rfc, @DatosFiscalesPendientes, @Telefono, @FechaCreacion, @InvitacionPendiente)
+                VALUES (@Email, @PasswordHash, @Nombre, @TipoPersona, @Rfc, @Telefono, @FechaCreacion, @InvitacionPendiente)
                 """;
 
             return await connection.ExecuteScalarAsync<int>(sql, new
@@ -61,7 +61,6 @@ public class ClienteRepository(SqlConnectionFactory connectionFactory) : IClient
                 cliente.Nombre,
                 TipoPersona = cliente.TipoPersona.ToString(),
                 cliente.Rfc,
-                cliente.DatosFiscalesPendientes,
                 cliente.Telefono,
                 FechaCreacion = cliente.FechaCreacion == default ? DateTime.UtcNow : cliente.FechaCreacion,
                 cliente.InvitacionPendiente
@@ -144,7 +143,6 @@ public class ClienteRepository(SqlConnectionFactory connectionFactory) : IClient
         ResetTokenExpira = row.ResetTokenExpira,
         TipoPersona = Enum.Parse<TipoPersona>(row.TipoPersona),
         Rfc = row.Rfc,
-        DatosFiscalesPendientes = row.DatosFiscalesPendientes,
         Telefono = row.Telefono,
         FechaCreacion = row.FechaCreacion,
         InvitacionPendiente = row.InvitacionPendiente
@@ -163,7 +161,6 @@ public class ClienteRepository(SqlConnectionFactory connectionFactory) : IClient
         public DateTime? ResetTokenExpira { get; init; }
         public string TipoPersona { get; init; } = nameof(Domain.Entities.TipoPersona.Fisica);
         public string? Rfc { get; init; }
-        public string? DatosFiscalesPendientes { get; init; }
         public string? Telefono { get; init; }
         public DateTime FechaCreacion { get; init; }
         public bool InvitacionPendiente { get; init; }

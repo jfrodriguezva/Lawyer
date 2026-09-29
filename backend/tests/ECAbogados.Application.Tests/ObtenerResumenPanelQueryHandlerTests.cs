@@ -44,9 +44,9 @@ public class ObtenerResumenPanelQueryHandlerTests
         Assert.Equal(0, vacio.TasaConfirmacionCitas);
         Assert.Equal(0, vacio.TasaAtencionMensajes);
 
-        // 2 de 3 confirmadas = 66.67% -> 67
+        // 2 de 3 confirmadas = 66.67% -> 67 (una Realizada también cuenta: fue confirmada)
         await SeedCita("A", DateTime.UtcNow, EstatusCita.Confirmada);
-        await SeedCita("B", DateTime.UtcNow, EstatusCita.Confirmada);
+        await SeedCita("B", DateTime.UtcNow, EstatusCita.Realizada);
         await SeedCita("C", DateTime.UtcNow, EstatusCita.Pendiente);
         // 1 de 8 atendidos = 12.5% -> 13
         for (var i = 0; i < 8; i++)

@@ -163,6 +163,12 @@ Hazlo **antes** de `docker compose up -d --build` si el cambio de código nuevo
 ya asume que las tablas existen (por ejemplo, el catálogo de Módulos/Servicios/
 Promociones — ver `docs/MANUAL_TECNICO.md`, sección de Catálogo).
 
+**Datos de ejemplo de instalaciones anteriores:** hasta septiembre de 2026,
+`schema.sql` insertaba 2 casos "[DATOS DE PRUEBA]" con sus citas. Ya no lo
+hace, pero los que existan en la BD se borran con
+`deploy/limpiar-datos-prueba.sql` (instrucciones dentro del archivo: primero
+respaldo, luego vista previa con ROLLBACK, luego COMMIT).
+
 ## Notas
 
 - No hay Gateway: el frontend habla directo con la API a través de nginx
