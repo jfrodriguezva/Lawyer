@@ -20,7 +20,7 @@ services:
       # (solo escucha en su propio loopback) -- esta variable de entorno la
       # sobreescribe para que ligue a todas las interfaces.
       URLS: "http://0.0.0.0:5080"
-      ConnectionStrings__Default: "Server=sqlserver;Database=ECAbogados;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;"
+      ConnectionStrings__Default: "Server=infra-sqlserver;Database=ECAbogados;User Id=${DB_USER};Password=${DB_PASSWORD};TrustServerCertificate=True;"
       Jwt__Secret: ${JWT_SECRET}
       Jwt__Issuer: ECAbogados
       Jwt__Audience: ECAbogadosClients
@@ -37,8 +37,7 @@ services:
       - documentos:/app/App_Data/documentos
       - promociones:/app/App_Data/promociones
       - logs:/app/Logs
-    depends_on:
-      - sqlserver
+    networks: [default, data]
     restart: always
 
   frontend:
@@ -75,6 +74,11 @@ services:
       - certbot-webroot:/var/www/certbot
     entrypoint: >
       sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h; done"
+
+networks:
+  data:
+    external: true
+    name: data
 
 volumes:
   sqldata:
