@@ -13,6 +13,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    container_name: lawyer-api
     environment:
       # appsettings.json trae "Urls": "http://localhost:5080" (para que `dotnet run`
       # local ligue solo a localhost). Dentro del contenedor eso hace que Kestrel
@@ -54,6 +55,7 @@ services:
         # con "/api" aquí ya incluido quedaría duplicado ("/api/api/...").
         NEXT_PUBLIC_API_URL: https://ecgabogados.com
         NEXT_PUBLIC_SITE_URL: https://ecgabogados.com
+    container_name: lawyer-frontend
     depends_on:
       - api
     # edge: el proxy compartido (infra-caddy) llega al frontend como "lawyer-frontend".
