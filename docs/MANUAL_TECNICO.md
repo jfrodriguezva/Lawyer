@@ -6,7 +6,7 @@
 Navegador → Frontend Next.js (:3000) → API .NET (:5080) → SQL Server
 ```
 
-El frontend (`lib/api.ts`) apunta por defecto a `http://localhost:5080` (o a `NEXT_PUBLIC_API_URL` si está definida), es decir, habla directo con la API. En producción, nginx expone un solo dominio y enruta `/api/*` hacia la API y todo lo demás hacia el frontend (ver `deploy/nginx.conf`); no hay Gateway intermedio (hubo uno basado en Ocelot que se retiró por no usarse en producción y no cubrir todos los endpoints).
+El frontend (`lib/api.ts`) apunta por defecto a `http://localhost:5080` (o a `NEXT_PUBLIC_API_URL` si está definida), es decir, habla directo con la API. En producción, el proxy compartido del VPS (Caddy, en `~/infra`) expone un solo dominio con HTTPS y enruta `/api/*` hacia la API y todo lo demás hacia el frontend (ver `deploy/README.md`); no hay Gateway intermedio (hubo uno basado en Ocelot que se retiró por no usarse en producción y no cubrir todos los endpoints).
 
 ## 2. Backend — `ECAbogados` (.NET 10, Clean Architecture)
 

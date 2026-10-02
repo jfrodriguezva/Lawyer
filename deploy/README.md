@@ -1,174 +1,79 @@
-# Despliegue en un VPS (Ubuntu + Docker)
+# Despliegue en el VPS (Ubuntu + Docker)
 
-Guía paso a paso para poner el sistema en un VPS nuevo (pensada para el VPS-2 de
-OVHcloud con Ubuntu 22.04/24.04, pero sirve para cualquier VPS Linux).
+Este repo despliega **solo la app** (api + frontend). SQL Server y el proxy HTTPS son
+infraestructura compartida del VPS y viven en `~/infra` (carpeta creada a mano en el
+servidor, no es un repo):
 
-## 0. Antes de empezar
-
-- El VPS ya contratado, con una IP pública fija.
-- Acceso por SSH al VPS.
-- El dominio `ecgabogados.com` administrado en Cloudflare (ya es el caso).
-
-## 1. Preparar el VPS
-
-Conéctate por SSH y instala Docker:
-
-```bash
-curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker $USER
-# cierra sesión y vuelve a entrar para que el grupo "docker" tome efecto
+```
+/home/ubuntu/
+├── infra/     infra-sqlserver (SQL Server 2022) + infra-caddy (80/443, HTTPS automático)
+│              .env (sa, correo de Let's Encrypt), caddy/sites/*.caddy, scripts/, backups/
+├── Lawyer/    este repo: lawyer-api + lawyer-frontend, con su .env
+└── Mrkos/     otra app, independiente
 ```
 
-Firewall — solo dejar abierto lo necesario:
+| Pieza | Dónde vive |
+|---|---|
+| API, frontend y volúmenes `lawyer_documentos` / `lawyer_promociones` / `lawyer_logs` | `~/Lawyer` |
+| BD `ECAbogados` y su login `kika` (solo esa BD) | `infra-sqlserver`, red `data` |
+| Sitio `ecgabogados.com` (proxy, headers de seguridad, límite de 55 MB, `www` → raíz) | `~/infra/caddy/sites/ecgabogados.caddy` |
+| Certificados HTTPS | Caddy los saca y renueva solo (ya no hay certbot ni cron de nginx) |
+| Respaldo diario de las BD y de los documentos | `~/infra/scripts/backup.sh`, cron 3:30 a. m. CDMX → `~/infra/backups/` (14 días) |
+
+Las dos redes (`edge` para el proxy, `data` para la BD) las crea `~/infra`, así que
+`~/infra` tiene que estar levantado antes que este compose.
+
+## Actualizar después de un cambio
 
 ```bash
-sudo ufw allow OpenSSH
-sudo ufw allow 80
-sudo ufw allow 443
-sudo ufw enable
-```
-
-## 2. Traer el código
-
-```bash
-git clone https://github.com/jfrodriguezva/Lawyer.git
-cd Lawyer
-cp .env.example .env
-nano .env   # rellena cada valor (ver comentarios dentro del archivo)
-```
-
-## 3. DNS en Cloudflare
-
-En el panel de Cloudflare, pestaña DNS, agrega (o edita si ya existen):
-
-| Tipo | Nombre | Contenido           | Proxy |
-|------|--------|---------------------|-------|
-| A    | @      | *(IP pública del VPS)* | DNS only (nube gris) |
-| A    | www    | *(IP pública del VPS)* | DNS only (nube gris) |
-
-Importante: déjalos en **"DNS only"** (nube gris, no naranja) al menos hasta
-terminar el paso 4 — con el proxy de Cloudflare activado, la verificación de
-Let's Encrypt se complica innecesariamente la primera vez. Una vez que todo
-funcione con HTTPS, puedes activar el proxy naranja si quieres el CDN/protección
-de Cloudflare.
-
-Esto es aparte de Email Routing — un registro **A** (para la página) y los
-registros **MX** (para el correo) conviven sin problema en el mismo DNS.
-
-## 4. Certificado HTTPS (primera vez)
-
-Es un problema de huevo y gallina: nginx no arranca con la configuración final
-porque pide un certificado que todavía no existe. Se resuelve en dos pasos.
-
-**4.1 — Arranca nginx solo con el bloque HTTP.** Guarda aparte la versión
-definitiva de `deploy/nginx.conf` (la que ya tiene los bloques 443) y
-sustitúyela temporalmente por una que solo redirige y sirve el reto de
-Let's Encrypt:
-
-```bash
-cp deploy/nginx.conf deploy/nginx.conf.full
-cat > deploy/nginx.conf <<'EOF'
-server {
-    listen 80;
-    server_name ecgabogados.com www.ecgabogados.com;
-
-    location /.well-known/acme-challenge/ {
-        root /var/www/certbot;
-    }
-
-    location / {
-        return 301 https://$host$request_uri;
-    }
-}
-EOF
-docker compose up -d nginx
-```
-
-**4.2 — Pide el certificado.** El servicio `certbot` en `docker-compose.yml`
-tiene un `entrypoint` fijo (el bucle de renovación automática), así que hay
-que sobreescribirlo explícitamente con `--entrypoint` para poder pasarle
-`certonly`:
-
-```bash
-docker compose run --rm --entrypoint certbot certbot certonly \
-  --webroot -w /var/www/certbot \
-  -d ecgabogados.com -d www.ecgabogados.com \
-  --email TU_CORREO_REAL --agree-tos --no-eff-email
-```
-
-**4.3 — Restaura la versión definitiva** de `deploy/nginx.conf` (con los
-bloques 443 ya emitido el certificado) y recarga:
-
-```bash
-mv deploy/nginx.conf.full deploy/nginx.conf
-docker compose restart nginx
-```
-
-## 5. Base de datos (primera vez)
-
-```bash
-docker compose up -d sqlserver
-# espera ~20 segundos a que arranque
-docker compose cp backend/database/schema.sql sqlserver:/tmp/schema.sql
-docker compose exec sqlserver /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P "$(grep SQL_SA_PASSWORD .env | cut -d= -f2)" \
-  -C -f 65001 -i /tmp/schema.sql
-```
-
-Si `sqlcmd` no se encuentra en esa ruta, prueba `/opt/mssql-tools/bin/sqlcmd`
-(la ruta cambió de nombre entre versiones de la imagen).
-
-## 6. Levantar todo
-
-```bash
+cd ~/Lawyer
+git pull origin main
 docker compose up -d --build
 ```
 
-Esto construye la API (.NET) y el frontend (Next.js) y los deja corriendo.
-Verifica en `https://ecgabogados.com`.
-
-## 7. Renovación del certificado
-
-El contenedor `certbot` ya se queda corriendo y renueva automáticamente cada 12
-horas si hace falta — pero nginx no recarga solo el certificado nuevo. Agrega
-un cron semanal en el VPS:
+**Si el cambio toca `backend/database/schema.sql`**, aplícalo antes (es idempotente, no
+borra ni duplica datos). Se corre como `sa`, cuya contraseña está en `~/infra/.env`:
 
 ```bash
-crontab -e
-# agrega esta línea:
-0 4 * * 0 cd /ruta/a/Lawyer && docker compose restart nginx
+docker cp ~/Lawyer/backend/database/schema.sql infra-sqlserver:/tmp/schema.sql
+docker exec -it -e SQLCMDPASSWORD="$(grep '^SQL_SA_PASSWORD=' ~/infra/.env | cut -d= -f2-)" \
+  infra-sqlserver /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -d ECAbogados -f 65001 -i /tmp/schema.sql
 ```
 
-## 8. Actualizar el sistema después de un cambio
+**Datos de ejemplo de instalaciones anteriores:** hasta septiembre de 2026,
+`schema.sql` insertaba 2 casos "[DATOS DE PRUEBA]" con sus citas. Los que existan
+se borran con `deploy/limpiar-datos-prueba.sql` (instrucciones dentro: respaldo,
+vista previa con ROLLBACK, luego COMMIT).
 
-```bash
-cd Lawyer
-git pull
-docker compose up -d --build
-```
+## Conectarse a la BD desde SSMS (túnel SSH)
 
-**Si el cambio agrega tablas o columnas nuevas** (revisa si `backend/database/schema.sql`
-aparece en el `git pull`), vuelve a aplicarlo contra la base de datos ya
-existente — es idempotente (`IF NOT EXISTS`/`IF OBJECT_ID ... IS NULL`), no
-borra ni duplica nada de lo que ya había:
+El SQL Server no está expuesto a internet; solo escucha dentro del VPS
+(`127.0.0.1:1434`). Para entrar desde tu PC:
 
-```bash
-docker compose cp backend/database/schema.sql sqlserver:/tmp/schema.sql
-docker compose exec sqlserver /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P "$(grep SQL_SA_PASSWORD .env | cut -d= -f2)" \
-  -C -f 65001 -i /tmp/schema.sql
-```
+1. En PowerShell, deja abierto el túnel mientras trabajas:
+   ```powershell
+   ssh -N -L 14330:localhost:1434 ubuntu@51.81.202.18
+   ```
+2. En SSMS: servidor `localhost,14330`, SQL Server Authentication, usuario `sa` (todo) o
+   `kika` (solo `ECAbogados`), y marca **Trust server certificate**.
+3. `Ctrl+C` en PowerShell cierra el túnel.
 
-Hazlo **antes** de `docker compose up -d --build` si el cambio de código nuevo
-ya asume que las tablas existen (por ejemplo, el catálogo de Módulos/Servicios/
-Promociones — ver `docs/MANUAL_TECNICO.md`, sección de Catálogo).
+## VPS nuevo desde cero
+
+1. Docker (`curl -fsSL https://get.docker.com | sh`) y firewall con 22, 80 y 443.
+2. Levanta `~/infra` (SQL Server + Caddy) con su `.env`.
+3. Crea la BD y el login de la app en `infra-sqlserver` (`CREATE DATABASE ECAbogados`,
+   `CREATE LOGIN kika ...`, usuario `db_owner` solo en esa BD) y aplica `schema.sql`.
+4. `git clone https://github.com/jfrodriguezva/Lawyer.git ~/Lawyer`,
+   `cp .env.example .env`, llena `DB_PASSWORD`, `JWT_SECRET` y SMTP, y
+   `docker compose up -d --build`.
+5. Agrega `~/infra/caddy/sites/ecgabogados.caddy` y recarga Caddy.
+6. DNS en Cloudflare: registros A `@` y `www` → IP del VPS, en **DNS only** (nube gris).
 
 ## Notas
 
-- No hay Gateway: el frontend habla directo con la API a través de nginx
-  (`/api/*`). Existió un Gateway basado en Ocelot que nunca se llegó a
-  desplegar y se eliminó del proyecto porque solo enrutaba una parte de los
-  endpoints reales.
-- Los documentos subidos viven en el volumen Docker `documentos`, no en la
-  imagen — sobreviven a un `docker compose up --build`. Aun así, agrega el
-  respaldo diario que ya trae el VPS de OVHcloud a tu rutina de verificación.
+- No hay Gateway: el frontend habla directo con la API por `/api/*` bajo el mismo dominio.
+- La API confía en `X-Forwarded-For` solo si viene de redes privadas (la red de Docker
+  donde está Caddy), así que el rate limit usa la IP real del visitante.
+- Los documentos subidos viven en el volumen `lawyer_documentos`, no en la imagen:
+  sobreviven a `docker compose up --build` y entran en el respaldo diario.

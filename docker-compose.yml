@@ -1,14 +1,13 @@
-services:
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: ${SQL_SA_PASSWORD}
-      MSSQL_PID: Express
-    volumes:
-      - sqldata:/var/opt/mssql
-    restart: always
+# ECGAbogados en producción: SOLO la app (api + frontend).
+#
+# SQL Server y el proxy HTTPS son infraestructura compartida del VPS en ~/infra:
+#   - infra-sqlserver (red "data"): la API entra con su propio login (DB_USER/DB_PASSWORD
+#     en .env), con acceso solo a la BD ECAbogados.
+#   - infra-caddy (red "edge", dueño de 80/443): HTTPS automático y proxy hacia
+#     lawyer-frontend:3000 y lawyer-api:5080 (sitio en ~/infra/caddy/sites/ecgabogados.caddy).
+# ~/infra debe estar levantado antes que esto (crea las redes edge y data).
 
+services:
   api:
     build:
       context: ./backend
@@ -17,7 +16,7 @@ services:
     environment:
       # appsettings.json trae "Urls": "http://localhost:5080" (para que `dotnet run`
       # local ligue solo a localhost). Dentro del contenedor eso hace que Kestrel
-      # rechace las conexiones que le manda nginx por la red interna de Docker
+      # rechace las conexiones que le manda el proxy por la red interna de Docker
       # (solo escucha en su propio loopback) -- esta variable de entorno la
       # sobreescribe para que ligue a todas las interfaces.
       URLS: "http://0.0.0.0:5080"
@@ -65,28 +64,6 @@ services:
         aliases: [lawyer-frontend]
     restart: always
 
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - certbot-etc:/etc/letsencrypt
-      - certbot-webroot:/var/www/certbot
-    depends_on:
-      - api
-      - frontend
-    restart: always
-
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - certbot-etc:/etc/letsencrypt
-      - certbot-webroot:/var/www/certbot
-    entrypoint: >
-      sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h; done"
-
 networks:
   data:
     external: true
@@ -95,10 +72,8 @@ networks:
     external: true
     name: edge
 
+# Los archivos subidos viven aquí (lawyer_documentos, lawyer_promociones), no en la imagen.
 volumes:
-  sqldata:
   documentos:
   promociones:
   logs:
-  certbot-etc:
-  certbot-webroot:

@@ -67,7 +67,6 @@ cd ~/Lawyer
 git pull origin main
 docker compose build frontend
 docker compose up -d --force-recreate frontend
-docker compose restart nginx
 ```
 
 Si solo cambió la API:
@@ -89,6 +88,8 @@ docker compose up -d --build --force-recreate
 ```
 
 Si el cambio incluye `backend/database/schema.sql`, no asumir que basta con reconstruir contenedores: Codex debe indicar expresamente si hay que ejecutar SQL y proporcionar un procedimiento seguro que preserve los datos existentes.
+
+**Infraestructura compartida (desde 2026-10-02):** este repo ya no levanta SQL Server, nginx ni certbot. El VPS se divide en `~/infra` (`infra-sqlserver` + `infra-caddy` con HTTPS automático; carpeta creada a mano, no es repo), `~/Lawyer` (solo `lawyer-api` y `lawyer-frontend`) y `~/Mrkos` (otra app). La API entra a la BD `ECAbogados` con el login `kika` (`DB_USER`/`DB_PASSWORD` en `~/Lawyer/.env`), que no tiene acceso a ninguna otra BD; `sa` vive solo en `~/infra/.env`. El sitio de Caddy está en `~/infra/caddy/sites/ecgabogados.caddy` y se aplica con `docker exec infra-caddy caddy reload --config /etc/caddy/Caddyfile`. Respaldo diario de todas las BD y de los volúmenes de documentos/promociones: `~/infra/scripts/backup.sh` (cron 3:30 a. m. CDMX) → `~/infra/backups/`. Ver `deploy/README.md`.
 
 **Seguridad operativa:** nunca guardar en `RECOVERY.md`, Git o el chat contraseñas, tokens, el contenido de `.env` ni claves SSH privadas. La conexión SSH del VPS y el despliegue productivo permanecen bajo control manual del usuario.
 
