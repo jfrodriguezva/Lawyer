@@ -15,7 +15,7 @@ namespace ECAbogados.Api.Controllers;
 [Route("api/catalogo-publico")]
 public class CatalogoPublicoController(ISender sender, IMemoryCache cache) : ControllerBase
 {
-    private const string CacheKey = "catalogo-publico";
+    internal const string CacheKey = "catalogo-publico";
     private static readonly TimeSpan Ttl = TimeSpan.FromSeconds(30);
 
     [AllowAnonymous]

@@ -70,6 +70,12 @@ El SQL Server no está expuesto a internet; solo escucha dentro del VPS
 5. Agrega `~/infra/caddy/sites/ecgabogados.caddy` y recarga Caddy.
 6. DNS en Cloudflare: registros A `@` y `www` → IP del VPS, en **DNS only** (nube gris).
 
+**Datos de ejemplo de instalaciones anteriores:** hasta septiembre de 2026,
+`schema.sql` insertaba 2 casos "[DATOS DE PRUEBA]" con sus citas. Ya no lo
+hace, pero los que existan en la BD se borran con
+`deploy/limpiar-datos-prueba.sql` (instrucciones dentro del archivo: primero
+respaldo, luego vista previa con ROLLBACK, luego COMMIT).
+
 ## Notas
 
 - No hay Gateway: el frontend habla directo con la API por `/api/*` bajo el mismo dominio.

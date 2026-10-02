@@ -1,6 +1,6 @@
 // Helpers puros sobre el catálogo de Módulos/Servicios, que ahora vive en BD
 // (antes era el arreglo hardcodeado SERVICIOS de este mismo archivo). Los datos
-// se obtienen con getModulosActivos()/getServiciosActivos() (lib/api.ts) desde
+// se obtienen con getCatalogoPublico() (lib/api.ts) desde
 // cada página/componente (servidor o cliente, según corresponda) y se les
 // aplican estos helpers para agrupar/buscar.
 
@@ -8,6 +8,20 @@ import type { Modulo, Servicio } from "./api";
 
 export function getServicioPorSlug(servicios: Servicio[], slug: string): Servicio | undefined {
   return servicios.find((s) => s.slug === slug);
+}
+
+// El "módulo SAT" es el que atiende el rol Consultor (se identifica por rol y no
+// por slug, porque el Administrador puede renombrar el módulo). Su Activo es la
+// única fuente de verdad para todo lo SAT: el sitio público, la opción "Trámite
+// SAT" del formulario de citas y el menú del Consultor. Antes esto último
+// dependía de un flag aparte (Configuracion.sat_habilitado) que podía quedar
+// desincronizado del módulo.
+export function getModuloSat(modulos: Modulo[]): Modulo | undefined {
+  return modulos.find((m) => m.rolResponsable === "Consultor");
+}
+
+export function satActivo(modulos: Modulo[]): boolean {
+  return getModuloSat(modulos)?.activo ?? false;
 }
 
 export interface GrupoModuloServicios {

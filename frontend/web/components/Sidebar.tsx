@@ -22,7 +22,8 @@ import {
   IconMegaphone,
 } from "./icons";
 import { deleteCookie, getCookie } from "@/lib/cookies";
-import { getFlags } from "@/lib/api";
+import { satActivo } from "@/lib/servicios";
+import { useCatalogoPublico } from "@/lib/useCatalogoPublico";
 
 // Visible para Abogado y Administrador: es el módulo jurídico completo.
 const NAV_JURIDICO = [
@@ -67,7 +68,7 @@ export default function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const [rol, setRol] = useState<string | null>(null);
-  const [satHabilitado, setSatHabilitado] = useState(false);
+  const satHabilitado = satActivo(useCatalogoPublico().modulos);
 
   useEffect(() => {
     const raw = getCookie("ec_user");
@@ -78,9 +79,6 @@ export default function Sidebar({
         // ignore malformed cookie
       }
     }
-    getFlags()
-      .then((flags) => setSatHabilitado(flags.satHabilitado))
-      .catch(() => undefined);
   }, []);
 
   const esAdministrador = rol === "Administrador";

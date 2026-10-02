@@ -5,15 +5,13 @@ import Link from "next/link";
 import StatTile from "@/components/StatTile";
 import StatusPill from "@/components/StatusPill";
 import {
-  getCitas,
-  getMensajesContacto,
   getResumenCasos,
+  getResumenPanel,
   getSolicitudesCita,
   getTareasPendientes,
   getTramitesSAT,
-  type Cita,
-  type MensajeContacto,
   type ResumenCasos,
+  type ResumenPanel,
   type SolicitudCita,
   type TareaCaso,
   type TramiteSAT,
@@ -78,20 +76,16 @@ export default function DashboardPage() {
 // citas, solicitudes y tareas. El rol Administrador es superusuario, no un panel distinto.
 function PanelJuridico({ nombre }: { nombre: string }) {
   const [resumenCasos, setResumenCasos] = useState<ResumenCasos | null>(null);
-  const [citas, setCitas] = useState<Cita[]>([]);
-  const [mensajes, setMensajes] = useState<MensajeContacto[]>([]);
-  const [solicitudes, setSolicitudes] = useState<SolicitudCita[]>([]);
+  const [resumenPanel, setResumenPanel] = useState<ResumenPanel | null>(null);
   const [tareas, setTareas] = useState<TareaCaso[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([getResumenCasos(), getCitas(), getMensajesContacto(), getSolicitudesCita(), getTareasPendientes()])
-      .then(([resumenData, citasData, mensajesData, solicitudesData, tareasData]) => {
+    Promise.all([getResumenCasos(), getResumenPanel(), getTareasPendientes()])
+      .then(([resumenData, panelData, tareasData]) => {
         setResumenCasos(resumenData);
-        setCitas(citasData);
-        setMensajes(mensajesData);
-        setSolicitudes(solicitudesData);
+        setResumenPanel(panelData);
         setTareas(tareasData);
       })
       .catch(() => setError("No se pudieron cargar los datos del panel."))
@@ -102,12 +96,12 @@ function PanelJuridico({ nombre }: { nombre: string }) {
   const revisionCount = resumenCasos?.enRevision ?? 0;
   const cerradosCount = resumenCasos?.cerrados ?? 0;
   const activosRecientes = resumenCasos?.activosRecientes ?? [];
-  const proximasCitas = citas
-    .filter((c) => c.estatus !== "Cancelada")
-    .sort((a, b) => new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime())
-    .slice(0, 5);
-
-  const solicitudesPendientes = solicitudes.filter((s) => SOLICITUDES_PENDIENTES.includes(s.estatus));
+  // Ya vienen filtradas (solo futuras y no canceladas) y ordenadas desde el
+  // backend. Antes se ordenaban TODAS las citas históricas y se tomaban las 5
+  // primeras, así que "Próximas citas" mostraba las más antiguas del historial.
+  const proximasCitas = resumenPanel?.proximasCitas ?? [];
+  const solicitudesPendientesCount = resumenPanel?.solicitudesPendientes ?? 0;
+  const solicitudesPendientesRecientes = resumenPanel?.solicitudesPendientesRecientes ?? [];
   const tareasOrdenadas = [...tareas].sort((a, b) => {
     if (!a.fechaVencimiento) return 1;
     if (!b.fechaVencimiento) return -1;
@@ -115,14 +109,8 @@ function PanelJuridico({ nombre }: { nombre: string }) {
   });
   const tareasVencidas = tareasOrdenadas.filter((t) => t.fechaVencimiento && new Date(t.fechaVencimiento) < new Date());
 
-  const tasaConfirmacion =
-    citas.length > 0
-      ? Math.round((citas.filter((c) => c.estatus === "Confirmada").length / citas.length) * 100)
-      : 0;
-  const tasaAtencionMensajes =
-    mensajes.length > 0
-      ? Math.round((mensajes.filter((m) => m.atendido).length / mensajes.length) * 100)
-      : 0;
+  const tasaConfirmacion = resumenPanel?.tasaConfirmacionCitas ?? 0;
+  const tasaAtencionMensajes = resumenPanel?.tasaAtencionMensajes ?? 0;
 
   return (
     <div>
@@ -137,7 +125,7 @@ function PanelJuridico({ nombre }: { nombre: string }) {
       <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatTile label="Casos activos" value={loading ? "—" : activosCount} />
         <StatTile label="En revisión" value={loading ? "—" : revisionCount} />
-        <StatTile label="Solicitudes pendientes" value={loading ? "—" : solicitudesPendientes.length} />
+        <StatTile label="Solicitudes pendientes" value={loading ? "—" : solicitudesPendientesCount} />
         <StatTile label="Tareas vencidas" value={loading ? "—" : tareasVencidas.length} />
       </div>
 
@@ -216,10 +204,10 @@ function PanelJuridico({ nombre }: { nombre: string }) {
             </Link>
           </div>
           <ul className="mt-4 space-y-3">
-            {!loading && solicitudesPendientes.length === 0 && (
+            {!loading && solicitudesPendientesCount === 0 && (
               <li className="text-sm text-brand-creamSoft">Sin solicitudes pendientes.</li>
             )}
-            {solicitudesPendientes.slice(0, 5).map((s) => (
+            {solicitudesPendientesRecientes.map((s) => (
               <li key={s.id} className="border border-brand-line px-4 py-3">
                 <p className="text-sm font-medium text-brand-cream">{s.nombreSolicitante}</p>
                 <p className="text-xs text-brand-creamSoft">{formatFecha(s.fechaHoraPropuesta)} · {s.estatus}</p>

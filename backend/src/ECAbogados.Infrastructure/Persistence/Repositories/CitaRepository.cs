@@ -96,6 +96,51 @@ public class CitaRepository(SqlConnectionFactory connectionFactory) : ICitaRepos
         });
     }
 
+    public async Task<IReadOnlyList<Cita>> GetProximasAsync(DateTime desde, int top)
+    {
+        return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            const string sql = """
+                SELECT TOP (@Top) Id, CasoId, NombreCliente, Telefono, FechaHora, Estatus, RecordatorioEnviado, ServicioInteres
+                FROM dbo.Citas
+                WHERE FechaHora >= @Desde AND Estatus IN @Estatus
+                ORDER BY FechaHora
+                """;
+
+            var rows = await connection.QueryAsync<CitaRow>(sql, new
+            {
+                Top = top,
+                Desde = desde,
+                Estatus = new[] { EstatusCita.Pendiente.ToString(), EstatusCita.Confirmada.ToString() }
+            });
+            return rows.Select(MapToEntity).ToList();
+        });
+    }
+
+    // "Confirmadas" incluye las que ya pasaron a Realizada/NoAsistio: también
+    // fueron confirmadas; si no, la tasa bajaría cada vez que se registra que
+    // el cliente asistió.
+    public async Task<(int Total, int Confirmadas)> GetConteoConfirmadasAsync()
+    {
+        return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            const string sql = """
+                SELECT COUNT(1) AS Total,
+                       COALESCE(SUM(CASE WHEN Estatus IN @Confirmadas THEN 1 ELSE 0 END), 0) AS Confirmadas
+                FROM dbo.Citas
+                """;
+
+            return await connection.QuerySingleAsync<(int Total, int Confirmadas)>(sql, new
+            {
+                Confirmadas = new[] { EstatusCita.Confirmada.ToString(), EstatusCita.Realizada.ToString(), EstatusCita.NoAsistio.ToString() }
+            });
+        });
+    }
+
     public async Task MarkRecordatorioEnviadoAsync(int id)
     {
         await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>

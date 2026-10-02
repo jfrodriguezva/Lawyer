@@ -60,14 +60,22 @@ BEGIN
         ResetTokenExpira DATETIME2 NULL,
         TipoPersona NVARCHAR(20) NOT NULL DEFAULT 'Fisica',
         Rfc NVARCHAR(20) NULL,
-        -- Datos fiscales adicionales: pendiente de que el despacho defina qué
-        -- captura además del RFC. Campo libre para no inventar una estructura.
-        DatosFiscalesPendientes NVARCHAR(1000) NULL,
         Telefono NVARCHAR(30) NULL,
         FechaCreacion DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
         InvitacionPendiente BIT NOT NULL DEFAULT 0,
         CONSTRAINT CK_Clientes_TipoPersona CHECK (TipoPersona IN ('Fisica', 'Moral'))
     );
+END
+GO
+
+-- Clientes.DatosFiscalesPendientes: ninguna pantalla la capturaba ni la mostraba.
+-- Se elimina solo si está vacía en todas las filas, para no perder nada que se
+-- haya capturado a mano; si tiene datos, se deja y hay que revisarla. Va en SQL
+-- dinámico porque en una BD nueva la columna no existe y el lote no compilaría.
+IF COL_LENGTH(N'dbo.Clientes', N'DatosFiscalesPendientes') IS NOT NULL
+BEGIN
+    EXEC(N'IF NOT EXISTS (SELECT 1 FROM dbo.Clientes WHERE DatosFiscalesPendientes IS NOT NULL)
+               ALTER TABLE dbo.Clientes DROP COLUMN DatosFiscalesPendientes;');
 END
 GO
 
@@ -443,21 +451,17 @@ END
 GO
 
 -- =========================================================
--- Configuración editable: catálogos y feature flags (SAT, Comercializadora).
--- Clave/valor simple a propósito -- evita tablas nuevas por cada opción.
+-- dbo.Configuracion (eliminada): guardaba los flags sat_habilitado y
+-- comercializadora_habilitada, que duplicaban Modulos.Activo y podían
+-- contradecirlo, y documentos_cuota_total_mb, que ningún código leía. Hoy lo
+-- SAT depende solo de Modulos.Activo. Se borra solo si contiene únicamente esas
+-- claves conocidas, para no perder alguna agregada a mano.
 -- =========================================================
-IF OBJECT_ID(N'dbo.Configuracion', N'U') IS NULL
+IF OBJECT_ID(N'dbo.Configuracion', N'U') IS NOT NULL
 BEGIN
-    CREATE TABLE dbo.Configuracion (
-        Clave NVARCHAR(100) NOT NULL PRIMARY KEY,
-        Valor NVARCHAR(1000) NOT NULL,
-        Descripcion NVARCHAR(500) NULL
-    );
-
-    INSERT INTO dbo.Configuracion (Clave, Valor, Descripcion) VALUES
-        ('sat_habilitado', 'false', 'Activa el módulo informativo de trámites SAT (rol Consultor).'),
-        ('comercializadora_habilitada', 'false', 'Activa el módulo de Comercializadora (rol Agente). Pendiente de definición de negocio.'),
-        ('documentos_cuota_total_mb', '2048', 'Cuota total aproximada de almacenamiento local de documentos.');
+    EXEC(N'IF NOT EXISTS (SELECT 1 FROM dbo.Configuracion
+                          WHERE Clave NOT IN (''sat_habilitado'', ''comercializadora_habilitada'', ''documentos_cuota_total_mb''))
+               DROP TABLE dbo.Configuracion;');
 END
 GO
 
@@ -606,18 +610,16 @@ GO
 -- =========================================================
 -- Seed: Módulos y Servicios -- migra el catálogo que antes vivía hardcodeado
 -- en frontend/web/lib/servicios.ts, para que el sitio no pierda contenido al
--- pasar a ser administrable desde el panel. Activo de SAT/Comercializadora
--- toma el valor que ya tenían los flags de dbo.Configuracion.
+-- pasar a ser administrable desde el panel. SAT y Comercializadora arrancan
+-- inactivos ("Próximamente"); el Administrador los activa desde el panel.
 -- =========================================================
 IF NOT EXISTS (SELECT 1 FROM dbo.Modulos)
 BEGIN
     INSERT INTO dbo.Modulos (Nombre, Slug, RolResponsable, Activo, Orden)
     VALUES
         ('Abogado', 'abogado', 'Abogado', 1, 10),
-        ('SAT', 'sat', 'Consultor',
-            (SELECT CASE WHEN Valor = 'true' THEN 1 ELSE 0 END FROM dbo.Configuracion WHERE Clave = 'sat_habilitado'), 20),
-        ('Comercializadora', 'comercializadora', 'Agente',
-            (SELECT CASE WHEN Valor = 'true' THEN 1 ELSE 0 END FROM dbo.Configuracion WHERE Clave = 'comercializadora_habilitada'), 30);
+        ('SAT', 'sat', 'Consultor', 0, 20),
+        ('Comercializadora', 'comercializadora', 'Agente', 0, 30);
 END
 GO
 
@@ -664,30 +666,8 @@ BEGIN
 END
 GO
 
--- =========================================================
--- Seed: datos de ejemplo, claramente identificados (para poblar el dashboard).
--- =========================================================
-IF NOT EXISTS (SELECT 1 FROM dbo.Casos WHERE ClienteNombre = 'María Fernanda López' AND Tipo = 'Divorcio incausado')
-BEGIN
-    DECLARE @AbogadoId INT = (SELECT Id FROM dbo.Usuarios WHERE Email = 'erika@ecgabogados.com');
-
-    INSERT INTO dbo.Casos (ClienteNombre, Tipo, Estatus, FechaApertura, Notas, TokenAcceso, TokenGeneradoEn, AbogadoResponsableId, Prioridad, FolioInterno)
-    VALUES
-        ('María Fernanda López', 'Divorcio incausado', 'Activo', DATEADD(DAY, -30, SYSUTCDATETIME()), '[DATOS DE PRUEBA] Audiencia preliminar programada.',
-            LOWER(REPLACE(CONVERT(NVARCHAR(36), NEWID()), '-', '')), SYSUTCDATETIME(), @AbogadoId, 'Media', 'ECG-0001'),
-        ('Carlos Alberto Ramírez', 'Custodia y pensión', 'Revision', DATEADD(DAY, -15, SYSUTCDATETIME()), '[DATOS DE PRUEBA] Pendiente de documentación adicional del cliente.',
-            LOWER(REPLACE(CONVERT(NVARCHAR(36), NEWID()), '-', '')), SYSUTCDATETIME(), @AbogadoId, 'Alta', 'ECG-0002');
-END
-GO
-
-IF NOT EXISTS (SELECT 1 FROM dbo.Citas WHERE NombreCliente = 'María Fernanda López')
-BEGIN
-    DECLARE @CasoDivorcioId INT = (SELECT TOP 1 Id FROM dbo.Casos WHERE Tipo = 'Divorcio incausado' ORDER BY Id);
-    DECLARE @CasoCustodiaId INT = (SELECT TOP 1 Id FROM dbo.Casos WHERE Tipo = 'Custodia y pensión' ORDER BY Id);
-
-    INSERT INTO dbo.Citas (CasoId, NombreCliente, Telefono, FechaHora, Estatus)
-    VALUES
-        (@CasoDivorcioId, 'María Fernanda López', '5512345678', DATEADD(DAY, 2, SYSUTCDATETIME()), 'Confirmada'),
-        (@CasoCustodiaId, 'Carlos Alberto Ramírez', '5598765432', DATEADD(DAY, 4, SYSUTCDATETIME()), 'Pendiente');
-END
-GO
+-- (Aquí había un seed de datos de ejemplo -- 2 casos "[DATOS DE PRUEBA]" y 2
+-- citas -- que se volvía a insertar cada vez que se aplicaba este script, así
+-- que borrarlos en producción no servía: reaparecían en el siguiente
+-- despliegue con cambios de BD. Se quitó; los que ya existan en una BD se
+-- borran a mano, ver deploy/limpiar-datos-prueba.sql.)

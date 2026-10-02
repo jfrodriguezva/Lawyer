@@ -1,4 +1,5 @@
 using ECAbogados.Application.Interfaces;
+using ECAbogados.Api.Filters;
 using ECAbogados.Application.Mediation;
 using ECAbogados.Application.Promociones;
 using ECAbogados.Application.Promociones.Commands.ActualizarPromocion;
@@ -15,6 +16,7 @@ namespace ECAbogados.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[InvalidaCatalogoPublico]
 public class PromocionesController(ISender sender, IWebHostEnvironment environment, IPromocionRepository promocionRepository) : ControllerBase
 {
     // Pública: el banner del servicio y el aviso del NavBar la consumen sin sesión.

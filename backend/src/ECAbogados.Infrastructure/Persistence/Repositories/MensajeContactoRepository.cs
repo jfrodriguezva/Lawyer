@@ -78,4 +78,20 @@ public class MensajeContactoRepository(SqlConnectionFactory connectionFactory) :
             await connection.ExecuteAsync(sql, new { Id = id });
         });
     }
+
+    public async Task<(int Total, int Atendidos)> GetConteoAtendidosAsync()
+    {
+        return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            const string sql = """
+                SELECT COUNT(1) AS Total,
+                       COALESCE(SUM(CASE WHEN Atendido = 1 THEN 1 ELSE 0 END), 0) AS Atendidos
+                FROM dbo.MensajesContacto
+                """;
+
+            return await connection.QuerySingleAsync<(int Total, int Atendidos)>(sql);
+        });
+    }
 }

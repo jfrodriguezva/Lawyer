@@ -3,7 +3,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { IconCalendar, IconCheck, IconChat } from "@/components/icons";
-import { crearSolicitudCita, enviarMensajeContacto, getFlags, type ModalidadCita, type ModuloSolicitud } from "@/lib/api";
+import { crearSolicitudCita, enviarMensajeContacto, type ModalidadCita, type ModuloSolicitud } from "@/lib/api";
+import { satActivo } from "@/lib/servicios";
+import { useCatalogoPublico } from "@/lib/useCatalogoPublico";
 import Stepper from "@/components/Stepper";
 
 type Tab = "cita" | "mensaje";
@@ -108,7 +110,7 @@ function AgendaForm({ servicioInteres }: { servicioInteres?: string }) {
   const [email, setEmail] = useState("");
   const [medioContacto, setMedioContacto] = useState("WhatsApp");
   const [modulo, setModulo] = useState<ModuloSolicitud>("Abogado");
-  const [satHabilitado, setSatHabilitado] = useState(false);
+  const satHabilitado = satActivo(useCatalogoPublico().modulos);
   const [descripcion, setDescripcion] = useState("");
   const [fechaHora, setFechaHora] = useState("");
   const [modalidad, setModalidad] = useState<ModalidadCita>("Presencial");
@@ -119,12 +121,6 @@ function AgendaForm({ servicioInteres }: { servicioInteres?: string }) {
 
   const puedeAvanzarPaso1 = nombreCliente.trim() !== "" && telefono.trim() !== "" && email.trim() !== "";
   const puedeAvanzarPaso3 = fechaHora !== "";
-
-  useEffect(() => {
-    getFlags()
-      .then((flags) => setSatHabilitado(flags.satHabilitado))
-      .catch(() => undefined);
-  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();

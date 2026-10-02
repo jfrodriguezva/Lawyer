@@ -21,11 +21,10 @@ import {
   IconWhatsapp,
 } from "@/components/icons";
 import {
-  getModulosPublicos,
-  getServiciosActivos,
-  getPromocionesActivasPublic,
+  getCatalogoPublico,
   promocionImagenUrl,
   type IconoBeneficio,
+  type PromocionPublica,
   type Servicio,
 } from "@/lib/api";
 import { getServicioPorSlug } from "@/lib/servicios";
@@ -54,7 +53,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const servicios = await getServiciosActivos();
+  const { servicios } = await getCatalogoPublico();
   const servicio = getServicioPorSlug(servicios, slug);
   if (!servicio) return {};
 
@@ -66,7 +65,7 @@ export async function generateMetadata({
   };
 }
 
-function PromocionesDelServicio({ servicio, promociones }: { servicio: Servicio; promociones: Awaited<ReturnType<typeof getPromocionesActivasPublic>> }) {
+function PromocionesDelServicio({ servicio, promociones }: { servicio: Servicio; promociones: PromocionPublica[] }) {
   const propias = promociones.filter((p) => p.servicioIds.includes(servicio.id));
   if (propias.length === 0) return null;
 
@@ -100,11 +99,9 @@ export default async function ServicioPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [servicios, promociones, modulos] = await Promise.all([
-    getServiciosActivos(),
-    getPromocionesActivasPublic(),
-    getModulosPublicos(),
-  ]);
+  // Misma URL que en generateMetadata: Next memoiza el fetch dentro del mismo
+  // render, así que la página completa hace una sola petición al API.
+  const { servicios, promociones, modulos } = await getCatalogoPublico();
   const servicio = getServicioPorSlug(servicios, slug);
 
   if (!servicio) {

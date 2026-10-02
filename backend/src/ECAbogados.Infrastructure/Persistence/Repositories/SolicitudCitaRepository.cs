@@ -153,17 +153,81 @@ public class SolicitudCitaRepository(SqlConnectionFactory connectionFactory) : I
                 """;
 
             var rows = await connection.QueryAsync<HistorialRow>(sql, new { SolicitudCitaId = solicitudCitaId });
-            return rows.Select(r => new HistorialCitaCambio
-            {
-                Id = r.Id,
-                SolicitudCitaId = r.SolicitudCitaId,
-                FechaHoraPropuesta = r.FechaHoraPropuesta,
-                PropuestoPor = Enum.Parse<OrigenCambioCita>(r.PropuestoPor),
-                Motivo = r.Motivo,
-                Fecha = r.Fecha
-            }).ToList();
+            return rows.Select(MapHistorial).ToList();
         });
     }
+
+    // Una consulta por lote en vez de una por solicitud (N+1). Se parte en lotes
+    // porque SQL Server acepta como máximo 2100 parámetros por comando y Dapper
+    // expande "IN @Ids" a un parámetro por elemento.
+    private const int TamanoLoteHistorial = 1000;
+
+    public async Task<IReadOnlyDictionary<int, IReadOnlyList<HistorialCitaCambio>>> GetHistorialPorSolicitudesAsync(IReadOnlyCollection<int> solicitudCitaIds)
+    {
+        if (solicitudCitaIds.Count == 0)
+        {
+            return new Dictionary<int, IReadOnlyList<HistorialCitaCambio>>();
+        }
+
+        return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            const string sql = """
+                SELECT Id, SolicitudCitaId, FechaHoraPropuesta, PropuestoPor, Motivo, Fecha
+                FROM dbo.HistorialCitaCambios
+                WHERE SolicitudCitaId IN @Ids
+                ORDER BY Fecha
+                """;
+
+            var historial = new List<HistorialCitaCambio>();
+            foreach (var lote in solicitudCitaIds.Distinct().Chunk(TamanoLoteHistorial))
+            {
+                var rows = await connection.QueryAsync<HistorialRow>(sql, new { Ids = lote });
+                historial.AddRange(rows.Select(MapHistorial));
+            }
+
+            return (IReadOnlyDictionary<int, IReadOnlyList<HistorialCitaCambio>>)historial
+                .GroupBy(h => h.SolicitudCitaId)
+                .ToDictionary(g => g.Key, g => (IReadOnlyList<HistorialCitaCambio>)g.OrderBy(h => h.Fecha).ToList());
+        });
+    }
+
+    public async Task<(int Total, IReadOnlyList<SolicitudCita> MasRecientes)> GetPendientesAsync(
+        IReadOnlyCollection<EstatusSolicitudCita> estatusPendientes, ModuloSolicitud? modulo, int top)
+    {
+        return await ResiliencePolicies.SqlRetryPolicy.ExecuteAsync(async () =>
+        {
+            using var connection = await connectionFactory.CreateOpenConnectionAsync();
+
+            var filtro = "WHERE Estatus IN @Estatus AND (@Modulo IS NULL OR Modulo = @Modulo)";
+            var sql = $"""
+                SELECT COUNT(1) FROM dbo.SolicitudesCita {filtro};
+                SELECT TOP (@Top) {Columnas} FROM dbo.SolicitudesCita {filtro} ORDER BY FechaCreacion DESC;
+                """;
+
+            using var multi = await connection.QueryMultipleAsync(sql, new
+            {
+                Estatus = estatusPendientes.Select(e => e.ToString()).ToArray(),
+                Modulo = modulo?.ToString(),
+                Top = top
+            });
+
+            var total = await multi.ReadSingleAsync<int>();
+            var rows = await multi.ReadAsync<SolicitudCitaRow>();
+            return (total, (IReadOnlyList<SolicitudCita>)rows.Select(MapToEntity).ToList());
+        });
+    }
+
+    private static HistorialCitaCambio MapHistorial(HistorialRow r) => new()
+    {
+        Id = r.Id,
+        SolicitudCitaId = r.SolicitudCitaId,
+        FechaHoraPropuesta = r.FechaHoraPropuesta,
+        PropuestoPor = Enum.Parse<OrigenCambioCita>(r.PropuestoPor),
+        Motivo = r.Motivo,
+        Fecha = r.Fecha
+    };
 
     private static SolicitudCita MapToEntity(SolicitudCitaRow row) => new()
     {

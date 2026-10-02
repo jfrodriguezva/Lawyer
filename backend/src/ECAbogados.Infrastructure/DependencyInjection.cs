@@ -32,7 +32,6 @@ public static class DependencyInjection
         services.AddScoped<INotificacionRepository, NotificacionRepository>();
         services.AddScoped<IPlantillaMensajeRepository, PlantillaMensajeRepository>();
         services.AddScoped<IRegistroTiempoRepository, RegistroTiempoRepository>();
-        services.AddScoped<IConfiguracionRepository, ConfiguracionRepository>();
         services.AddScoped<ICatalogoTramiteSATRepository, CatalogoTramiteSATRepository>();
         services.AddScoped<ITramiteSATRepository, TramiteSATRepository>();
         services.AddScoped<IModuloRepository, ModuloRepository>();

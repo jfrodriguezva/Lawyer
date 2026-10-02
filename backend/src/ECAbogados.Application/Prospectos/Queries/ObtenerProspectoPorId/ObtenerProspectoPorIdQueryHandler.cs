@@ -18,12 +18,11 @@ public class ObtenerProspectoPorIdQueryHandler(
         }
 
         var solicitudes = await solicitudCitaRepository.GetByProspectoIdAsync(request.Id);
-        var solicitudesDto = new List<SolicitudCitaDto>();
-        foreach (var solicitud in solicitudes)
-        {
-            var historial = await solicitudCitaRepository.GetHistorialAsync(solicitud.Id);
-            solicitudesDto.Add(solicitud.ToDto(historial));
-        }
+        var historialPorSolicitud = await solicitudCitaRepository.GetHistorialPorSolicitudesAsync(
+            solicitudes.Select(s => s.Id).ToList());
+        var solicitudesDto = solicitudes
+            .Select(s => s.ToDto(historialPorSolicitud.GetValueOrDefault(s.Id) ?? []))
+            .ToList();
 
         return new ProspectoDetalleDto(prospecto.ToDto(), solicitudesDto);
     }

@@ -44,7 +44,7 @@ public class Documento
     public int? SubidoPorId { get; set; }
     public string? SubidoPorNombre { get; set; }
 
-    // Modo "solo registro" (ver Configuracion): cuando es true, el documento no
+    // Modo "solo registro": cuando es true, el documento no
     // tiene archivo físico en disco -- solo se deja constancia de que se
     // entregó por otro medio (correo/WhatsApp), para no depender de almacenar
     // el binario en el servidor.

@@ -245,7 +245,7 @@ export default function AgendaPage() {
                 >
                   Abrir WhatsApp
                 </a>
-                {seleccionada.estatus !== "Confirmada" && (
+                {seleccionada.estatus !== "Confirmada" && seleccionada.estatus !== "Realizada" && seleccionada.estatus !== "NoAsistio" && (
                   <button
                     onClick={() => handleEstatus(seleccionada.id, "Confirmada")}
                     className="border border-brand-gold px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-brand-gold hover:bg-brand-gold hover:text-brand-ink"
@@ -253,7 +253,24 @@ export default function AgendaPage() {
                     Confirmar
                   </button>
                 )}
-                {seleccionada.estatus !== "Cancelada" && (
+                {/* Solo una vez que pasó la hora de la cita tiene sentido registrar si el cliente asistió. */}
+                {seleccionada.estatus === "Confirmada" && new Date(seleccionada.fechaHora) <= new Date() && (
+                  <>
+                    <button
+                      onClick={() => handleEstatus(seleccionada.id, "Realizada")}
+                      className="border border-emerald-600/60 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-emerald-400 hover:bg-emerald-600/20"
+                    >
+                      Asistió
+                    </button>
+                    <button
+                      onClick={() => handleEstatus(seleccionada.id, "NoAsistio")}
+                      className="border border-red-500/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-red-400 hover:bg-red-500/20"
+                    >
+                      No asistió
+                    </button>
+                  </>
+                )}
+                {seleccionada.estatus !== "Cancelada" && seleccionada.estatus !== "Realizada" && seleccionada.estatus !== "NoAsistio" && (
                   <button
                     onClick={() => handleEstatus(seleccionada.id, "Cancelada")}
                     className="border border-brand-line px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-brand-creamSoft hover:border-brand-goldDeep hover:text-brand-goldDeep"
@@ -330,6 +347,12 @@ export default function AgendaPage() {
             </span>
             <span className="flex items-center gap-1.5">
               <StatusPill estatus="Cancelada" /> cancelada
+            </span>
+            <span className="flex items-center gap-1.5">
+              <StatusPill estatus="Realizada" /> realizada
+            </span>
+            <span className="flex items-center gap-1.5">
+              <StatusPill estatus="NoAsistio" /> no asistió
             </span>
           </div>
         </div>
