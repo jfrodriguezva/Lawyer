@@ -37,7 +37,12 @@ services:
       - documentos:/app/App_Data/documentos
       - promociones:/app/App_Data/promociones
       - logs:/app/Logs
-    networks: [default, data]
+    # edge: el proxy compartido (infra-caddy) llega a la API como "lawyer-api".
+    networks:
+      default:
+      data:
+      edge:
+        aliases: [lawyer-api]
     restart: always
 
   frontend:
@@ -51,6 +56,11 @@ services:
         NEXT_PUBLIC_SITE_URL: https://ecgabogados.com
     depends_on:
       - api
+    # edge: el proxy compartido (infra-caddy) llega al frontend como "lawyer-frontend".
+    networks:
+      default:
+      edge:
+        aliases: [lawyer-frontend]
     restart: always
 
   nginx:
@@ -79,6 +89,9 @@ networks:
   data:
     external: true
     name: data
+  edge:
+    external: true
+    name: edge
 
 volumes:
   sqldata:
